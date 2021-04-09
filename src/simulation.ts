@@ -1,8 +1,8 @@
 import * as PIXI from 'pixi.js';
 
 import { ParticleInterface } from 'graphics';
-import Ant from 'assets/ant.png';
 import { randomSign } from 'utils/math';
+import Ant from 'assets/ant.png';
 
 export const setupSimulation = (
   container: HTMLElement,
@@ -10,18 +10,18 @@ export const setupSimulation = (
   particles: PIXI.ParticleContainer,
 ): void => {
   const ants: ParticleInterface[] = [];
-  const numberOfSprites = app.renderer instanceof PIXI.Renderer ? 1000 : 100;
+  const numberOfSprites = app.renderer instanceof PIXI.Renderer ? 2000 : 100;
 
   // eslint-disable-next-line no-plusplus
   for (let i = 0; i < numberOfSprites; i++) {
     const ant = PIXI.Sprite.from(Ant) as ParticleInterface;
     ant.anchor.set(0.5);
-    ant.scale.set(0.3);
+    ant.scale.set(0.2);
     ant.x = Math.random() * container.offsetWidth;
     ant.y = Math.random() * container.offsetHeight;
     ant.direction = Math.random() * Math.PI * 2;
     ant.turningSpeed = Math.random() - 0.8;
-    ant.speed = (2 + Math.random() * 2) * 0.5;
+    ant.speed = 2 + Math.random() * 2;
     ants.push(ant);
     particles.addChild(ant);
   }
@@ -31,7 +31,7 @@ export const setupSimulation = (
     for (const ant of ants) {
       ant.direction += ant.turningSpeed * deltaTime * 0.01;
       const { direction, scale, speed } = ant;
-      ant.x += Math.sin(direction) * (speed * scale.y) * deltaTime;
+      ant.x += Math.sin(direction) * (speed * scale.x) * deltaTime;
       ant.y += Math.cos(direction) * (speed * scale.y) * deltaTime;
       const { x, y } = ant;
       const { offsetWidth, offsetHeight } = container;
