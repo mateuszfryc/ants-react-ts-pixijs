@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 
 import { ParticleInterface } from 'graphics';
 import Ant from 'assets/ant.png';
+import { randomSign } from 'utils/math';
 
 export const setupSimulation = (
   container: HTMLElement,
@@ -29,9 +30,26 @@ export const setupSimulation = (
     // eslint-disable-next-line no-restricted-syntax
     for (const ant of ants) {
       ant.direction += ant.turningSpeed * deltaTime * 0.01;
-      ant.x += Math.sin(ant.direction) * (ant.speed * ant.scale.y) * deltaTime;
-      ant.y += Math.cos(ant.direction) * (ant.speed * ant.scale.y) * deltaTime;
-      ant.rotation = -ant.direction + Math.PI;
+      const { direction, scale, speed } = ant;
+      ant.x += Math.sin(direction) * (speed * scale.y) * deltaTime;
+      ant.y += Math.cos(direction) * (speed * scale.y) * deltaTime;
+      const { x, y } = ant;
+      const { offsetWidth, offsetHeight } = container;
+      if (x < 0) {
+        ant.x = 0;
+        ant.direction += randomSign() * direction * deltaTime * 0.1;
+      } else if (x > offsetWidth) {
+        ant.x = offsetWidth;
+        ant.direction += randomSign() * direction * deltaTime * 0.1;
+      }
+      if (y < 0) {
+        ant.y = 0;
+        ant.direction += randomSign() * direction * deltaTime * 0.1;
+      } else if (y > offsetHeight) {
+        ant.y = offsetHeight;
+        ant.direction += randomSign() * direction * deltaTime * 0.1;
+      }
+      ant.rotation = -direction + Math.PI;
     }
   });
 };
