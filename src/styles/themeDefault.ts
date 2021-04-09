@@ -31,6 +31,7 @@ const padding = {
   small: '0.5rem 0.8rem',
 };
 
+export const navigationClosedWidth = 40;
 export const navigationWidth = 320;
 
 export const paragraph = `
@@ -43,6 +44,7 @@ export const paragraph = `
 export const theme = {
   colors: colorsLibrary,
   fontSizes,
+  navigationClosedWidth,
   navigationWidth,
   padding,
   paragraph,

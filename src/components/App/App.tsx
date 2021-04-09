@@ -3,7 +3,8 @@ import styled, { css } from 'styled-components';
 
 import { Navigation } from 'components/Navigation';
 import { SEO } from 'components/SEO';
-import { setupPixiAnts } from 'logic/ants';
+import { setupGraphics, updateRendererSize } from 'graphics';
+import { setupSimulation } from 'simulation';
 
 export const AppContainer = styled.div(
   ({ theme: { colors } }) => css`
@@ -17,6 +18,7 @@ export const AppContainer = styled.div(
 
 export const Content = styled.div(
   () => css`
+    overflow: hidden;
     flex: 1;
   `,
 );
@@ -25,7 +27,18 @@ export const App: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (contentRef.current) setupPixiAnts(contentRef.current);
+    const { current } = contentRef;
+    if (current) {
+      const { app, particles } = setupGraphics(current);
+      setupSimulation(current, app, particles);
+      updateRendererSize(current);
+
+      app.start();
+
+      window.addEventListener('resize', () => {
+        updateRendererSize(current!);
+      });
+    }
   }, []);
 
   return (

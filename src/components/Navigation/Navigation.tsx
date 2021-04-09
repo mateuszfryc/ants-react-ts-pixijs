@@ -11,9 +11,10 @@ import { NavItemWithContent } from './NavItemWithContent';
 import { Settings } from './Settings';
 
 const NavigationClosed = styled.div(
-  ({ theme: { colors } }) => css`
+  ({ theme: { colors, navigationClosedWidth } }) => css`
     text-align: center;
     height: 100vh;
+    width: ${navigationClosedWidth}px;
     background-color: ${colors.primary};
   `,
 );
