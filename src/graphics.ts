@@ -1,10 +1,6 @@
 import * as PIXI from 'pixi.js';
 
-import * as AntFrames from 'assets/ant/';
-
 const app = new PIXI.Application({
-  // resolution: devicePixelRatio,
-  // eslint-disable-next-line prettier/prettier
   backgroundColor: 0xffffff,
 });
 app.stop();
@@ -38,17 +34,14 @@ export const updateRendererSize = <T extends HTMLElement>(container: T): void =>
   }
 };
 
-export interface ParticleInterface extends PIXI.AnimatedSprite {
+export interface ParticleInterface extends PIXI.Sprite {
   anchor: PIXI.ObservablePoint;
   x: number;
   y: number;
   direction: number;
   tint: number;
   turningSpeed: number;
-  // offset: number;
   scale: PIXI.ObservablePoint;
   speed: number;
   rotation: number;
 }
-
-export const antTextures = Object.values(AntFrames).map((frame) => PIXI.Texture.from(frame));
