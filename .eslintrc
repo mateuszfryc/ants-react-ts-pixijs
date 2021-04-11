@@ -33,12 +33,14 @@
   "rules": {
     "indent": [2, 2],
     "arrow-body-style": 0,
+    "no-underscore-dangle": 0,
     "class-methods-use-this": ["warn", { "exceptMethods": ["isOverlappingWith"] }],
     "function-call-argument-newline": 0,
     "import/prefer-default-export": 0,
     "jsx-quotes": ["warn", "prefer-single"],
     "lines-between-class-members": 0,
     "newline-before-return": ["warn"],
+    "no-plusplus": ["warn", { "allowForLoopAfterthoughts": true }],
     "no-console": "warn",
     "no-nested-ternary": 0,
     "no-shadow": "error",
@@ -51,6 +53,19 @@
     "react/jsx-props-no-spreading": 0,
     "react/prop-types": 0,
     "react/static-property-placement": 0,
+    "prefer-destructuring": [
+      "warn",
+      {
+        "VariableDeclarator": {
+          "array": false,
+          "object": true
+        },
+        "AssignmentExpression": {
+          "array": false,
+          "object": false
+        }
+      }
+    ],
     "jsx-a11y/alt-text": [
       2,
       {
@@ -68,19 +83,12 @@
     "import/no-extraneous-dependencies": 0,
     "@typescript-eslint/no-unused-vars": 0,
     "@typescript-eslint/no-non-null-assertion": 0,
+    "@typescript-eslint/lines-between-class-members": 0,
+    "@typescript-eslint/naming-convention": 0,
     "unicorn/prevent-abbreviations": 0,
     "unicorn/number-literal-case": 0,
     "unicorn/consistent-destructuring": 0,
-    "unicorn/filename-case": [
-      "warn",
-      {
-        "cases": {
-          "camelCase": true,
-          "pascalCase": true
-        },
-        "ignore": ["^SEO.tsx$"]
-      }
-    ]
+    "unicorn/filename-case": 0
   },
   "ignorePatterns": ["react-app-env.d.ts"],
   "settings": {

@@ -8,6 +8,7 @@ app.stop();
 type PixiSetupResultType = {
   app: PIXI.Application;
   particles: PIXI.ParticleContainer;
+  draw: PIXI.Graphics;
 };
 
 export const setupGraphics = <T extends HTMLElement>(container: T): PixiSetupResultType => {
@@ -20,9 +21,12 @@ export const setupGraphics = <T extends HTMLElement>(container: T): PixiSetupRes
   });
   app.stage.addChild(particles);
 
+  const draw = new PIXI.Graphics();
+  app.stage.addChild(draw);
+
   app.resizeTo = container;
 
-  return { app, particles };
+  return { app, particles, draw };
 };
 
 export const updateRendererSize = <T extends HTMLElement>(container: T): void => {
