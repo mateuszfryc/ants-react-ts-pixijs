@@ -58,8 +58,8 @@ class CollisionsTest {
 
     // eslint-disable-next-line no-restricted-syntax
     for (const body of this.bodies) {
-      body.x += body.direction_x * speed;
-      body.y += body.direction_y * speed;
+      body.x += body.xVelocity * speed;
+      body.y += body.yVelocity * speed;
 
       const potentials = this.collisions.getPotentials(body);
 
@@ -69,15 +69,15 @@ class CollisionsTest {
           body.x -= result.overlap! * result.overlap_x;
           body.y -= result.overlap! * result.overlap_y;
 
-          let dot = body.direction_x * result.overlap_y + body.direction_y * -result.overlap_x;
+          let dot = body.xVelocity * result.overlap_y + body.yVelocity * -result.overlap_x;
 
-          body.direction_x = 2 * dot * result.overlap_y - body.direction_x;
-          body.direction_y = 2 * dot * -result.overlap_x - body.direction_y;
+          body.xVelocity = 2 * dot * result.overlap_y - body.xVelocity;
+          body.yVelocity = 2 * dot * -result.overlap_x - body.yVelocity;
 
-          dot = other.direction_x * result.overlap_y + other.direction_y * -result.overlap_x;
+          dot = other.xVelocity * result.overlap_y + other.yVelocity * -result.overlap_x;
 
-          other.direction_x = 2 * dot * result.overlap_y - other.direction_x;
-          other.direction_y = 2 * dot * -result.overlap_x - other.direction_y;
+          other.xVelocity = 2 * dot * result.overlap_y - other.xVelocity;
+          other.yVelocity = 2 * dot * -result.overlap_x - other.yVelocity;
         }
       }
     }
@@ -120,8 +120,8 @@ class CollisionsTest {
       this.polygons += 1;
     }
 
-    body.direction_x = Math.cos(direction);
-    body.direction_y = Math.sin(direction);
+    body.xVelocity = Math.cos(direction);
+    body.yVelocity = Math.sin(direction);
 
     this.bodies.push(body);
   }

@@ -3,8 +3,8 @@ import { BVHBranch } from './BVHBranch';
 export class Body extends BVHBranch {
   x: number;
   y: number;
-  direction_x: number;
-  direction_y: number;
+  xVelocity: number;
+  yVelocity: number;
   padding: number;
   _polygon: boolean;
   _bvh_padding: number;
@@ -13,8 +13,8 @@ export class Body extends BVHBranch {
     super(false);
     this.x = x;
     this.y = y;
-    this.direction_x = 0;
-    this.direction_y = 0;
+    this.xVelocity = 0;
+    this.yVelocity = 0;
     this.padding = padding;
     this._polygon = false;
     this._bvh_padding = padding;

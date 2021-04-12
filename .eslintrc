@@ -43,7 +43,7 @@
     "no-plusplus": ["warn", { "allowForLoopAfterthoughts": true }],
     "no-console": "warn",
     "no-nested-ternary": 0,
-    "no-shadow": "error",
+    "no-shadow": "warn",
     "no-use-before-define": 0,
     "prettier/prettier": "warn",
     "react/display-name": 0,
@@ -73,7 +73,7 @@
       }
     ],
     "import/extensions": [
-      "error",
+      "warn",
       "ignorePackages",
       {
         "ts": "never",
