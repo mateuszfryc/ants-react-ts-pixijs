@@ -37,15 +37,3 @@ export const updateRendererSize = <T extends HTMLElement>(container: T): void =>
     canavs.height = offsetHeight;
   }
 };
-
-export interface ParticleInterface extends PIXI.Sprite {
-  anchor: PIXI.ObservablePoint;
-  x: number;
-  y: number;
-  direction: number;
-  tint: number;
-  turningSpeed: number;
-  scale: PIXI.ObservablePoint;
-  speed: number;
-  rotation: number;
-}

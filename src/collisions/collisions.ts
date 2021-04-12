@@ -81,6 +81,28 @@ export class Collisions {
     return bvh.potentials(shape);
   }
 
+  createWorldBounds(width: number, height: number): Polygon[] {
+    // World bounds
+    const top = this.addPolygon(0, 0, [
+      [0, 0],
+      [width, 0],
+    ]);
+    const right = this.addPolygon(0, 0, [
+      [width, 0],
+      [width, height],
+    ]);
+    const bottom = this.addPolygon(0, 0, [
+      [width, height],
+      [0, height],
+    ]);
+    const left = this.addPolygon(0, 0, [
+      [0, height],
+      [0, 0],
+    ]);
+
+    return [top, right, bottom, left];
+  }
+
   // eslint-disable-next-line class-methods-use-this
   isCollision(a: Shape, b: Shape, result?: Result): boolean {
     const a_polygon = a._polygon;

@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { randomInRange } from 'utils/math';
 
 import { Collisions } from './collisions';
 import { Shape } from './proxyTypes';
@@ -9,11 +10,7 @@ const count = 510;
 const speed = 1;
 const size = 4;
 
-function random(min: number, max: number): number {
-  return Math.floor(Math.random() * max) + min;
-}
-
-class StressTest {
+class CollisionsTest {
   context: PIXI.Graphics;
   collisions: Collisions;
   bodies: Shape[];
@@ -50,7 +47,7 @@ class StressTest {
     ]);
 
     for (let i = 0; i < count; ++i) {
-      this.createShape(!random(0, 49));
+      this.createShape(!randomInRange(0, 49));
     }
 
     this.update();
@@ -97,14 +94,14 @@ class StressTest {
   createShape(isLarge: boolean): void {
     const min_size = size * 0.75 * (isLarge ? 3 : 1);
     const max_size = size * 1.25 * (isLarge ? 5 : 1);
-    const x = random(0, this.width);
-    const y = random(0, this.height);
-    const direction = (random(0, 360) * Math.PI) / 180;
+    const x = randomInRange(0, this.width);
+    const y = randomInRange(0, this.height);
+    const direction = (randomInRange(0, 360) * Math.PI) / 180;
 
     let body;
 
-    if (random(0, 2)) {
-      body = this.collisions.addCircle(x, y, random(min_size, max_size));
+    if (randomInRange(0, 2)) {
+      body = this.collisions.addCircle(x, y, randomInRange(min_size, max_size));
 
       this.circles += 1;
     } else {
@@ -112,12 +109,12 @@ class StressTest {
         x,
         y,
         [
-          [-random(min_size, max_size), -random(min_size, max_size)],
-          [random(min_size, max_size), -random(min_size, max_size)],
-          [random(min_size, max_size), random(min_size, max_size)],
-          [-random(min_size, max_size), random(3, size)],
+          [-randomInRange(min_size, max_size), -randomInRange(min_size, max_size)],
+          [randomInRange(min_size, max_size), -randomInRange(min_size, max_size)],
+          [randomInRange(min_size, max_size), randomInRange(min_size, max_size)],
+          [-randomInRange(min_size, max_size), randomInRange(3, size)],
         ],
-        (random(0, 360) * Math.PI) / 180,
+        (randomInRange(0, 360) * Math.PI) / 180,
       );
 
       this.polygons += 1;
@@ -134,6 +131,6 @@ export const SetupStressTest = (
   context: PIXI.Graphics,
   width: number,
   height: number,
-): StressTest => {
-  return new StressTest(context, width, height);
+): CollisionsTest => {
+  return new CollisionsTest(context, width, height);
 };

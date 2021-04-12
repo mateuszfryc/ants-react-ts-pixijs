@@ -4,8 +4,7 @@ import styled, { css } from 'styled-components';
 import { Navigation } from 'components/Navigation';
 import { SEO } from 'components/SEO';
 import { setupGraphics, updateRendererSize } from 'graphics';
-// import { setupSimulation } from 'simulation';
-import { SetupStressTest } from 'collisions/stressTest';
+import { setupSimulation } from 'ants-simulation';
 
 export const AppContainer = styled.div(
   ({ theme: { colors } }) => css`
@@ -30,12 +29,10 @@ export const App: React.FC = () => {
   useEffect(() => {
     const { current } = contentRef;
     if (current) {
-      const { app, draw /* , particles */ } = setupGraphics(current);
-      const { view } = app;
-      // setupSimulation(current, app, particles);
+      const { app, particles } = setupGraphics(current);
+      setupSimulation(current, app, particles);
       app.start();
       updateRendererSize(current);
-      SetupStressTest(draw, view.width, view.height);
 
       window.addEventListener('resize', () => {
         updateRendererSize(current!);
