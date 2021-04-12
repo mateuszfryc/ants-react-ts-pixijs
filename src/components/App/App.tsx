@@ -29,8 +29,8 @@ export const App: React.FC = () => {
   useEffect(() => {
     const { current } = contentRef;
     if (current) {
-      const { app, particles } = setupGraphics(current);
-      setupSimulation(current, app, particles);
+      const { app, particles, draw } = setupGraphics(current);
+      setupSimulation(current, app, particles, draw);
       app.start();
       updateRendererSize(current);
 

@@ -15,6 +15,7 @@ export const setupSimulation = (
   container: HTMLElement,
   app: PIXI.Application,
   particles: PIXI.ParticleContainer,
+  draw: PIXI.Graphics,
 ): void => {
   const ants: Ant[] = [];
   // const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 2000 : 100;
@@ -27,10 +28,10 @@ export const setupSimulation = (
   for (let i = 0; i < numberOfAnts; i++) {
     const ant = PIXI.Sprite.from(AntImage) as Ant;
     ant.anchor.set(0.5);
-    ant.scale.set(1.2);
+    ant.scale.set(1);
     ant.x = Math.random() * container.offsetWidth;
     ant.y = Math.random() * container.offsetHeight;
-    ant.body = collisions.addCircle(ant.x, ant.y, 15);
+    ant.body = collisions.addCircle(ant.x, ant.y, 13 * ant.scale.x);
     const direction = (randomInRange(0, 360) * Math.PI) / 180;
     ant.body.direction_x = Math.cos(direction);
     ant.body.direction_y = Math.sin(direction);
@@ -73,6 +74,10 @@ export const setupSimulation = (
       }
       ant.x = body.x;
       ant.y = body.y;
+
+      draw.clear();
+      draw.lineStyle(1, 0xff0000);
+      collisions.draw(draw);
     }
   });
 };
