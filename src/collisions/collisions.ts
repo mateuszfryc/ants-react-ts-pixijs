@@ -7,6 +7,11 @@ import { Polygon } from './polygon';
 import { Shape } from './proxyTypes';
 import { Result } from './result';
 
+export const TAGS = {
+  ANT: 'ant',
+  OBSTACLE: 'world-bounds',
+};
+
 export class Collisions {
   _bvh: BVH;
 
@@ -14,8 +19,8 @@ export class Collisions {
     this._bvh = new BVH();
   }
 
-  addCircle(x = 0, y = 0, radius = 0, scale = 1, padding = 0): Circle {
-    const body = new Circle(x, y, radius, scale, padding) as Shape;
+  addCircle(x = 0, y = 0, radius = 0, tags = [TAGS.ANT], scale = 1, padding = 0): Circle {
+    const body = new Circle(x, y, radius, tags, scale, padding) as Shape;
 
     this._bvh.insert(body);
 
@@ -26,12 +31,13 @@ export class Collisions {
     x = 0,
     y = 0,
     points = [[0, 0]],
+    tags = [TAGS.OBSTACLE],
     angle = 0,
     scale_x = 1,
     scale_y = 1,
     padding = 0,
   ): Polygon {
-    const body = new Polygon(x, y, points, angle, scale_x, scale_y, padding) as Shape;
+    const body = new Polygon(x, y, points, tags, angle, scale_x, scale_y, padding) as Shape;
 
     this._bvh.insert(body);
 
@@ -81,8 +87,7 @@ export class Collisions {
     return bvh.potentials(shape);
   }
 
-  createWorldBounds(width: number, height: number): Polygon[] {
-    const padding = 10;
+  createWorldBounds(width: number, height: number, padding = 2): Polygon[] {
     const top = this.addPolygon(0, 0, [
       [0, 0],
       [width, 0],

@@ -8,10 +8,11 @@ export class Body extends BVHBranch {
   rotation: number;
   targetRotation: number;
   padding: number;
+  tags: string[];
   _polygon: boolean;
   _bvh_padding: number;
 
-  constructor(x = 0, y = 0, padding = 0) {
+  constructor(x = 0, y = 0, padding = 0, tags: string[]) {
     super(false);
     this.x = x;
     this.y = y;
@@ -20,6 +21,7 @@ export class Body extends BVHBranch {
     this.rotation = 0; // radians
     this.targetRotation = 0; // radians
     this.padding = padding;
+    this.tags = tags;
     this._polygon = false;
     this._bvh_padding = padding;
   }

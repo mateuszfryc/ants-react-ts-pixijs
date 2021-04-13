@@ -24,8 +24,17 @@ export class Polygon extends Body {
   _dirty_coords: boolean;
   _dirty_normals: boolean;
 
-  constructor(x = 0, y = 0, points: number[][], angle = 0, scale_x = 1, scale_y = 1, padding = 0) {
-    super(x, y, padding);
+  constructor(
+    x = 0,
+    y = 0,
+    points: number[][],
+    tags: string[],
+    angle = 0,
+    scale_x = 1,
+    scale_y = 1,
+    padding = 0,
+  ) {
+    super(x, y, padding, tags);
 
     // The angle of the body in radians
     this.angle = angle;

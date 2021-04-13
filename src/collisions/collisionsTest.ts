@@ -114,6 +114,7 @@ class CollisionsTest {
           [randomInRange(min_size, max_size), randomInRange(min_size, max_size)],
           [-randomInRange(min_size, max_size), randomInRange(3, size)],
         ],
+        [],
         (randomInRange(0, 360) * Math.PI) / 180,
       );
 
