@@ -6,7 +6,6 @@ export class Body extends BVHBranch {
   xVelocity: number;
   yVelocity: number;
   rotation: number;
-  targetRotation: number;
   padding: number;
   tags: string[];
   _polygon: boolean;
@@ -19,7 +18,6 @@ export class Body extends BVHBranch {
     this.xVelocity = 0;
     this.yVelocity = 0;
     this.rotation = 0; // radians
-    this.targetRotation = 0; // radians
     this.padding = padding;
     this.tags = tags;
     this._polygon = false;

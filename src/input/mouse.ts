@@ -1,11 +1,14 @@
-const Mouse = {
+export const Mouse = {
   x: 0,
   y: 0,
+  isPressed: false,
 
-  getMouseToPointAngle(point) {
-    const { x, y } = point;
-
+  getMouseToPointAngle(x: number, y = 0): number {
     return Math.atan2(this.x - x, y - this.y);
+  },
+
+  getIsPressed(): boolean {
+    return this.isPressed;
   },
 };
 
@@ -28,4 +31,10 @@ function getmousePosition(event: MouseEvent): void {
 
 export function setupMouseInput(): void {
   document.addEventListener('mousemove', getmousePosition);
+  document.addEventListener('mousedown', () => {
+    Mouse.isPressed = true;
+  });
+  document.addEventListener('mouseup', () => {
+    Mouse.isPressed = false;
+  });
 }
