@@ -5,6 +5,8 @@ export class Body extends BVHBranch {
   y: number;
   xVelocity: number;
   yVelocity: number;
+  rotation: number;
+  targetRotation: number;
   padding: number;
   _polygon: boolean;
   _bvh_padding: number;
@@ -15,6 +17,8 @@ export class Body extends BVHBranch {
     this.y = y;
     this.xVelocity = 0;
     this.yVelocity = 0;
+    this.rotation = 0; // radians
+    this.targetRotation = 0; // radians
     this.padding = padding;
     this._polygon = false;
     this._bvh_padding = padding;
