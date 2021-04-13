@@ -19,7 +19,7 @@ export const setupSimulation = (
 ): void => {
   const ants: Ant[] = [];
   // const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 2000 : 100;
-  const numberOfAnts = 100;
+  const numberOfAnts = 500;
   const result = new Result();
   const collisions = new Collisions();
   collisions.createWorldBounds(app.view.width, app.view.height);
@@ -29,7 +29,7 @@ export const setupSimulation = (
     const speed = randomInRange(80, 100);
 
     ant.anchor.set(0.5);
-    ant.scale.set(1);
+    ant.scale.set(0.3);
     ant.x = Math.random() * container.offsetWidth;
     ant.y = Math.random() * container.offsetHeight;
     ant.speed = speed;

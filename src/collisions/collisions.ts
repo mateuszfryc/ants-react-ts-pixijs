@@ -82,22 +82,30 @@ export class Collisions {
   }
 
   createWorldBounds(width: number, height: number): Polygon[] {
-    // World bounds
+    const padding = 10;
     const top = this.addPolygon(0, 0, [
       [0, 0],
       [width, 0],
+      [width, padding],
+      [0, padding],
     ]);
     const right = this.addPolygon(0, 0, [
+      [width - padding, 0],
       [width, 0],
       [width, height],
+      [width - padding, height],
     ]);
     const bottom = this.addPolygon(0, 0, [
+      [0, height - padding],
+      [width, height - padding],
       [width, height],
       [0, height],
     ]);
     const left = this.addPolygon(0, 0, [
-      [0, height],
       [0, 0],
+      [padding, 0],
+      [padding, height],
+      [0, height],
     ]);
 
     return [top, right, bottom, left];
