@@ -4,11 +4,12 @@ import AntImage from 'assets/ant.png';
 import { Collisions } from 'collisions/collisions';
 import { Shape } from 'collisions/proxyTypes';
 import { Result } from 'collisions/result';
-import { randomInRange } from 'utils/math';
+import { randomInRange, PI, twoPI, interpolateNumber } from 'utils/math';
 
 type Ant = PIXI.Sprite & {
   body: Shape;
   speed: number;
+  targetRotation: number;
 };
 
 export const setupSimulation = (
@@ -19,26 +20,29 @@ export const setupSimulation = (
 ): void => {
   const ants: Ant[] = [];
   // const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 2000 : 100;
-  const numberOfAnts = 100;
+  const numberOfAnts = 1;
   const result = new Result();
   const collisions = new Collisions();
-  collisions.createWorldBounds(app.view.width, app.view.height);
+  // collisions.createWorldBounds(app.view.width, app.view.height);
+  collisions.createWorldBounds(500, 500);
+  console.log(container);
 
   for (let i = 0; i < numberOfAnts; i++) {
     const ant = PIXI.Sprite.from(AntImage) as Ant;
-    // const rotation = Math.random() * Math.PI * 2;
-    const rotation = Math.random() * Math.PI;
-    const speed = randomInRange(50, 60);
+    // const rotation = Math.random() * PI * 2;
+    const speed = 150; // randomInRange(100, 100);
 
     ant.anchor.set(0.5);
     ant.scale.set(1);
-    ant.rotation = rotation;
-    ant.x = Math.random() * container.offsetWidth;
-    ant.y = Math.random() * container.offsetHeight;
-    ant.body = collisions.addCircle(ant.x, ant.y, 13 * ant.scale.x) as Shape;
-    ant.body.xVelocity = Math.cos(rotation);
-    ant.body.yVelocity = Math.sin(rotation);
+    ant.x = 150; // Math.random() * container.offsetWidth;
+    ant.y = 150; // Math.random() * container.offsetHeight;
     ant.speed = speed;
+    ant.body = collisions.addCircle(ant.x, ant.y, 13 * ant.scale.x) as Shape;
+    ant.body.xVelocity = randomInRange(-1, 1);
+    ant.body.yVelocity = randomInRange(-1, 1);
+    const rotation = -Math.atan2(ant.body.xVelocity, ant.body.yVelocity);
+    ant.rotation = rotation;
+    ant.targetRotation = rotation;
     ants.push(ant);
     particles.addChild(ant);
   }
@@ -70,6 +74,7 @@ export const setupSimulation = (
 
           body.xVelocity = 2 * dot * result.overlap_y - x;
           body.yVelocity = 2 * dot * -result.overlap_x - y;
+          ant.targetRotation = -Math.atan2(body.xVelocity, body.yVelocity);
 
           dot = other.xVelocity * result.overlap_y + other.yVelocity * -result.overlap_x;
 
@@ -78,9 +83,23 @@ export const setupSimulation = (
         }
       }
 
+      if (ant.targetRotation !== ant.rotation) {
+        const diff = ant.targetRotation - ant.rotation;
+        const dffAbs = Math.abs(diff);
+        if (dffAbs < 0.05) ant.rotation = ant.targetRotation;
+        if (dffAbs > PI) {
+          ant.rotation += diff * deltaTime * 4;
+        } else ant.rotation -= diff * deltaTime * 4;
+
+        if (ant.rotation > PI) {
+          ant.rotation = -(twoPI - ant.rotation);
+        } else if (ant.rotation < -PI) {
+          ant.rotation = twoPI + ant.rotation;
+        }
+      }
+
       ant.x = body.x;
       ant.y = body.y;
-      ant.rotation = -Math.atan2(body.xVelocity, body.yVelocity);
 
       draw.clear();
       draw.lineStyle(1, 0xff0000);
