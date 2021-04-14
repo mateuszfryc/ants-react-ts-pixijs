@@ -11,7 +11,9 @@ export const TAGS = {
   ANT: 'ant',
   OBSTACLE: 'world-bounds',
   NEST: 'nest',
+  FOOD: 'food',
   SCENT_NEST: 'scent_nest',
+  FOOD_NEST: 'scent_food',
 };
 
 export class Collisions {
@@ -23,6 +25,12 @@ export class Collisions {
 
   addCircle(x = 0, y = 0, radius = 0, tags = [TAGS.ANT], scale = 1, padding = 0): Circle {
     const body = new Circle(x, y, radius, tags, scale, padding) as Shape;
+
+    const removeSelf = (): void => {
+      this.remove(body);
+    };
+    removeSelf.bind(this);
+    body.removeSelfFromCollisions = removeSelf;
 
     this._bvh.insert(body);
 
@@ -40,6 +48,12 @@ export class Collisions {
     padding = 0,
   ): Polygon {
     const body = new Polygon(x, y, points, tags, angle, scale_x, scale_y, padding) as Shape;
+
+    const removeSelf = (): void => {
+      this.remove(body);
+    };
+    removeSelf.bind(this);
+    body.removeSelfFromCollisions = removeSelf;
 
     this._bvh.insert(body);
 

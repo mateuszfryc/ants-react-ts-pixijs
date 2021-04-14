@@ -13,6 +13,8 @@ export class Ant extends SpriteWithCollisions {
   rotationFlipMuliplierCounter: number;
   scentEmissionTimer: Timer;
   nestScent: number;
+  foodScent: number;
+  hasFood: boolean;
 
   constructor(x: number, y: number, speed = 30, scale = 0.2) {
     const rotation = Math.atan2(randomInRange(-1, 1), randomInRange(-1, 1));
@@ -29,5 +31,7 @@ export class Ant extends SpriteWithCollisions {
     this.rotationFlipMuliplierCounter = 0;
     this.scentEmissionTimer = new Timer(flipRotation, 0.5, true);
     this.nestScent = 2;
+    this.foodScent = 0;
+    this.hasFood = false;
   }
 }

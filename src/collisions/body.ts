@@ -1,3 +1,5 @@
+import * as PIXI from 'pixi.js';
+
 import { BVHBranch } from './BVHBranch';
 
 export class Body extends BVHBranch {
@@ -8,6 +10,8 @@ export class Body extends BVHBranch {
   rotation: number;
   padding: number;
   tags: string[];
+  removeSelfFromCollisions: () => void;
+  spriteRef: PIXI.Sprite | undefined;
   _polygon: boolean;
   _bvh_padding: number;
 
@@ -20,6 +24,8 @@ export class Body extends BVHBranch {
     this.rotation = 0; // radians
     this.padding = padding;
     this.tags = tags;
+    this.removeSelfFromCollisions = () => {};
+    this.spriteRef = undefined;
     this._polygon = false;
     this._bvh_padding = padding;
   }

@@ -17,5 +17,6 @@ export class SpriteWithCollisions extends PIXI.Sprite {
     this.body.x = x;
     this.body.y = y;
     this.body.rotation = rotation;
+    this.body.spriteRef = this;
   }
 }

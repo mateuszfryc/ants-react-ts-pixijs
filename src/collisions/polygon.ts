@@ -94,35 +94,6 @@ export class Polygon extends Body {
     return points;
   }
 
-  calculateSegments(): void {
-    const coords = this.getCoords();
-    const points: number[][] = [];
-
-    points.push([coords[0], coords[1]]);
-
-    for (let i = 2; i < coords.length; i += 2) {
-      points.push([coords[i], coords[i + 1]]);
-    }
-
-    if (coords.length > 4) {
-      points.push([coords[0], coords[1]]);
-    }
-
-    // eslint-disable-next-line no-plusplus
-    for (let i = 1; i < points.length; i++) {
-      this._segments.push([points[i - 1], points[i]]);
-    }
-    this._segments.push([points[points.length - 1], points[0]]);
-  }
-
-  getSegments(): number[][][] {
-    if (this._segments.length === 0) {
-      this.calculateSegments();
-    }
-
-    return this._segments;
-  }
-
   draw(context: PIXI.Graphics): void {
     if (
       this._dirty_coords ||

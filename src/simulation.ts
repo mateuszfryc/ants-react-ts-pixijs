@@ -3,10 +3,11 @@ import * as PIXI from 'pixi.js';
 import { Collisions, TAGS } from 'collisions/collisions';
 import { Shape } from 'collisions/proxyTypes';
 import { Result } from 'collisions/result';
-import { randomInRange, interpolateRadians, normalizeRadians } from 'utils/math';
+import { randomInRange, interpolateRadians, normalizeRadians, mapRangeClamped } from 'utils/math';
 import { Ant } from 'Ant';
 import { Nest } from 'Nest';
-import { ScentParticle } from 'ScentParticle';
+import { ScentParticle, SCENT_TYPES } from 'ScentParticle';
+import { Food } from 'Food';
 
 let xMouse = 0;
 let yMouse = 0;
@@ -47,21 +48,33 @@ export const setupSimulation = (
   particles: PIXI.ParticleContainer,
   draw: PIXI.Graphics,
 ): void => {
-  const ants: Ant[] = [];
-  const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 2000 : 100;
   const result = new Result();
   const collisions = new Collisions();
-  const { NEST, SCENT_NEST, OBSTACLE } = TAGS;
+  const { NEST, SCENT_NEST, FOOD } = TAGS;
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
   collisions.createWorldBounds(app.view.width, app.view.height);
 
   const scentParticles = new Map<ScentParticle, ScentParticle>();
+  const foodParticles = new Map<ScentParticle, ScentParticle>();
 
   const nest = new Nest(200, 200);
   nest.zIndex = 1;
   collisions.insert(nest.body);
   app.stage.addChild(nest);
 
+  const foodAmount = 100;
+  for (let i = 0; i < foodAmount; i++) {
+    const foodPeace = new Food(
+      worldWidth * 0.8 + randomInRange(-50, 50),
+      worldHeight * 0.8 + randomInRange(-50, 50),
+    );
+    nest.zIndex = 1;
+    collisions.insert(foodPeace.body);
+    app.stage.addChild(foodPeace);
+  }
+
+  const ants: Ant[] = [];
+  const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 1000 : 100;
   for (let i = 0; i < numberOfAnts; i++) {
     const speed = randomInRange(35, 45);
     const ant = new Ant(nest.x, nest.y, speed);
@@ -112,7 +125,16 @@ export const setupSimulation = (
               targetRotation += normalizeRadians(ant.rotationSign + Math.random() * 1.5);
 
             if (other.tags.includes(NEST)) {
-              ant.nestScent = 2;
+              ant.nestScent = nest.scentLifeTime;
+              ant.hasFood = false;
+            } else if (other.tags.includes(FOOD)) {
+              ant.nestScent = 0;
+              const food = other.spriteRef as Food;
+              if (!ant.hasFood && !food.isEmpty) {
+                ant.hasFood = true;
+                ant.foodScent = Food.scentLifeTime;
+                food.haveABite();
+              }
             }
           }
         }
@@ -147,16 +169,38 @@ export const setupSimulation = (
       ant.rotation = body.rotation;
 
       ant.nestScent -= deltaTime * 0.25;
-      if (ant.nestScent > 0 && ant.scentEmissionTimer.update(deltaTime)) {
-        const scent = new ScentParticle(body.x, body.y);
-        collisions.insert(scent.body);
-        app.stage.addChild(scent);
-        scentParticles.set(scent, scent);
+      if (ant.nestScent < 0) ant.nestScent = 0;
+
+      ant.foodScent -= deltaTime * 0.25;
+      if (ant.foodScent < 0) ant.foodScent = 0;
+
+      if (ant.scentEmissionTimer.update(deltaTime)) {
+        if (ant.hasFood && ant.foodScent > 0) {
+          const scent = new ScentParticle(
+            body.x,
+            body.y,
+            SCENT_TYPES.FOOD,
+            mapRangeClamped(ant.foodScent, Food.scentLifeTime),
+          );
+          collisions.insert(scent.body);
+          app.stage.addChild(scent);
+          foodParticles.set(scent, scent);
+        } else if (ant.nestScent > 0) {
+          const scent = new ScentParticle(
+            body.x,
+            body.y,
+            SCENT_TYPES.NEST,
+            mapRangeClamped(ant.nestScent, nest.scentLifeTime),
+          );
+          collisions.insert(scent.body);
+          app.stage.addChild(scent);
+          scentParticles.set(scent, scent);
+        }
       }
 
       draw.clear();
       draw.lineStyle(1, 0xff0000);
-      // anthill.body.draw(draw);
+      // food.body.draw(draw);
       // collisions.draw(draw);
     }
 
@@ -171,6 +215,20 @@ export const setupSimulation = (
         collisions.remove(particle.body);
         // eslint-disable-next-line unicorn/prefer-dom-node-remove
         app.stage.removeChild(particle);
+      }
+    });
+
+    // eslint-disable-next-line unicorn/no-array-for-each
+    foodParticles.forEach((chunk: ScentParticle): void => {
+      // eslint-disable-next-line no-param-reassign
+      chunk.lifeTime -= deltaTime;
+      // eslint-disable-next-line no-param-reassign
+      chunk.alpha = chunk.lifeTime;
+      if (chunk.lifeTime <= 0) {
+        foodParticles.delete(chunk);
+        collisions.remove(chunk.body);
+        // eslint-disable-next-line unicorn/prefer-dom-node-remove
+        app.stage.removeChild(chunk);
       }
     });
 
