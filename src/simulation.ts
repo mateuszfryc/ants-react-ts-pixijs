@@ -9,6 +9,7 @@ import {
   interpolateRadians,
   normalizeRadians,
   mapRangeClamped,
+  randomSign,
 } from 'utils/math';
 import { Ant } from 'Ant';
 import { Nest } from 'Nest';
@@ -59,7 +60,7 @@ export const setupSimulation = (
   const foodChunkTexture = PIXI.Texture.from(FoodImage);
   const result = new Result();
   const collisions = new Collisions();
-  const { OBSTACLE, NEST, SCENT_NEST, FOOD } = TAGS;
+  const { ANT, OBSTACLE, NEST, SCENT_NEST, FOOD, SCENT_FOOD } = TAGS;
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
   collisions.createWorldBounds(app.view.width, app.view.height, 10);
 
@@ -85,8 +86,13 @@ export const setupSimulation = (
   const ants: Ant[] = [];
   const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 2000 : 100;
   for (let i = 0; i < numberOfAnts; i++) {
+    const { radius } = nest.body;
     const speed = randomInRange(35, 45);
-    const ant = new Ant(nest.x, nest.y, speed);
+    const ant = new Ant(
+      nest.x + randomSign() * randomInRange(radius + 1, radius + 30),
+      nest.y + randomSign() * randomInRange(radius + 1, radius + 30),
+      speed,
+    );
 
     ants.push(ant);
     collisions.insert(ant.body as Shape);
@@ -103,14 +109,6 @@ export const setupSimulation = (
     // eslint-disable-next-line no-restricted-syntax
     for (const ant of ants) {
       const { body, speed } = ant;
-      /*
-        Because of imperfections of collision system ant can escape world bounds.
-        If that happens - teleport it back to the nest.
-      */
-      if (ant.x < 0 || ant.x > worldWidth || ant.y < 0 || ant.y > worldHeight) {
-        body.x = nest.x;
-        body.y = nest.y;
-      }
       const { rotation } = ant.body;
       body.x -= Math.cos(rotation + Math.PI * 0.5) * deltaTime * (leftMouseDown ? 150 : speed);
       body.y -= Math.sin(rotation + Math.PI * 0.5) * deltaTime * (leftMouseDown ? 150 : speed);
@@ -123,7 +121,17 @@ export const setupSimulation = (
         if (collisions.isCollision(body as Shape, other, result)) {
           const { tags } = other;
 
+          // if (tags.includes(ANT)) {
+          //   // eslint-disable-next-line no-continue
+          //   continue;
+          // }
+
           if (tags.includes(SCENT_NEST)) {
+            // eslint-disable-next-line no-continue
+            continue;
+          }
+
+          if (tags.includes(SCENT_FOOD)) {
             // eslint-disable-next-line no-continue
             continue;
           }
@@ -234,10 +242,14 @@ export const setupSimulation = (
         }
       }
 
-      draw.clear();
-      draw.lineStyle(1, 0xff0000);
-      // food.body.draw(draw);
-      // collisions.draw(draw);
+      /*
+        Because of imperfections of collision system ant can escape world bounds.
+        If that happens - teleport it back to the nest.
+      */
+      if (ant.x < 0 || ant.x > worldWidth || ant.y < 0 || ant.y > worldHeight) {
+        body.x = nest.x;
+        body.y = nest.y;
+      }
     }
 
     // eslint-disable-next-line unicorn/no-array-for-each
@@ -267,6 +279,11 @@ export const setupSimulation = (
         app.stage.removeChild(chunk);
       }
     });
+
+    draw.clear();
+    // draw.lineStyle(1, 0xff0000);
+    // food.body.draw(draw);
+    // collisions.draw(draw);
 
     lastTime = frameStartTime;
   }

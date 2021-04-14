@@ -21,7 +21,7 @@ export class Ant extends SpriteWithCollisions {
 
   constructor(x: number, y: number, speed = 30, scale = 0.2) {
     const rotation = Math.atan2(randomInRange(-1, 1), randomInRange(-1, 1));
-    super(AntImage, new Circle(x, y, scale * 11, [TAGS.ANT]) as Shape, x, y, scale, rotation);
+    super(AntImage, new Circle(x, y, scale * 10, [TAGS.ANT]) as Shape, x, y, scale, rotation);
 
     this.speed = speed;
     // eslint-disable-next-line unicorn/consistent-function-scoping

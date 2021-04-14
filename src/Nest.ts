@@ -7,8 +7,8 @@ import { Shape } from 'collisions/proxyTypes';
 export class Nest extends SpriteWithCollisions {
   scentLifeTime: number;
 
-  constructor(x: number, y: number) {
-    super(NestImage, new Circle(x, y, 18, [TAGS.NEST]) as Shape, x, y);
+  constructor(x: number, y: number, size = 1) {
+    super(NestImage, new Circle(x, y, size * 18, [TAGS.NEST]) as Shape, x, y, size);
 
     this.scentLifeTime = 8;
   }

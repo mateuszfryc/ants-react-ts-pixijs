@@ -13,7 +13,7 @@ export const TAGS = {
   NEST: 'nest',
   FOOD: 'food',
   SCENT_NEST: 'scent_nest',
-  FOOD_NEST: 'scent_food',
+  SCENT_FOOD: 'scent_food',
 };
 
 export class Collisions {
@@ -103,31 +103,67 @@ export class Collisions {
     return bvh.potentials(shape);
   }
 
-  createWorldBounds(width: number, height: number, padding = 2): Polygon[] {
-    const top = this.addPolygon(0, 0, [
-      [0, 0],
-      [width, 0],
-      [width, padding],
-      [0, padding],
-    ]);
-    const right = this.addPolygon(0, 0, [
-      [width - padding, 0],
-      [width, 0],
-      [width, height],
-      [width - padding, height],
-    ]);
-    const bottom = this.addPolygon(0, 0, [
-      [0, height - padding],
-      [width, height - padding],
-      [width, height],
-      [0, height],
-    ]);
-    const left = this.addPolygon(0, 0, [
-      [0, 0],
-      [padding, 0],
-      [padding, height],
-      [0, height],
-    ]);
+  createWorldBounds(width: number, height: number, padding = 20): Polygon[] {
+    const top = this.addPolygon(
+      0,
+      0,
+      [
+        [0, 0],
+        [width, 0],
+        [width, padding],
+        [0, padding],
+      ],
+      [TAGS.OBSTACLE],
+      0,
+      1,
+      1,
+      padding,
+    );
+    const right = this.addPolygon(
+      0,
+      0,
+      [
+        [width - padding, 0],
+        [width, 0],
+        [width, height],
+        [width - padding, height],
+      ],
+      [TAGS.OBSTACLE],
+      0,
+      1,
+      1,
+      padding,
+    );
+    const bottom = this.addPolygon(
+      0,
+      0,
+      [
+        [0, height - padding],
+        [width, height - padding],
+        [width, height],
+        [0, height],
+      ],
+      [TAGS.OBSTACLE],
+      0,
+      1,
+      1,
+      padding,
+    );
+    const left = this.addPolygon(
+      0,
+      0,
+      [
+        [0, 0],
+        [padding, 0],
+        [padding, height],
+        [0, height],
+      ],
+      [TAGS.OBSTACLE],
+      0,
+      1,
+      1,
+      padding,
+    );
 
     return [top, right, bottom, left];
   }
