@@ -1,4 +1,4 @@
-import NestImage from 'assets/food.png';
+import FoodImage from 'assets/food.png';
 import { Circle } from 'collisions/circle';
 import { TAGS } from 'collisions/collisions';
 import { SpriteWithCollisions } from 'SpriteWithCollisions';
@@ -13,7 +13,7 @@ export class Food extends SpriteWithCollisions {
   static scentLifeTime = 10;
 
   constructor(x: number, y: number, size = 1) {
-    super(NestImage, new Circle(x, y, size * 5, [TAGS.FOOD]) as Shape, x, y, size * 0.5);
+    super(FoodImage, new Circle(x, y, size * 5, [TAGS.FOOD]) as Shape, x, y, size * 0.5);
 
     this.amount = size * 50;
     this.scentLifeTime = 10;
