@@ -3,7 +3,13 @@ import * as PIXI from 'pixi.js';
 import { Collisions, TAGS } from 'collisions/collisions';
 import { Shape } from 'collisions/proxyTypes';
 import { Result } from 'collisions/result';
-import { randomInRange, interpolateRadians, normalizeRadians, mapRangeClamped } from 'utils/math';
+import {
+  PI,
+  randomInRange,
+  interpolateRadians,
+  normalizeRadians,
+  mapRangeClamped,
+} from 'utils/math';
 import { Ant } from 'Ant';
 import { Nest } from 'Nest';
 import { ScentParticle, SCENT_TYPES } from 'ScentParticle';
@@ -53,9 +59,9 @@ export const setupSimulation = (
   const foodChunkTexture = PIXI.Texture.from(FoodImage);
   const result = new Result();
   const collisions = new Collisions();
-  const { NEST, SCENT_NEST, FOOD } = TAGS;
+  const { OBSTACLE, NEST, SCENT_NEST, FOOD } = TAGS;
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
-  collisions.createWorldBounds(app.view.width, app.view.height);
+  collisions.createWorldBounds(app.view.width, app.view.height, 10);
 
   const scentParticles = new Map<ScentParticle, ScentParticle>();
   const foodParticles = new Map<ScentParticle, ScentParticle>();
@@ -77,7 +83,7 @@ export const setupSimulation = (
   }
 
   const ants: Ant[] = [];
-  const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 1000 : 100;
+  const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 2000 : 100;
   for (let i = 0; i < numberOfAnts; i++) {
     const speed = randomInRange(35, 45);
     const ant = new Ant(nest.x, nest.y, speed);
@@ -114,38 +120,50 @@ export const setupSimulation = (
 
       // eslint-disable-next-line no-restricted-syntax
       for (const other of potentials) {
-        if (
-          // other.tags.includes(OBSTACLE) &&
-          collisions.isCollision(body as Shape, other, result)
-        ) {
-          if (other.tags.includes(SCENT_NEST)) {
-            //
-          } else {
-            const { overlap, overlap_x, overlap_y } = result;
-            body.x -= overlap! * overlap_x;
-            body.y -= overlap! * overlap_y;
-            if (!leftMouseDown)
-              targetRotation += normalizeRadians(ant.rotationSign + Math.random() * 1.5);
+        if (collisions.isCollision(body as Shape, other, result)) {
+          const { tags } = other;
 
-            if (other.tags.includes(NEST)) {
-              ant.nestScent = nest.scentLifeTime;
-              ant.hasFood = false;
-              // eslint-disable-next-line unicorn/prefer-dom-node-remove
-              if (ant.attachedFoodSprite) app.stage.removeChild(ant.attachedFoodSprite);
-              ant.attachedFoodSprite = undefined;
-            } else if (other.tags.includes(FOOD)) {
-              ant.nestScent = 0;
-              const food = other.spriteRef as Food;
-              if (!ant.hasFood && !food.isEmpty) {
-                ant.hasFood = true;
-                ant.foodScent = Food.scentLifeTime;
-                food.haveABite();
-                ant.attachedFoodSprite = Sprite.from(foodChunkTexture);
-                ant.attachedFoodSprite.scale.set(0.2);
-                ant.attachedFoodSprite.anchor.set(0.5, 1);
-                ant.attachedFoodSprite.zIndex = 3;
-                app.stage.addChild(ant.attachedFoodSprite);
-              }
+          if (tags.includes(SCENT_NEST)) {
+            // eslint-disable-next-line no-continue
+            continue;
+          }
+
+          const { overlap, overlap_x, overlap_y } = result;
+          body.x -= overlap! * overlap_x;
+          body.y -= overlap! * overlap_y;
+
+          if (tags.includes(OBSTACLE)) {
+            targetRotation = normalizeRadians(rotation - ant.rotationSign * PI);
+            // eslint-disable-next-line no-continue
+            continue;
+          }
+
+          // randomize movement
+          if (!leftMouseDown)
+            targetRotation += normalizeRadians(ant.rotationSign + Math.random() * 1.5);
+
+          if (tags.includes(NEST)) {
+            ant.nestScent = nest.scentLifeTime;
+            ant.hasFood = false;
+            // eslint-disable-next-line unicorn/prefer-dom-node-remove
+            if (ant.attachedFoodSprite) app.stage.removeChild(ant.attachedFoodSprite);
+            ant.attachedFoodSprite = undefined;
+            // eslint-disable-next-line no-continue
+            continue;
+          }
+
+          if (tags.includes(FOOD)) {
+            ant.nestScent = 0;
+            const food = other.spriteRef as Food;
+            if (!ant.hasFood && !food.isEmpty) {
+              ant.hasFood = true;
+              ant.foodScent = Food.scentLifeTime;
+              food.haveABite();
+              ant.attachedFoodSprite = Sprite.from(foodChunkTexture);
+              ant.attachedFoodSprite.scale.set(0.2);
+              ant.attachedFoodSprite.anchor.set(0.5, 1.2);
+              ant.attachedFoodSprite.zIndex = 3;
+              app.stage.addChild(ant.attachedFoodSprite);
             }
           }
         }

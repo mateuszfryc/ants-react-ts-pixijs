@@ -10,7 +10,7 @@ export class Food extends SpriteWithCollisions {
   isEmpty: boolean;
   scentLifeTime: number;
 
-  static scentLifeTime = 10;
+  static scentLifeTime = 15;
 
   constructor(x: number, y: number, size = 1) {
     super(FoodImage, new Circle(x, y, size * 5, [TAGS.FOOD]) as Shape, x, y, size * 0.5);

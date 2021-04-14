@@ -32,7 +32,7 @@ export class Ant extends SpriteWithCollisions {
     this.rotationSign = Math.random() * 2 - 1;
     this.rotationFlipTime = Math.random() * 2;
     this.rotationFlipMuliplierCounter = 0;
-    this.scentEmissionTimer = new Timer(flipRotation, 0.5, true);
+    this.scentEmissionTimer = new Timer(flipRotation, 0.5, true, 0.2, 0.7);
     this.nestScent = 2;
     this.foodScent = 0;
     this.hasFood = false;

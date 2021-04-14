@@ -10,6 +10,6 @@ export class Nest extends SpriteWithCollisions {
   constructor(x: number, y: number) {
     super(NestImage, new Circle(x, y, 18, [TAGS.NEST]) as Shape, x, y);
 
-    this.scentLifeTime = 6;
+    this.scentLifeTime = 8;
   }
 }
