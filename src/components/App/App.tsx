@@ -4,7 +4,7 @@ import styled, { css } from 'styled-components';
 import { Navigation } from 'components/Navigation';
 import { SEO } from 'components/SEO';
 import { setupGraphics, updateRendererSize } from 'graphics';
-import { setupSimulation } from 'ants-simulation';
+import { setupSimulation } from 'simulation';
 
 export const AppContainer = styled.div(
   ({ theme: { colors } }) => css`
