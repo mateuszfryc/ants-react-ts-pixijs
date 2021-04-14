@@ -1,3 +1,5 @@
+import * as PIXI from 'pixi.js';
+
 import AntImage from 'assets/ant-red.png';
 import { Circle } from 'collisions/circle';
 import { TAGS } from 'collisions/collisions';
@@ -15,6 +17,7 @@ export class Ant extends SpriteWithCollisions {
   nestScent: number;
   foodScent: number;
   hasFood: boolean;
+  attachedFoodSprite: PIXI.Sprite | undefined;
 
   constructor(x: number, y: number, speed = 30, scale = 0.2) {
     const rotation = Math.atan2(randomInRange(-1, 1), randomInRange(-1, 1));
@@ -33,5 +36,6 @@ export class Ant extends SpriteWithCollisions {
     this.nestScent = 2;
     this.foodScent = 0;
     this.hasFood = false;
+    this.attachedFoodSprite = undefined;
   }
 }

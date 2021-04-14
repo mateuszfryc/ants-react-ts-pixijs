@@ -8,6 +8,7 @@ import { Ant } from 'Ant';
 import { Nest } from 'Nest';
 import { ScentParticle, SCENT_TYPES } from 'ScentParticle';
 import { Food } from 'Food';
+import FoodImage from 'assets/food.png';
 
 let xMouse = 0;
 let yMouse = 0;
@@ -48,6 +49,8 @@ export const setupSimulation = (
   particles: PIXI.ParticleContainer,
   draw: PIXI.Graphics,
 ): void => {
+  const { Sprite } = PIXI;
+  const foodChunkTexture = PIXI.Texture.from(FoodImage);
   const result = new Result();
   const collisions = new Collisions();
   const { NEST, SCENT_NEST, FOOD } = TAGS;
@@ -127,6 +130,9 @@ export const setupSimulation = (
             if (other.tags.includes(NEST)) {
               ant.nestScent = nest.scentLifeTime;
               ant.hasFood = false;
+              // eslint-disable-next-line unicorn/prefer-dom-node-remove
+              if (ant.attachedFoodSprite) app.stage.removeChild(ant.attachedFoodSprite);
+              ant.attachedFoodSprite = undefined;
             } else if (other.tags.includes(FOOD)) {
               ant.nestScent = 0;
               const food = other.spriteRef as Food;
@@ -134,6 +140,11 @@ export const setupSimulation = (
                 ant.hasFood = true;
                 ant.foodScent = Food.scentLifeTime;
                 food.haveABite();
+                ant.attachedFoodSprite = Sprite.from(foodChunkTexture);
+                ant.attachedFoodSprite.scale.set(0.2);
+                ant.attachedFoodSprite.anchor.set(0.5, 1);
+                ant.attachedFoodSprite.zIndex = 3;
+                app.stage.addChild(ant.attachedFoodSprite);
               }
             }
           }
@@ -167,6 +178,13 @@ export const setupSimulation = (
       ant.x = body.x;
       ant.y = body.y;
       ant.rotation = body.rotation;
+
+      const { attachedFoodSprite } = ant;
+      if (attachedFoodSprite !== undefined) {
+        attachedFoodSprite.x = ant.x;
+        attachedFoodSprite.y = ant.y;
+        attachedFoodSprite.rotation = ant.rotation;
+      }
 
       ant.nestScent -= deltaTime * 0.25;
       if (ant.nestScent < 0) ant.nestScent = 0;
