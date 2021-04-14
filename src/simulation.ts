@@ -5,7 +5,8 @@ import { Shape } from 'collisions/proxyTypes';
 import { Result } from 'collisions/result';
 import { randomInRange, interpolateRadians, normalizeRadians } from 'utils/math';
 import { Ant } from 'Ant';
-import { Anthill } from 'Anthill';
+import { Nest } from 'Nest';
+import { ScentParticle } from 'ScentParticle';
 
 let xMouse = 0;
 let yMouse = 0;
@@ -50,18 +51,20 @@ export const setupSimulation = (
   const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 2000 : 100;
   const result = new Result();
   const collisions = new Collisions();
-  const { NEST, OBSTACLE } = TAGS;
+  const { NEST, SCENT_NEST, OBSTACLE } = TAGS;
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
   collisions.createWorldBounds(app.view.width, app.view.height);
 
-  const anthill = new Anthill(200, 200);
-  anthill.zIndex = 1;
-  collisions.insert(anthill.body);
-  app.stage.addChild(anthill);
+  const scentParticles = new Map<ScentParticle, ScentParticle>();
+
+  const nest = new Nest(200, 200);
+  nest.zIndex = 1;
+  collisions.insert(nest.body);
+  app.stage.addChild(nest);
 
   for (let i = 0; i < numberOfAnts; i++) {
     const speed = randomInRange(35, 45);
-    const ant = new Ant(anthill.x, anthill.y, speed);
+    const ant = new Ant(nest.x, nest.y, speed);
 
     ants.push(ant);
     collisions.insert(ant.body as Shape);
@@ -73,7 +76,6 @@ export const setupSimulation = (
   function simulationUpdate() {
     const frameStartTime = performance.now();
     const deltaTime = (frameStartTime - lastTime) / 1000;
-    lastTime = frameStartTime;
 
     collisions.update();
     // eslint-disable-next-line no-restricted-syntax
@@ -84,8 +86,8 @@ export const setupSimulation = (
         If that happens - teleport it back to the nest.
       */
       if (ant.x < 0 || ant.x > worldWidth || ant.y < 0 || ant.y > worldHeight) {
-        body.x = anthill.x;
-        body.y = anthill.y;
+        body.x = nest.x;
+        body.y = nest.y;
       }
       const { rotation } = ant.body;
       body.x -= Math.cos(rotation + Math.PI * 0.5) * deltaTime * (leftMouseDown ? 150 : speed);
@@ -98,14 +100,21 @@ export const setupSimulation = (
       for (const other of potentials) {
         if (
           // other.tags.includes(OBSTACLE) &&
-          // !other.tags.includes(NEST) &&
           collisions.isCollision(body as Shape, other, result)
         ) {
-          const { overlap, overlap_x, overlap_y } = result;
-          body.x -= overlap! * overlap_x;
-          body.y -= overlap! * overlap_y;
-          if (!leftMouseDown)
-            targetRotation += normalizeRadians(ant.rotationFlipSign + Math.random() * 1.5);
+          if (other.tags.includes(SCENT_NEST)) {
+            //
+          } else {
+            const { overlap, overlap_x, overlap_y } = result;
+            body.x -= overlap! * overlap_x;
+            body.y -= overlap! * overlap_y;
+            if (!leftMouseDown)
+              targetRotation += normalizeRadians(ant.rotationSign + Math.random() * 1.5);
+
+            if (other.tags.includes(NEST)) {
+              ant.nestScent = 2;
+            }
+          }
         }
       }
 
@@ -115,14 +124,14 @@ export const setupSimulation = (
           : normalizeRadians(-Math.atan2(body.x - xMouse, body.y - yMouse));
       } else {
         targetRotation += normalizeRadians(
-          ant.rotationFlipSign > 0
+          ant.rotationSign > 0
             ? Math.sin(deltaTime * Math.random())
             : -Math.sin(deltaTime * Math.random()),
         );
         ant.rotationFlipMuliplierCounter += deltaTime;
         if (ant.rotationFlipMuliplierCounter > ant.rotationFlipTime) {
           ant.rotationFlipTime = Math.random() * 4;
-          ant.rotationFlipSign *= -1;
+          ant.rotationSign *= -1;
           ant.rotationFlipMuliplierCounter = 0;
         }
       }
@@ -137,11 +146,35 @@ export const setupSimulation = (
       ant.y = body.y;
       ant.rotation = body.rotation;
 
+      ant.nestScent -= deltaTime * 0.25;
+      if (ant.nestScent > 0 && ant.scentEmissionTimer.update(deltaTime)) {
+        const scent = new ScentParticle(body.x, body.y);
+        collisions.insert(scent.body);
+        app.stage.addChild(scent);
+        scentParticles.set(scent, scent);
+      }
+
       draw.clear();
       draw.lineStyle(1, 0xff0000);
       // anthill.body.draw(draw);
       // collisions.draw(draw);
     }
+
+    // eslint-disable-next-line unicorn/no-array-for-each
+    scentParticles.forEach((particle: ScentParticle): void => {
+      // eslint-disable-next-line no-param-reassign
+      particle.lifeTime -= deltaTime;
+      // eslint-disable-next-line no-param-reassign
+      particle.alpha = particle.lifeTime;
+      if (particle.lifeTime <= 0) {
+        scentParticles.delete(particle);
+        collisions.remove(particle.body);
+        // eslint-disable-next-line unicorn/prefer-dom-node-remove
+        app.stage.removeChild(particle);
+      }
+    });
+
+    lastTime = frameStartTime;
   }
 
   app.ticker.add(simulationUpdate);

@@ -4,7 +4,7 @@ import { TAGS } from 'collisions/collisions';
 import { SpriteWithCollisions } from 'SpriteWithCollisions';
 import { Shape } from 'collisions/proxyTypes';
 
-export class Anthill extends SpriteWithCollisions {
+export class Nest extends SpriteWithCollisions {
   constructor(x: number, y: number) {
     super(NestImage, new Circle(x, y, 18, [TAGS.NEST]) as Shape, x, y);
   }

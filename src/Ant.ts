@@ -4,19 +4,30 @@ import { TAGS } from 'collisions/collisions';
 import { randomInRange } from 'utils/math';
 import { SpriteWithCollisions } from 'SpriteWithCollisions';
 import { Shape } from 'collisions/proxyTypes';
+import { Timer } from 'Timer';
 
 export class Ant extends SpriteWithCollisions {
   speed: number;
-  rotationFlipSign: number;
+  rotationSign: number;
   rotationFlipTime: number;
   rotationFlipMuliplierCounter: number;
+  scentEmissionTimer: Timer;
+  nestScent: number;
 
   constructor(x: number, y: number, speed = 30, scale = 0.2) {
     const rotation = Math.atan2(randomInRange(-1, 1), randomInRange(-1, 1));
     super(AntImage, new Circle(x, y, scale * 11, [TAGS.ANT]) as Shape, x, y, scale, rotation);
+
     this.speed = speed;
-    this.rotationFlipSign = Math.random() * 2 - 1;
+    // eslint-disable-next-line unicorn/consistent-function-scoping
+    const flipRotation = (): void => {
+      this.rotationSign *= -1;
+    };
+    flipRotation.bind(this);
+    this.rotationSign = Math.random() * 2 - 1;
     this.rotationFlipTime = Math.random() * 2;
     this.rotationFlipMuliplierCounter = 0;
+    this.scentEmissionTimer = new Timer(flipRotation, 0.5, true);
+    this.nestScent = 2;
   }
 }

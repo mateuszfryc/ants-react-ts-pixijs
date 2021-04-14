@@ -11,6 +11,7 @@ export const TAGS = {
   ANT: 'ant',
   OBSTACLE: 'world-bounds',
   NEST: 'nest',
+  SCENT_NEST: 'scent_nest',
 };
 
 export class Collisions {
