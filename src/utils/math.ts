@@ -22,7 +22,7 @@ export const interpolateRadians = (
   const diff = target - current;
   const dffAbs = Math.abs(diff);
   if (dffAbs < 0.05) return target;
-  if (dffAbs > PI) return current + diff * deltaTime * speed;
+  if (dffAbs > PI) return current - diff * deltaTime * speed;
 
-  return current - diff * deltaTime * speed;
+  return current + diff * deltaTime * speed;
 };
