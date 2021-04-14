@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 
 const app = new PIXI.Application({
-  backgroundColor: 0xffffff,
+  backgroundColor: 0x111111,
 });
 app.stop();
 
@@ -19,7 +19,9 @@ export const setupGraphics = <T extends HTMLElement>(container: T): PixiSetupRes
     position: true,
     rotation: true,
   });
+  particles.zIndex = 2;
   app.stage.addChild(particles);
+  app.stage.sortableChildren = true;
 
   const draw = new PIXI.Graphics();
   app.stage.addChild(draw);

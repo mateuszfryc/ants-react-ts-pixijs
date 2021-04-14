@@ -5,7 +5,7 @@ import { Shape } from 'collisions/proxyTypes';
 import { Result } from 'collisions/result';
 import { randomInRange, interpolateRadians, normalizeRadians } from 'utils/math';
 import { Ant } from 'Ant';
-import { SpriteWithCollisions } from 'SpriteWithCollisions';
+import { Anthill } from 'Anthill';
 
 let xMouse = 0;
 let yMouse = 0;
@@ -50,15 +50,18 @@ export const setupSimulation = (
   const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 2000 : 100;
   const result = new Result();
   const collisions = new Collisions();
-  const { ANTHILL /* OBSTACLE */ } = TAGS;
+  const { NEST, OBSTACLE } = TAGS;
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
   collisions.createWorldBounds(app.view.width, app.view.height);
 
-  const Anthill = collisions.addCircle(200, 200, 20, [ANTHILL]);
+  const anthill = new Anthill(200, 200);
+  anthill.zIndex = 1;
+  collisions.insert(anthill.body);
+  app.stage.addChild(anthill);
 
   for (let i = 0; i < numberOfAnts; i++) {
     const speed = randomInRange(35, 45);
-    const ant = new Ant(Anthill.x, Anthill.y, speed);
+    const ant = new Ant(anthill.x, anthill.y, speed);
 
     ants.push(ant);
     collisions.insert(ant.body as Shape);
@@ -76,10 +79,13 @@ export const setupSimulation = (
     // eslint-disable-next-line no-restricted-syntax
     for (const ant of ants) {
       const { body, speed } = ant;
-      // if ant is out of world bounds teleport it back to the nest
+      /*
+        Because of imperfections of collision system ant can escape world bounds.
+        If that happens - teleport it back to the nest.
+      */
       if (ant.x < 0 || ant.x > worldWidth || ant.y < 0 || ant.y > worldHeight) {
-        body.x = Anthill.x;
-        body.y = Anthill.y;
+        body.x = anthill.x;
+        body.y = anthill.y;
       }
       const { rotation } = ant.body;
       body.x -= Math.cos(rotation + Math.PI * 0.5) * deltaTime * (leftMouseDown ? 150 : speed);
@@ -92,7 +98,7 @@ export const setupSimulation = (
       for (const other of potentials) {
         if (
           // other.tags.includes(OBSTACLE) &&
-          // !other.tags.includes(ANTHILL) &&
+          // !other.tags.includes(NEST) &&
           collisions.isCollision(body as Shape, other, result)
         ) {
           const { overlap, overlap_x, overlap_y } = result;
@@ -133,7 +139,7 @@ export const setupSimulation = (
 
       draw.clear();
       draw.lineStyle(1, 0xff0000);
-      Anthill.draw(draw);
+      // anthill.body.draw(draw);
       // collisions.draw(draw);
     }
   }

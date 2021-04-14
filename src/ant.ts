@@ -1,4 +1,4 @@
-import AntImage from 'assets/ant.png';
+import AntImage from 'assets/ant-red.png';
 import { Circle } from 'collisions/circle';
 import { TAGS } from 'collisions/collisions';
 import { randomInRange } from 'utils/math';

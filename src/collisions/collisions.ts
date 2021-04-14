@@ -10,7 +10,7 @@ import { Result } from './result';
 export const TAGS = {
   ANT: 'ant',
   OBSTACLE: 'world-bounds',
-  ANTHILL: 'anthill',
+  NEST: 'nest',
 };
 
 export class Collisions {
