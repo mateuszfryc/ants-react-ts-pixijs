@@ -4,12 +4,15 @@ import { TAGS } from 'collisions/collisions';
 import { SpriteWithCollisions } from 'SpriteWithCollisions';
 import { Shape } from 'collisions/proxyTypes';
 
+const { NEST, NEST_VISIBLE_AREA } = TAGS;
+
 export class Nest extends SpriteWithCollisions {
-  scentLifeTime: number;
+  areaIsVisibleIn: Shape;
 
   constructor(x: number, y: number, size = 1) {
-    super(NestImage, new Circle(x, y, size * 18, [TAGS.NEST]) as Shape, x, y, size);
+    // circle in the SpriteWithCollisions type acts as a drop zone for ants with food
+    super(NestImage, new Circle(x, y, size * 17, NEST) as Shape, x, y, size);
 
-    this.scentLifeTime = 8;
+    this.areaIsVisibleIn = new Circle(x, y, size * 50, NEST_VISIBLE_AREA) as Shape;
   }
 }

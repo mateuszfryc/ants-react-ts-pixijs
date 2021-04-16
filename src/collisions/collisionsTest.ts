@@ -56,14 +56,12 @@ class CollisionsTest {
   update(): void {
     this.collisions.update();
 
-    // eslint-disable-next-line no-restricted-syntax
     for (const body of this.bodies) {
       body.x += body.xVelocity * speed;
       body.y += body.yVelocity * speed;
 
       const potentials = this.collisions.getPotentials(body);
 
-      // eslint-disable-next-line no-restricted-syntax
       for (const other of potentials) {
         if (this.collisions.isCollision(body, other, result)) {
           body.x -= result.overlap! * result.overlap_x;
@@ -114,7 +112,7 @@ class CollisionsTest {
           [randomInRange(min_size, max_size), randomInRange(min_size, max_size)],
           [-randomInRange(min_size, max_size), randomInRange(3, size)],
         ],
-        [],
+        1,
         (randomInRange(0, 360) * Math.PI) / 180,
       );
 

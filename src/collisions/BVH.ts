@@ -43,13 +43,9 @@ export class BVH {
     const body_max_x = (isPolygon ? shape._max_x : body_x + radius) + padding;
     const body_max_y = (isPolygon ? shape._max_y : body_y + radius) + padding;
 
-    // eslint-disable-next-line no-param-reassign
     shape._bvh_min_x = body_min_x;
-    // eslint-disable-next-line no-param-reassign
     shape._bvh_min_y = body_min_y;
-    // eslint-disable-next-line no-param-reassign
     shape._bvh_max_x = body_max_x;
-    // eslint-disable-next-line no-param-reassign
     shape._bvh_max_y = body_max_y;
 
     let current = this._hierarchy!;
@@ -108,7 +104,7 @@ export class BVH {
         const parent_min_y = current._bvh_min_y;
         const parent_max_x = current._bvh_max_x;
         const parent_max_y = current._bvh_max_y;
-        // eslint-disable-next-line no-multi-assign, no-param-reassign
+        // eslint-disable-next-line no-multi-assign
         const new_parent = (current._bvh_parent = shape._bvh_parent = BVHBranch.getBranch());
 
         new_parent._bvh_parent = grandparent;

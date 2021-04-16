@@ -40,11 +40,14 @@
     "jsx-quotes": ["warn", "prefer-single"],
     "lines-between-class-members": 0,
     "newline-before-return": ["warn"],
-    "no-plusplus": ["warn", { "allowForLoopAfterthoughts": true }],
+    "no-plusplus": 0,
     "no-console": "warn",
     "no-nested-ternary": 0,
     "no-shadow": "warn",
     "no-use-before-define": 0,
+    "no-case-declarations": 0,
+    "no-restricted-syntax": 0,
+    "no-param-reassign": 0,
     "prettier/prettier": "warn",
     "react/display-name": 0,
     "react/jsx-filename-extension": 0,
@@ -88,7 +91,9 @@
     "unicorn/prevent-abbreviations": 0,
     "unicorn/number-literal-case": 0,
     "unicorn/consistent-destructuring": 0,
-    "unicorn/filename-case": 0
+    "unicorn/filename-case": 0,
+    "unicorn/prefer-dom-node-remove": 0,
+    "unicorn/no-nested-ternary": 0
   },
   "ignorePatterns": ["react-app-env.d.ts"],
   "settings": {

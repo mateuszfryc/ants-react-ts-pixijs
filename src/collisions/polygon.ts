@@ -28,13 +28,13 @@ export class Polygon extends Body {
     x = 0,
     y = 0,
     points: number[][],
-    tags: string[],
+    tag = 0,
     angle = 0,
     scale_x = 1,
     scale_y = 1,
     padding = 0,
   ) {
-    super(x, y, padding, tags);
+    super(x, y, padding, tag);
 
     // The angle of the body in radians
     this.angle = angle;

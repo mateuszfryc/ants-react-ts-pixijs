@@ -24,6 +24,7 @@ export const setupGraphics = <T extends HTMLElement>(container: T): PixiSetupRes
   app.stage.sortableChildren = true;
 
   const draw = new PIXI.Graphics();
+  draw.zIndex = 10;
   app.stage.addChild(draw);
 
   app.resizeTo = container;

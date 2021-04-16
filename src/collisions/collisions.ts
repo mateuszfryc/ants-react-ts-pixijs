@@ -8,12 +8,13 @@ import { Shape } from './proxyTypes';
 import { Result } from './result';
 
 export const TAGS = {
-  ANT: 'ant',
-  OBSTACLE: 'world-bounds',
-  NEST: 'nest',
-  FOOD: 'food',
-  SCENT_NEST: 'scent_nest',
-  SCENT_FOOD: 'scent_food',
+  ANT: 0,
+  OBSTACLE: 1,
+  NEST: 2,
+  NEST_VISIBLE_AREA: 3,
+  FOOD: 4,
+  SCENT_NEST: 5,
+  SCENT_FOOD: 6,
 };
 
 export class Collisions {
@@ -23,8 +24,8 @@ export class Collisions {
     this._bvh = new BVH();
   }
 
-  addCircle(x = 0, y = 0, radius = 0, tags = [TAGS.ANT], scale = 1, padding = 0): Circle {
-    const body = new Circle(x, y, radius, tags, scale, padding) as Shape;
+  addCircle(x = 0, y = 0, radius = 0, tag = TAGS.ANT, scale = 1, padding = 0): Circle {
+    const body = new Circle(x, y, radius, tag, scale, padding) as Shape;
 
     const removeSelf = (): void => {
       this.remove(body);
@@ -41,13 +42,13 @@ export class Collisions {
     x = 0,
     y = 0,
     points = [[0, 0]],
-    tags = [TAGS.OBSTACLE],
+    tag = TAGS.OBSTACLE,
     angle = 0,
     scale_x = 1,
     scale_y = 1,
     padding = 0,
   ): Polygon {
-    const body = new Polygon(x, y, points, tags, angle, scale_x, scale_y, padding) as Shape;
+    const body = new Polygon(x, y, points, tag, angle, scale_x, scale_y, padding) as Shape;
 
     const removeSelf = (): void => {
       this.remove(body);
@@ -62,7 +63,6 @@ export class Collisions {
 
   // Inserts bodies into the collision system
   insert(...bodies: Shape[]): Collisions {
-    // eslint-disable-next-line no-restricted-syntax
     for (const body of bodies) {
       this._bvh.insert(body, false);
     }
@@ -72,7 +72,6 @@ export class Collisions {
 
   // Removes bodies from the collision system
   remove(...bodies: Shape[]): Collisions {
-    // eslint-disable-next-line no-restricted-syntax
     for (const body of bodies) {
       this._bvh.remove(body, false);
     }
@@ -113,7 +112,7 @@ export class Collisions {
         [width, padding],
         [0, padding],
       ],
-      [TAGS.OBSTACLE],
+      TAGS.OBSTACLE,
       0,
       1,
       1,
@@ -128,7 +127,7 @@ export class Collisions {
         [width, height],
         [width - padding, height],
       ],
-      [TAGS.OBSTACLE],
+      TAGS.OBSTACLE,
       0,
       1,
       1,
@@ -143,7 +142,7 @@ export class Collisions {
         [width, height],
         [0, height],
       ],
-      [TAGS.OBSTACLE],
+      TAGS.OBSTACLE,
       0,
       1,
       1,
@@ -158,7 +157,7 @@ export class Collisions {
         [padding, height],
         [0, height],
       ],
-      [TAGS.OBSTACLE],
+      TAGS.OBSTACLE,
       0,
       1,
       1,
@@ -174,19 +173,12 @@ export class Collisions {
     const b_polygon = b._polygon;
 
     if (result) {
-      // eslint-disable-next-line no-param-reassign
       result.a = a;
-      // eslint-disable-next-line no-param-reassign
       result.b = b;
-      // eslint-disable-next-line no-param-reassign
       result.a_in_b = true;
-      // eslint-disable-next-line no-param-reassign
       result.b_in_a = true;
-      // eslint-disable-next-line no-param-reassign
       result.overlap = undefined;
-      // eslint-disable-next-line no-param-reassign
       result.overlap_x = 0;
-      // eslint-disable-next-line no-param-reassign
       result.overlap_y = 0;
     }
 

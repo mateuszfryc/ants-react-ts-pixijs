@@ -1,4 +1,5 @@
 export const { PI } = Math;
+export const halfPI = PI * 0.5;
 export const twoPI = 2 * Math.PI;
 
 export const clamp = (value: number, min = 0, max = 1): number => {
@@ -45,4 +46,16 @@ export const interpolateRadians = (
   if (dffAbs > PI) return current - diff * deltaTime * speed;
 
   return current + diff * deltaTime * speed;
+};
+
+export const getMiddleOfTwoRadians = (a: number, b: number): number => {
+  const max = Math.max(a, b);
+  const min = Math.min(a, b);
+  const result = max - (max - min) * 0.5;
+
+  return Math.abs(a) + Math.abs(b) > PI ? result - PI : result;
+};
+
+export const getRadiansFromAtoB = (ax: number, ay: number, bx: number, by: number): number => {
+  return -Math.atan2(ax - bx, ay - by);
 };

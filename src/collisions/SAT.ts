@@ -76,12 +76,10 @@ export const separatingAxis = (
     let overlap = 0;
 
     if (a_start! < b_start!) {
-      // eslint-disable-next-line no-param-reassign
       result.a_in_b = false;
 
       if (a_end! < b_end!) {
         overlap = a_end! - b_start!;
-        // eslint-disable-next-line no-param-reassign
         result.b_in_a = false;
       } else {
         const option1 = a_end! - b_start!;
@@ -90,12 +88,10 @@ export const separatingAxis = (
         overlap = option1 < option2 ? option1 : -option2;
       }
     } else {
-      // eslint-disable-next-line no-param-reassign
       result.b_in_a = false;
 
       if (a_end! > b_end!) {
         overlap = a_start! - b_end!;
-        // eslint-disable-next-line no-param-reassign
         result.a_in_b = false;
       } else {
         const option1 = a_end! - b_start!;
@@ -109,13 +105,13 @@ export const separatingAxis = (
     const absolute_overlap = overlap < 0 ? -overlap : overlap;
 
     if (current_overlap === undefined || current_overlap > absolute_overlap) {
-      const sign = overlap < 0 ? -1 : 1;
+      // prettier-ignore
+      const sign = overlap < 0
+        ? -1
+        : 1;
 
-      // eslint-disable-next-line no-param-reassign
       result.overlap = absolute_overlap;
-      // eslint-disable-next-line no-param-reassign
       result.overlap_x = x * sign;
-      // eslint-disable-next-line no-param-reassign
       result.overlap_y = y * sign;
     }
   }
@@ -134,7 +130,6 @@ export const polygonPolygon = (a: Shape, b: Shape, result?: Result): boolean => 
     const b_coords = b._coords;
 
     if (result) {
-      // eslint-disable-next-line no-param-reassign
       result.overlap = 0;
     }
 
@@ -213,8 +208,12 @@ export const polygonCircle = (
       const edge_x = a_edges[ix];
       const edge_y = a_edges[iy];
       const dot = coord_x * edge_x + coord_y * edge_y;
-      // eslint-disable-next-line unicorn/no-nested-ternary
-      const region = dot < 0 ? -1 : dot > edge_x * edge_x + edge_y * edge_y ? 1 : 0;
+      // prettier-ignore
+      const region = dot < 0
+        ? -1
+        : dot > edge_x * edge_x + edge_y * edge_y
+          ? 1
+          : 0;
 
       let tmp_overlapping = false;
       let tmp_overlap = 0;
@@ -227,16 +226,22 @@ export const polygonCircle = (
 
       if (region) {
         const left = region === -1;
-        // eslint-disable-next-line unicorn/no-nested-ternary
-        const other_x = left ? (ix === 0 ? count - 2 : ix - 2) : ix === count - 2 ? 0 : ix + 2;
+        // prettier-ignore
+        const other_x = left
+          ? ix === 0 ? count - 2 : ix - 2
+          : ix === count - 2 ? 0 : ix + 2;
         const other_y = other_x + 1;
         const coord2_x = b_x - a_coords[other_x];
         const coord2_y = b_y - a_coords[other_y];
         const edge2_x = a_edges[other_x];
         const edge2_y = a_edges[other_y];
         const dot2 = coord2_x * edge2_x + coord2_y * edge2_y;
-        // eslint-disable-next-line unicorn/no-nested-ternary
-        const region2 = dot2 < 0 ? -1 : dot2 > edge2_x * edge2_x + edge2_y * edge2_y ? 1 : 0;
+        // prettier-ignore
+        const region2 = dot2 < 0
+          ? -1
+          : dot2 > edge2_x * edge2_x + edge2_y * edge2_y
+            ? 1
+            : 0;
 
         if (region2 === -region) {
           const target_x = left ? coord_x : coord2_x;
@@ -288,15 +293,10 @@ export const polygonCircle = (
   }
 
   if (result) {
-    // eslint-disable-next-line no-param-reassign
     result.a_in_b = reverse ? b_in_a : a_in_b;
-    // eslint-disable-next-line no-param-reassign
     result.b_in_a = reverse ? a_in_b : b_in_a;
-    // eslint-disable-next-line no-param-reassign
     result.overlap = overlap;
-    // eslint-disable-next-line no-param-reassign
     result.overlap_x = reverse ? -overlap_x : overlap_x;
-    // eslint-disable-next-line no-param-reassign
     result.overlap_y = reverse ? -overlap_y : overlap_y;
   }
 
@@ -319,15 +319,10 @@ export const circleCircle = (a: Shape, b: Shape, result?: Result): boolean => {
   if (result) {
     const length = Math.sqrt(length_squared);
 
-    // eslint-disable-next-line no-param-reassign
     result.a_in_b = a_radius <= b_radius && length <= b_radius - a_radius;
-    // eslint-disable-next-line no-param-reassign
     result.b_in_a = b_radius <= a_radius && length <= a_radius - b_radius;
-    // eslint-disable-next-line no-param-reassign
     result.overlap = radius_sum - length;
-    // eslint-disable-next-line no-param-reassign
     result.overlap_x = difference_x / length;
-    // eslint-disable-next-line no-param-reassign
     result.overlap_y = difference_y / length;
   }
 
