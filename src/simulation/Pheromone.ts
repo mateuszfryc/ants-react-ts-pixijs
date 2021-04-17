@@ -2,10 +2,10 @@ import * as PIXI from 'pixi.js';
 
 import NestScentImage from 'assets/nest-scent.png';
 import FoodScentImage from 'assets/food-scent.png';
-import { Circle } from 'collisions/circle';
-import { TAGS } from 'collisions/collisions';
-import { SpriteWithCollisions } from 'SpriteWithCollisions';
-import { Shape } from 'collisions/proxyTypes';
+import { Circle } from 'simulation/collisions/circle';
+import { TAGS } from 'simulation/collisions/collisions';
+import { SpriteWithCollisions } from 'simulation/SpriteWithCollisions';
+import { Shape } from 'simulation/collisions/proxyTypes';
 import { mapRangeClamped } from 'utils/math';
 
 const scentInitialLifetime = 32;

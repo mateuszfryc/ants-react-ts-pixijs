@@ -1,7 +1,7 @@
 import React from 'react';
 import styled, { css } from 'styled-components';
 
-import { Flex } from 'components/Flex';
+import { Flex } from 'UI/components/Flex';
 
 export const Label = styled.label(
   () => css`

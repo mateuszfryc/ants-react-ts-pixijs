@@ -27,7 +27,12 @@ export const randomSign = (): number => Math.round(Math.random()) * 2 - 1;
 export const randomInRange = (min: number, max: number): number =>
   Math.random() * (max - min) + min;
 
-export const getPoitnsAToBDistance = (ax: number, ay: number, bx: number, by: number): number => {
+export const getDistanceFromPointAtoB = (
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): number => {
   const xDiff = bx - ax;
   const yDiff = by - ay;
 
@@ -63,6 +68,6 @@ export const getMiddleOfTwoRadians = (a: number, b: number): number => {
   return Math.abs(a) + Math.abs(b) > PI ? result - PI : result;
 };
 
-export const getRadiansFromAtoB = (ax: number, ay: number, bx: number, by: number): number => {
+export const getRadiansFromPointAtoB = (ax: number, ay: number, bx: number, by: number): number => {
   return -Math.atan2(ax - bx, ay - by);
 };

@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import styled, { css } from 'styled-components';
 
-import { Navigation } from 'components/Navigation';
-import { SEO } from 'components/SEO';
-import { setupGraphics, updateRendererSize } from 'graphics';
-import { setupSimulation } from 'simulation';
+import { Navigation } from 'UI/components/Navigation';
+import { SEO } from 'UI/components/SEO';
+import { setupGraphics, updateRendererSize } from 'utils/graphics';
+import { setupSimulation } from 'simulation/simulation';
 
 export const AppContainer = styled.div(
   ({ theme: { colors } }) => css`

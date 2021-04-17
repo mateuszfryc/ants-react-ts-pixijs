@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 
-import { Shape } from 'collisions/proxyTypes';
+import { Shape } from 'simulation/collisions/proxyTypes';
 
 export class SpriteWithCollisions extends PIXI.Sprite {
   body: Shape;

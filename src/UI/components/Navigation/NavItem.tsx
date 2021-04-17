@@ -1,4 +1,4 @@
-import { Flex } from 'components/Flex';
+import { Flex } from 'UI/components/Flex';
 import styled, { css } from 'styled-components';
 
 export const NavItem = styled(Flex)<{ isColumn?: boolean }>(

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ObjectOfStrings } from 'types/baseTypes';
+import { ObjectOfStrings } from 'UI/types/baseTypes';
 
 export type IconPropsType = {
   height?: number;

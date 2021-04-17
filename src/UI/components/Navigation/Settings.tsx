@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Paragraph } from 'components/Paragraph/';
+import { Paragraph } from 'UI/components/Paragraph';
 import { NavItem } from './NavItem';
 import { NavItemWithContent } from './NavItemWithContent';
 

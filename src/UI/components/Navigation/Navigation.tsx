@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import styled, { css } from 'styled-components';
 
-import { MenuIcon, CloseIcon } from 'icons/';
-import { Paragraph } from 'components/Paragraph/';
-import { ScrollVertical } from 'components/ScrollVertical/';
-import { colorsLibrary, navigationWidth } from 'styles/themeDefault';
-import { Flex } from 'components/Flex';
+import { MenuIcon, CloseIcon } from 'UI/icons';
+import { Paragraph } from 'UI/components/Paragraph';
+import { ScrollVertical } from 'UI/components/ScrollVertical';
+import { colorsLibrary, navigationWidth } from 'UI/styles/themeDefault';
+import { Flex } from 'UI/components/Flex';
 import { NavItem } from './NavItem';
 import { NavItemWithContent } from './NavItemWithContent';
 import { Settings } from './Settings';

@@ -1,21 +1,21 @@
 import * as PIXI from 'pixi.js';
 
-import { Collisions, TAGS } from 'collisions/collisions';
-import { Shape } from 'collisions/proxyTypes';
-import { Result } from 'collisions/result';
+import { Collisions, TAGS } from 'simulation/collisions/collisions';
+import { Shape } from 'simulation/collisions/proxyTypes';
+import { Result } from 'simulation/collisions/result';
 import {
   PI,
   randomInRange,
   interpolateRadians,
   normalizeRadians,
   randomSign,
-  getRadiansFromAtoB,
+  getRadiansFromPointAtoB,
   clamp,
 } from 'utils/math';
-import { Ant } from 'Ant';
-import { Nest } from 'Nest';
-import { Pheromone } from 'Pheromone';
-import { Food } from 'Food';
+import { Ant } from 'simulation/Ant';
+import { Nest } from 'simulation/Nest';
+import { Pheromone } from 'simulation/Pheromone';
+import { Food } from 'simulation/Food';
 import FoodImage from 'assets/food.png';
 
 let xMouse = 0;
@@ -342,7 +342,7 @@ export const setupSimulation = (
         32,
         ++scentIdCounter,
         0,
-        getRadiansFromAtoB(xMouse, yMouse, lastMouseSpawn.x, lastMouseSpawn.y),
+        getRadiansFromPointAtoB(xMouse, yMouse, lastMouseSpawn.x, lastMouseSpawn.y),
       );
       collisions.insert(scent.body);
       app.stage.addChild(scent);

@@ -1,5 +1,5 @@
-import { setColor } from 'utils/styles';
-import { ObjectOfNumbers, ObjectOfStrings } from 'types/baseTypes';
+import { setColor } from 'UI/utils/styles';
+import { ObjectOfNumbers, ObjectOfStrings } from 'UI/types/baseTypes';
 import * as colors from './colors';
 
 export const colorsLibrary: ObjectOfStrings = {

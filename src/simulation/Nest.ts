@@ -2,10 +2,10 @@ import * as PIXI from 'pixi.js';
 
 import NestImage from 'assets/nest.png';
 import NestEntranceCoverImage from 'assets/nest-entrance-cover.png';
-import { Circle } from 'collisions/circle';
-import { TAGS } from 'collisions/collisions';
-import { SpriteWithCollisions } from 'SpriteWithCollisions';
-import { Shape } from 'collisions/proxyTypes';
+import { Circle } from 'simulation/collisions/circle';
+import { TAGS } from 'simulation/collisions/collisions';
+import { SpriteWithCollisions } from 'simulation/SpriteWithCollisions';
+import { Shape } from 'simulation/collisions/proxyTypes';
 
 const { NEST, NEST_VISIBLE_AREA } = TAGS;
 

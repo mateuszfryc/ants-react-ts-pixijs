@@ -1,12 +1,12 @@
 import * as PIXI from 'pixi.js';
 
 import AntImage from 'assets/ant-red.png';
-import { Circle } from 'collisions/circle';
-import { TAGS } from 'collisions/collisions';
+import { Circle } from 'simulation/collisions/circle';
+import { TAGS } from 'simulation/collisions/collisions';
 import { randomInRange } from 'utils/math';
-import { SpriteWithCollisions } from 'SpriteWithCollisions';
-import { Shape } from 'collisions/proxyTypes';
-import { Timer } from 'Timer';
+import { SpriteWithCollisions } from 'simulation/SpriteWithCollisions';
+import { Shape } from 'simulation/collisions/proxyTypes';
+import { Timer } from 'simulation/Timer';
 
 const { ANT } = TAGS;
 

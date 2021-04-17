@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 
-import { Body } from 'collisions/body';
+import { Body } from 'simulation/collisions/body';
 
 export class Circle extends Body {
   radius: number;
