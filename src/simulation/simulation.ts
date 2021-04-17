@@ -17,6 +17,8 @@ import { Nest } from 'simulation/Nest';
 import { Pheromone } from 'simulation/Pheromone';
 import { Food } from 'simulation/Food';
 import FoodImage from 'assets/food.png';
+import { setupFPSDisplay } from './debug';
+import { Timer } from './Timer';
 
 let xMouse = 0;
 let yMouse = 0;
@@ -58,6 +60,7 @@ export const setupSimulation = (
   particles: PIXI.ParticleContainer,
   draw: PIXI.Graphics,
 ): void => {
+  const { updateFPSDisplay } = setupFPSDisplay();
   const { Sprite } = PIXI;
   const foodChunkTexture = PIXI.Texture.from(FoodImage);
   const result = new Result();
@@ -73,7 +76,7 @@ export const setupSimulation = (
     SCENT_FOOD,
   } = TAGS;
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
-  collisions.createWorldBounds(app.view.width, app.view.height, 10);
+  collisions.createWorldBounds(app.view.width, app.view.height);
 
   const pheromones = new Map<Pheromone, Pheromone>();
   let scentIdCounter = 0;
@@ -106,10 +109,12 @@ export const setupSimulation = (
   const ants: Ant[] = [];
 
   let lastTime = performance.now();
+  const fpsLogTimer = new Timer(0.5);
 
   function simulationUpdate() {
     const frameStartTime = performance.now();
     const deltaTime = (frameStartTime - lastTime) / 1000;
+    if (fpsLogTimer.update(deltaTime)) updateFPSDisplay(deltaTime);
 
     collisions.update();
     for (const ant of ants) {
@@ -360,7 +365,7 @@ export const setupSimulation = (
 
   app.ticker.add(simulationUpdate);
 
-  const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 600 : 100;
+  const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 400 : 100;
   let antsIdCounter = 0;
   function releaseTheAnts() {
     setTimeout(() => {

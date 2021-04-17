@@ -10,19 +10,13 @@ import { NavItem } from './NavItem';
 import { NavItemWithContent } from './NavItemWithContent';
 import { Settings } from './Settings';
 
-const NavigationClosed = styled.div(
-  ({ theme: { colors, navigationClosedWidth } }) => css`
-    text-align: center;
-    height: 100vh;
-    width: ${navigationClosedWidth}px;
-    background-color: ${colors.primary};
-  `,
-);
-
 const OpenMenuButton = styled(Flex)(
   ({ theme: { padding } }) => css`
     height: 40px;
     padding: ${padding.small};
+    position: fixed;
+    right: 0;
+    top: 0;
   `,
 );
 
@@ -49,11 +43,9 @@ export const Navigation: React.FC = () => {
 
   return (
     <>
-      <NavigationClosed>
-        <OpenMenuButton as='button' type='button' onClick={() => setIsOpen(true)}>
-          <MenuIcon color={colorsLibrary.secondary} />
-        </OpenMenuButton>
-      </NavigationClosed>
+      <OpenMenuButton as='button' type='button' onClick={() => setIsOpen(true)}>
+        <MenuIcon color={colorsLibrary.secondary} />
+      </OpenMenuButton>
       <NavigationOpen style={{ right: isOpen ? 0 : `${-navigationWidth}px` }}>
         <ScrollVertical>
           <NavItem style={{ fontWeight: 'bold', justifyContent: 'space-between' }}>

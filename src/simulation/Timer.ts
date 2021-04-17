@@ -5,9 +5,9 @@ export class Timer {
   from: number | undefined;
   callback: (() => void) | undefined;
 
-  constructor(targetTime = 1, callback?: () => void, from?: number, to = 2) {
+  constructor(timeToNextCall = 1, callback?: () => void, from?: number, to = 2) {
     this.counter = 0;
-    this.targetTime = targetTime;
+    this.targetTime = timeToNextCall;
     this.from = from;
     this.to = to;
     this.callback = callback;

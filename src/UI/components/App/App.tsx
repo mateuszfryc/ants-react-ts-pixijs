@@ -5,6 +5,7 @@ import { Navigation } from 'UI/components/Navigation';
 import { SEO } from 'UI/components/SEO';
 import { setupGraphics, updateRendererSize } from 'utils/graphics';
 import { setupSimulation } from 'simulation/simulation';
+import { StatusBar } from '../StatusBar';
 
 export const AppContainer = styled.div(
   ({ theme: { colors } }) => css`
@@ -45,6 +46,7 @@ export const App: React.FC = () => {
       <SEO />
       <Content ref={contentRef} />
       <Navigation />
+      <StatusBar />
     </AppContainer>
   );
 };

@@ -103,7 +103,9 @@ export class Collisions {
     return bvh.potentials(shape);
   }
 
-  createWorldBounds(width: number, height: number, padding = 20): Polygon[] {
+  createWorldBounds(width: number, height: number, padding = 1): Polygon[] {
+    // the below is just in case js loop would not be able to handle all collision tests
+    const collisionSafeDistance = 30;
     const top = this.addPolygon(
       0,
       0,
@@ -117,7 +119,7 @@ export class Collisions {
       0,
       1,
       1,
-      padding,
+      collisionSafeDistance,
     );
     const right = this.addPolygon(
       0,
@@ -132,14 +134,16 @@ export class Collisions {
       0,
       1,
       1,
-      padding,
+      collisionSafeDistance,
     );
+    // this is required for the status bar
+    const bottomPadding = padding + 20;
     const bottom = this.addPolygon(
       0,
       0,
       [
-        [0, height - padding],
-        [width, height - padding],
+        [0, height - bottomPadding],
+        [width, height - bottomPadding],
         [width, height],
         [0, height],
       ],
@@ -147,7 +151,7 @@ export class Collisions {
       0,
       1,
       1,
-      padding,
+      collisionSafeDistance,
     );
     const left = this.addPolygon(
       0,
@@ -162,7 +166,7 @@ export class Collisions {
       0,
       1,
       1,
-      padding,
+      collisionSafeDistance,
     );
 
     return [top, right, bottom, left];
