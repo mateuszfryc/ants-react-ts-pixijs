@@ -15,29 +15,27 @@ export class Ant extends SpriteWithCollisions {
   speed: number;
   maxSpeed: number;
   rotationSign: number;
-  rotationFlipTime: number;
-  rotationFlipMuliplierCounter: number;
   nestScent: number;
   foodScent: number;
   hasFood: boolean;
+  foundFood: boolean;
   attachedFoodSprite: PIXI.Sprite | undefined;
   recentlyVistedScentParticles: number[];
   rotationSignChangeTimer: Timer;
   scentEmissionTimer: Timer;
 
-  constructor(id: number, x: number, y: number, maxSpeed = 30, nestScent = 16, scale = 0.2) {
+  constructor(id: number, x: number, y: number, maxSpeed = 30, nestScent = 32, scale = 0.2) {
     const rotation = Math.atan2(randomInRange(-1, 1), randomInRange(-1, 1));
-    super(AntImage, new Circle(x, y, scale * 10, ANT) as Shape, x, y, scale, rotation);
+    super(AntImage, new Circle(x, y, scale * 5, ANT) as Shape, x, y, scale, rotation);
 
     this.id = id;
     this.maxSpeed = maxSpeed * 0.5;
     this.speed = maxSpeed;
     this.rotationSign = Math.random() * 2 - 1;
-    this.rotationFlipTime = Math.random() * 2;
-    this.rotationFlipMuliplierCounter = 0;
     this.nestScent = nestScent;
     this.foodScent = 0;
     this.hasFood = false;
+    this.foundFood = false;
     this.attachedFoodSprite = undefined;
     this.recentlyVistedScentParticles = [];
     this.rotationSignChangeTimer = new Timer(0.2, undefined, 0.2, 1);

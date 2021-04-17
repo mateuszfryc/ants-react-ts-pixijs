@@ -13,8 +13,9 @@ export const TAGS = {
   NEST: 2,
   NEST_VISIBLE_AREA: 3,
   FOOD: 4,
-  SCENT_NEST: 5,
-  SCENT_FOOD: 6,
+  FOOD_SCENT_AREA: 5,
+  SCENT_NEST: 6,
+  SCENT_FOOD: 7,
 };
 
 export class Collisions {

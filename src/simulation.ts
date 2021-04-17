@@ -14,6 +14,7 @@ import {
   halfPI,
   getMiddleOfTwoRadians,
   getRadiansFromAtoB,
+  clamp,
 } from 'utils/math';
 import { Ant } from 'Ant';
 import { Nest } from 'Nest';
@@ -66,7 +67,16 @@ export const setupSimulation = (
   const foodChunkTexture = PIXI.Texture.from(FoodImage);
   const result = new Result();
   const collisions = new Collisions();
-  const { ANT, OBSTACLE, NEST, NEST_VISIBLE_AREA, SCENT_NEST, FOOD, SCENT_FOOD } = TAGS;
+  const {
+    ANT,
+    OBSTACLE,
+    NEST,
+    NEST_VISIBLE_AREA,
+    SCENT_NEST,
+    FOOD,
+    FOOD_SCENT_AREA,
+    SCENT_FOOD,
+  } = TAGS;
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
   collisions.createWorldBounds(app.view.width, app.view.height, 10);
 
@@ -86,6 +96,7 @@ export const setupSimulation = (
     );
     nest.zIndex = 1;
     collisions.insert(foodPeace.body);
+    collisions.insert(foodPeace.scentArea);
     app.stage.addChild(foodPeace);
   }
 
@@ -100,14 +111,14 @@ export const setupSimulation = (
     collisions.update();
     for (const ant of ants) {
       const { body, maxSpeed } = ant;
-      let { speed, hasFood } = ant;
+      let { speed, hasFood, foundFood } = ant;
       const { rotation } = body;
       const makes180turn = false;
       let followedScent: number | undefined;
       // used to test which scent is oldest, which might mean it leads to the nest
-      let followedScendAge = 10000;
+      let followedScendAge = 0;
 
-      if (speed < maxSpeed) speed += deltaTime * 5;
+      if (speed < maxSpeed) speed += deltaTime * 4;
       if (speed > maxSpeed) speed = maxSpeed;
       body.x -=
         Math.cos(rotation + Math.PI * 0.5) * deltaTime * speed /* (leftMouseDown ? 150 : speed) */;
@@ -158,22 +169,27 @@ export const setupSimulation = (
               break;
 
             case NEST:
-              ant.nestScent = 16;
+              ant.nestScent = Pheromone.scentInitialLifetime;
               if (hasFood) {
                 followedScent = targetRotation - PI;
                 hasFood = false;
+                foundFood = false;
               }
               if (ant.attachedFoodSprite) app.stage.removeChild(ant.attachedFoodSprite);
               ant.attachedFoodSprite = undefined;
               break;
 
             case FOOD:
+              body.x -= overlap! * overlap_x;
+              body.y -= overlap! * overlap_y;
+              targetRotation -= PI;
               const food = other.spriteRef as Food;
-              if (!food.isEmpty && !hasFood) {
-                if (!followedScent) followedScent = targetRotation - PI;
+              if (!hasFood && !food.isEmpty) {
+                followedScent = undefined;
+                speed = 0;
                 ant.nestScent = 0;
                 hasFood = true;
-                ant.foodScent = 16;
+                ant.foodScent = Pheromone.scentInitialLifetime;
                 food.haveABite();
                 ant.attachedFoodSprite = Sprite.from(foodChunkTexture);
                 ant.attachedFoodSprite.scale.set(0.2);
@@ -184,42 +200,37 @@ export const setupSimulation = (
               }
               break;
 
+            case FOOD_SCENT_AREA:
+              if (!hasFood && !foundFood) {
+                foundFood = true;
+                followedScent = ant.getRotationAtPoint(other.x, other.y);
+              }
+              break;
+
             case SCENT_FOOD:
-              if (!hasFood) {
-                const foodScent = other.spriteRef as Pheromone;
-                const { /* antId,  id, */ x, y, strength, pointsToDirection } = foodScent;
-                followedScent = normalizeRadians(pointsToDirection);
-                // if (
-                // !ant.recentlyVistedScentParticles.includes(foodScent.id) &&
-                // antId === ant.id ||
-                // !followedScendAge
-                // strength < followedScendAge
-                // ) {
-                // const toScentSource = ant.getRotationAtPoint(x, y);
-                // primaryDirection = normalizeRadians(pointsToDirection);
-                // primaryDirection = getMiddleOfTwoRadians(
-                //   normalizeRadians(pointsToDirection),
-                //   normalizeRadians(toScentSource),
-                // );
-                // followedScendAge = strength;
-                // ant.recentlyVistedScentParticles.unshift(id);
-                // }
+              const foodScent = other.spriteRef as Pheromone;
+              if (
+                !hasFood &&
+                !foundFood &&
+                !ant.recentlyVistedScentParticles.includes(foodScent.id) &&
+                (foodScent.antId === ant.id ||
+                  foodScent.strength > followedScendAge ||
+                  !followedScent)
+              ) {
+                followedScent = normalizeRadians(foodScent.pointsToDirection);
               }
               break;
 
             case SCENT_NEST:
-              if (hasFood) {
-                const nestScent = other.spriteRef as Pheromone;
-                const { antId, /* id, x, y, */ strength, pointsToDirection } = nestScent;
-                if (
-                  // !ant.recentlyVistedScentParticles.includes(id) &&
-                  antId === ant.id ||
-                  strength < followedScendAge
-                ) {
-                  followedScent = normalizeRadians(pointsToDirection);
-                  followedScendAge = strength;
-                  // ant.recentlyVistedScentParticles.unshift(nestScent.id);
-                }
+              const nestScent = other.spriteRef as Pheromone;
+              const { antId, id, strength, pointsToDirection } = nestScent;
+              if (
+                hasFood &&
+                !ant.recentlyVistedScentParticles.includes(id) &&
+                (antId === ant.id || strength > followedScendAge || !followedScent)
+              ) {
+                followedScent = normalizeRadians(pointsToDirection);
+                followedScendAge = strength;
               }
               break;
 
@@ -230,7 +241,7 @@ export const setupSimulation = (
         }
       }
 
-      // if (ant.recentlyVistedScentParticles.length > 127) ant.recentlyVistedScentParticles.pop();
+      if (ant.recentlyVistedScentParticles.length > 63) ant.recentlyVistedScentParticles = [];
 
       if (leftMouseDown) {
         // targetRotation = ant.getRotationAtPoint(xMouse, yMouse);
@@ -240,7 +251,11 @@ export const setupSimulation = (
             ? Math.sin(deltaTime * Math.random() * (followedScent ? 1.5 : 3))
             : -Math.sin(deltaTime * Math.random() * (followedScent ? 1.5 : 3));
 
-        if (ant.rotationSignChangeTimer.update(deltaTime)) ant.rotationSign *= -1;
+        if (ant.rotationSignChangeTimer.update(deltaTime)) {
+          ant.rotationSign *= -1;
+          if (!followedScent)
+            speed = clamp(randomInRange(hasFood ? maxSpeed * 0.5 : 0, maxSpeed), 0, maxSpeed);
+        }
 
         if (targetRotation !== rotation) {
           targetRotation = normalizeRadians(
@@ -301,6 +316,7 @@ export const setupSimulation = (
       ant.body.rotation = targetRotation;
       ant.rotation = targetRotation;
       ant.hasFood = hasFood;
+      ant.foundFood = foundFood;
     }
 
     // eslint-disable-next-line unicorn/no-array-for-each
@@ -333,7 +349,7 @@ export const setupSimulation = (
     }
 
     draw.clear();
-    // draw.lineStyle(1, 0x550000);
+    // draw.lineStyle(1, 0x440000);
     // collisions.draw(draw);
 
     lastTime = frameStartTime;
@@ -341,7 +357,7 @@ export const setupSimulation = (
 
   app.ticker.add(simulationUpdate);
 
-  const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 400 : 100;
+  const numberOfAnts = app.renderer instanceof PIXI.Renderer ? 600 : 100;
   let antsIdCounter = 0;
   function releaseTheAnts() {
     setTimeout(() => {

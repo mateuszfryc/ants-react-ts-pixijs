@@ -27,6 +27,13 @@ export const randomSign = (): number => Math.round(Math.random()) * 2 - 1;
 export const randomInRange = (min: number, max: number): number =>
   Math.random() * (max - min) + min;
 
+export const getPoitnsAToBDistance = (ax: number, ay: number, bx: number, by: number): number => {
+  const xDiff = bx - ax;
+  const yDiff = by - ay;
+
+  return Math.sqrt(xDiff * xDiff + yDiff * yDiff);
+};
+
 export const normalizeRadians = (radians: number): number => {
   if (radians > PI) return -(twoPI - radians);
   if (radians < -PI) return twoPI + radians;

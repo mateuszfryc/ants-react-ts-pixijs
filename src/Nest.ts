@@ -13,6 +13,6 @@ export class Nest extends SpriteWithCollisions {
     // circle in the SpriteWithCollisions type acts as a drop zone for ants with food
     super(NestImage, new Circle(x, y, size * 17, NEST) as Shape, x, y, size);
 
-    this.areaIsVisibleIn = new Circle(x, y, size * 50, NEST_VISIBLE_AREA) as Shape;
+    this.areaIsVisibleIn = new Circle(x, y, size * 55, NEST_VISIBLE_AREA) as Shape;
   }
 }
