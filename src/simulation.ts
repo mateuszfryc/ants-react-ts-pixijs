@@ -87,6 +87,7 @@ export const setupSimulation = (
   nest.zIndex = 1;
   collisions.insert(nest.body, nest.areaIsVisibleIn);
   app.stage.addChild(nest);
+  app.stage.addChild(nest.entranceCoverSprite);
 
   const foodAmount = 100;
   for (let i = 0; i < foodAmount; i++) {
@@ -94,7 +95,7 @@ export const setupSimulation = (
       worldWidth * 0.3 + randomInRange(-50, 50),
       worldHeight * 0.3 + randomInRange(-50, 50),
     );
-    nest.zIndex = 1;
+    foodPeace.zIndex = 3;
     collisions.insert(foodPeace.body);
     collisions.insert(foodPeace.scentArea);
     app.stage.addChild(foodPeace);
