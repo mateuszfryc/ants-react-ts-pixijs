@@ -9,10 +9,6 @@ import {
   interpolateRadians,
   normalizeRadians,
   randomSign,
-  twoPI,
-  mapRangeClamped,
-  halfPI,
-  getMiddleOfTwoRadians,
   getRadiansFromAtoB,
   clamp,
 } from 'utils/math';
@@ -21,7 +17,6 @@ import { Nest } from 'Nest';
 import { Pheromone } from 'Pheromone';
 import { Food } from 'Food';
 import FoodImage from 'assets/food.png';
-import { Timer } from 'Timer';
 
 let xMouse = 0;
 let yMouse = 0;
@@ -83,7 +78,7 @@ export const setupSimulation = (
   const pheromones = new Map<Pheromone, Pheromone>();
   let scentIdCounter = 0;
 
-  const nest = new Nest(worldWidth * 0.5, worldHeight * 0.5);
+  const nest = new Nest(worldWidth * 0.3, worldHeight * 0.5);
   nest.zIndex = 1;
   collisions.insert(nest.body, nest.areaIsVisibleIn);
   app.stage.addChild(nest);
@@ -92,14 +87,21 @@ export const setupSimulation = (
   const foodAmount = 100;
   for (let i = 0; i < foodAmount; i++) {
     const foodPeace = new Food(
-      worldWidth * 0.3 + randomInRange(-50, 50),
-      worldHeight * 0.3 + randomInRange(-50, 50),
+      worldWidth * 0.7 + randomInRange(-50, 50),
+      worldHeight * 0.5 + randomInRange(-50, 50),
     );
     foodPeace.zIndex = 3;
     collisions.insert(foodPeace.body);
     collisions.insert(foodPeace.scentArea);
     app.stage.addChild(foodPeace);
   }
+
+  const osbtacle = collisions.addPolygon(worldWidth * 0.45, worldHeight * 0.2, [
+    [0, 0],
+    [worldWidth * 0.1, 0],
+    [worldWidth * 0.1, worldHeight * 0.6],
+    [0, worldHeight * 0.6],
+  ]);
 
   const ants: Ant[] = [];
 
@@ -143,16 +145,15 @@ export const setupSimulation = (
               body.x -= overlap! * overlap_x;
               body.y -= overlap! * overlap_y;
               const otherAnt = other.spriteRef as Ant;
-              // ant with food will pass the direction to food to and without food
+              // ant with food will pass the direction to food to an and without food
               if (hasFood && !otherAnt.hasFood) {
                 otherAnt.rotation = reversedRotation;
                 other.rotation = reversedRotation;
               }
-              // ant without food will take information about food direction from the other with food
+              // ant without food will pass the direction to nest to ant with food
               else if (!hasFood && otherAnt.hasFood) {
-                const otherReversedRotation = otherAnt.rotation - PI;
-                ant.rotation = otherReversedRotation;
-                body.rotation = otherReversedRotation;
+                otherAnt.rotation = reversedRotation;
+                other.rotation = reversedRotation;
               }
               break;
 
@@ -350,7 +351,8 @@ export const setupSimulation = (
     }
 
     draw.clear();
-    // draw.lineStyle(1, 0x440000);
+    draw.lineStyle(1, 0x990000);
+    osbtacle.draw(draw);
     // collisions.draw(draw);
 
     lastTime = frameStartTime;
@@ -367,7 +369,7 @@ export const setupSimulation = (
         ++antsIdCounter,
         nest.x + randomSign() * randomInRange(radius - 15, radius - 2),
         nest.y + randomSign() * randomInRange(radius - 15, radius - 2),
-        randomInRange(55, 65),
+        randomInRange(70, 80),
         // 0.5,
       );
 

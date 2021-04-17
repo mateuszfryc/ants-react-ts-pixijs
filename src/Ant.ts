@@ -26,7 +26,7 @@ export class Ant extends SpriteWithCollisions {
 
   constructor(id: number, x: number, y: number, maxSpeed = 30, nestScent = 32, scale = 0.2) {
     const rotation = Math.atan2(randomInRange(-1, 1), randomInRange(-1, 1));
-    super(AntImage, new Circle(x, y, scale * 5, ANT) as Shape, x, y, scale, rotation);
+    super(AntImage, new Circle(x, y, scale * 8, ANT) as Shape, x, y, scale, rotation);
 
     this.id = id;
     this.maxSpeed = maxSpeed * 0.5;
@@ -39,7 +39,7 @@ export class Ant extends SpriteWithCollisions {
     this.attachedFoodSprite = undefined;
     this.recentlyVistedScentParticles = [];
     this.rotationSignChangeTimer = new Timer(0.2, undefined, 0.2, 1);
-    this.scentEmissionTimer = new Timer(0.25);
+    this.scentEmissionTimer = new Timer(0.15);
   }
 
   getRotationAtPoint(x: number, y: number): number {
