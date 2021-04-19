@@ -24,7 +24,7 @@ export class Ant extends SpriteWithCollisions {
   rotationSignChangeTimer: Timer;
   scentEmissionTimer: Timer;
 
-  constructor(id: number, x: number, y: number, maxSpeed = 30, nestScent = 32, scale = 0.2) {
+  constructor(id: number, x: number, y: number, maxSpeed = 30, scale = 0.2, nestScent = 32) {
     const rotation = Math.atan2(randomInRange(-1, 1), randomInRange(-1, 1));
     super(AntImage, new Circle(x, y, scale * 8, ANT) as Shape, x, y, scale, rotation);
 

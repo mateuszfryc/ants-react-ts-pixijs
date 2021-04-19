@@ -60,6 +60,7 @@ export const setupSimulation = (
   particles: PIXI.ParticleContainer,
   draw: PIXI.Graphics,
 ): void => {
+  console.log(particles);
   const { updateFPSDisplay } = setupFPSDisplay();
   const { updateAntsCounter } = setupAntCounter();
   const { Sprite } = PIXI;
@@ -77,7 +78,7 @@ export const setupSimulation = (
     SCENT_FOOD,
   } = TAGS;
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
-  collisions.createWorldBounds(app.view.width, app.view.height);
+  const worldBounds = collisions.createWorldBounds(app.view.width, app.view.height, 20, -19);
 
   const pheromones = new Map<Pheromone, Pheromone>();
   let scentIdCounter = 0;
@@ -117,6 +118,16 @@ export const setupSimulation = (
     const deltaTime = (frameStartTime - lastTime) / 1000;
     let antsOnScreenCounter = 0;
 
+    // update of the position of all moving bodies must be done before calling collisions.update()
+    // for the collision tests to work properly
+    for (const ant of ants) {
+      const { body, speed, rotation } = ant;
+      body.x -=
+        Math.cos(rotation + Math.PI * 0.5) * deltaTime * speed /* (leftMouseDown ? 150 : speed) */;
+      body.y -=
+        Math.sin(rotation + Math.PI * 0.5) * deltaTime * speed /* (leftMouseDown ? 150 : speed) */;
+    }
+
     collisions.update();
     for (const ant of ants) {
       const { body, maxSpeed } = ant;
@@ -129,10 +140,6 @@ export const setupSimulation = (
 
       if (speed < maxSpeed) speed += deltaTime * 4;
       if (speed > maxSpeed) speed = maxSpeed;
-      body.x -=
-        Math.cos(rotation + Math.PI * 0.5) * deltaTime * speed /* (leftMouseDown ? 150 : speed) */;
-      body.y -=
-        Math.sin(rotation + Math.PI * 0.5) * deltaTime * speed /* (leftMouseDown ? 150 : speed) */;
 
       let targetRotation = rotation;
       const reversedRotation = rotation - PI;
@@ -166,8 +173,8 @@ export const setupSimulation = (
             case OBSTACLE:
               body.x -= overlap! * overlap_x;
               body.y -= overlap! * overlap_y;
-              speed = maxSpeed * 0.5;
-              targetRotation -= PI;
+              speed = maxSpeed * 0.3;
+              followedScent = targetRotation - PI * 0.5 * -ant.rotationSign;
               break;
 
             case NEST_VISIBLE_AREA:
@@ -363,6 +370,9 @@ export const setupSimulation = (
     draw.clear();
     draw.lineStyle(1, 0x990000);
     osbtacle.draw(draw);
+    for (const bound of worldBounds) {
+      bound.draw(draw);
+    }
     // collisions.draw(draw);
 
     if (debugLogTimer.update(deltaTime)) {
@@ -385,14 +395,13 @@ export const setupSimulation = (
         nest.x + randomSign() * randomInRange(radius - 15, radius - 2),
         nest.y + randomSign() * randomInRange(radius - 15, radius - 2),
         randomInRange(70, 80),
-        // 0.5,
       );
 
       ants.push(ant);
       collisions.insert(ant.body as Shape);
       particles.addChild(ant);
-      if (ants.length < numberOfAnts - 1) releaseTheAnts();
-    }, 50);
+      if (ants.length < numberOfAnts) releaseTheAnts();
+    }, 30);
   }
 
   releaseTheAnts();
