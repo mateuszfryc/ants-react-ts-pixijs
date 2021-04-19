@@ -25,19 +25,24 @@ export const Content = styled.div(
 );
 
 export const App: React.FC = () => {
+  const simInitLock = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const { current } = contentRef;
-    if (current) {
-      const { app, particles, draw } = setupGraphics(current);
-      setupSimulation(current, app, particles, draw);
-      app.start();
-      updateRendererSize(current);
+    if (!simInitLock.current) {
+      const { current } = contentRef;
+      if (current) {
+        const { app, particles, draw } = setupGraphics(current);
+        setupSimulation(current, app, particles, draw);
+        app.start();
+        updateRendererSize(current);
 
-      window.addEventListener('resize', () => {
-        updateRendererSize(current!);
-      });
+        window.addEventListener('resize', () => {
+          updateRendererSize(current!);
+        });
+
+        simInitLock.current = true;
+      }
     }
   }, []);
 

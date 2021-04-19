@@ -1,10 +1,12 @@
 import React from 'react';
 import styled, { css } from 'styled-components';
+import { Flex } from '../Flex';
 
 const Bar = styled.div(
   ({ theme: { colors } }) => css`
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 8px;
     height: 20px;
     position: fixed;
@@ -34,15 +36,25 @@ const fpsWidth = '40px';
 export const StatusBar: React.FC = () => {
   return (
     <Bar>
-      <Status id='status-fps' style={{ width: fpsWidth }}>
-        FPS: <span>0</span>
-      </Status>
-      <Status id='status-fps-min' style={{ width: fpsWidth }}>
-        MIN: <span>0</span>
-      </Status>
-      <Status id='status-fps-max' style={{ width: fpsWidth }}>
-        MAX: <span>0</span>
-      </Status>
+      <Flex>
+        <Status id='status-fps' style={{ width: fpsWidth }}>
+          FPS: <span>0</span>
+        </Status>
+        <Status id='status-fps-min' style={{ width: fpsWidth }}>
+          MIN: <span>0</span>
+        </Status>
+        <Status id='status-fps-max' style={{ width: fpsWidth }}>
+          MAX: <span>0</span>
+        </Status>
+      </Flex>
+      <Flex>
+        <Status id='status-ants-total' style={{ width: '80px' }}>
+          Ants total: <span>0</span>
+        </Status>
+        <Status id='status-ants-on-screen' style={{ width: '120px' }}>
+          Ants on screen: <span>0</span>
+        </Status>
+      </Flex>
     </Bar>
   );
 };

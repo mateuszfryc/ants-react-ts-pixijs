@@ -8,7 +8,7 @@ import { SpriteWithCollisions } from 'simulation/SpriteWithCollisions';
 import { Shape } from 'simulation/collisions/proxyTypes';
 import { mapRangeClamped } from 'utils/math';
 
-const scentInitialLifetime = 32;
+const scentInitialLifetime = 48;
 
 const { SCENT_NEST } = TAGS;
 export class Pheromone extends SpriteWithCollisions {

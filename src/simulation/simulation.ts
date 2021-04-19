@@ -17,7 +17,7 @@ import { Nest } from 'simulation/Nest';
 import { Pheromone } from 'simulation/Pheromone';
 import { Food } from 'simulation/Food';
 import FoodImage from 'assets/food.png';
-import { setupFPSDisplay } from './debug';
+import { setupAntCounter, setupFPSDisplay } from './debug';
 import { Timer } from './Timer';
 
 let xMouse = 0;
@@ -61,6 +61,7 @@ export const setupSimulation = (
   draw: PIXI.Graphics,
 ): void => {
   const { updateFPSDisplay } = setupFPSDisplay();
+  const { updateAntsCounter } = setupAntCounter();
   const { Sprite } = PIXI;
   const foodChunkTexture = PIXI.Texture.from(FoodImage);
   const result = new Result();
@@ -109,12 +110,12 @@ export const setupSimulation = (
   const ants: Ant[] = [];
 
   let lastTime = performance.now();
-  const fpsLogTimer = new Timer(0.5);
+  const debugLogTimer = new Timer(0.5);
 
   function simulationUpdate() {
     const frameStartTime = performance.now();
     const deltaTime = (frameStartTime - lastTime) / 1000;
-    if (fpsLogTimer.update(deltaTime)) updateFPSDisplay(deltaTime);
+    let antsOnScreenCounter = 0;
 
     collisions.update();
     for (const ant of ants) {
@@ -324,6 +325,10 @@ export const setupSimulation = (
       ant.rotation = targetRotation;
       ant.hasFood = hasFood;
       ant.foundFood = foundFood;
+
+      // debug: test if the ant is on screen
+      if (ant.x > 0 && ant.y > 0 && ant.x < worldWidth && ant.y < worldHeight)
+        antsOnScreenCounter++;
     }
 
     // eslint-disable-next-line unicorn/no-array-for-each
@@ -359,6 +364,11 @@ export const setupSimulation = (
     draw.lineStyle(1, 0x990000);
     osbtacle.draw(draw);
     // collisions.draw(draw);
+
+    if (debugLogTimer.update(deltaTime)) {
+      updateFPSDisplay(deltaTime);
+      updateAntsCounter(ants.length, antsOnScreenCounter);
+    }
 
     lastTime = frameStartTime;
   }

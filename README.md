@@ -15,5 +15,13 @@
   - [ ] once the scent is found selection of the right direction
 
 - [ ] bringing food back to the nest
+
   - [ ] following own scent
   - [ ] finding the nest when there is no own scent
+
+- [ ] pheromones
+  - [x] nest
+  - [x] food
+  - [ ] danger (released uppon death, this would have to work differently, meaby have bigger radius)
+  - [ ] defend the nest
+  - [ ] take care for the nest
