@@ -367,7 +367,7 @@ export const setupSimulation = (
 
     if (debugLogTimer.update(deltaTime)) {
       updateFPSDisplay(deltaTime);
-      updateAntsCounter(ants.length, antsOnScreenCounter);
+      updateAntsCounter(ants.length, ants.length - antsOnScreenCounter);
     }
 
     lastTime = frameStartTime;

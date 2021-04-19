@@ -23,7 +23,7 @@ export class Result {
     this.b_in_a = false;
 
     // The magnitude of the shortest axis of overlap
-    this.overlap = 0;
+    this.overlap = undefined;
 
     // The X direction of the shortest axis of overlap
     this.overlap_x = 0;

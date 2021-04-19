@@ -24,8 +24,7 @@ export const mapRangeClamped = (
 
 export const randomSign = (): number => Math.round(Math.random()) * 2 - 1;
 
-export const randomInRange = (min: number, max: number): number =>
-  Math.random() * (max - min) + min;
+export const randomInRange = (min = 0, max = 1): number => Math.random() * (max - min) + min;
 
 export const getDistanceFromPointAtoB = (
   ax: number,

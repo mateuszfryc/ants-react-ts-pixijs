@@ -42,6 +42,7 @@
     "newline-before-return": ["warn"],
     "no-plusplus": 0,
     "no-console": "warn",
+    "prefer-const": 0,
     "no-nested-ternary": 0,
     "no-shadow": "warn",
     "no-use-before-define": 0,

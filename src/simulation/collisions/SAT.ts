@@ -183,112 +183,92 @@ export const polygonCircle = (
   let overlap_x = 0;
   let overlap_y = 0;
 
-  // Handle points specially
-  if (count === 2) {
-    const coord_x = b_x - a_coords[0];
-    const coord_y = b_y - a_coords[1];
-    const length_squared = coord_x * coord_x + coord_y * coord_y;
+  for (let ix = 0, iy = 1; ix < count; ix += 2, iy += 2) {
+    const coord_x = b_x - a_coords[ix];
+    const coord_y = b_y - a_coords[iy];
+    const edge_x = a_edges[ix];
+    const edge_y = a_edges[iy];
+    const dot = coord_x * edge_x + coord_y * edge_y;
+    // prettier-ignore
+    const region = dot < 0
+      ? -1
+      : dot > edge_x * edge_x + edge_y * edge_y
+        ? 1
+        : 0;
 
-    if (length_squared > radius_squared) {
-      return false;
+    let tmp_overlapping = false;
+    let tmp_overlap = 0;
+    let tmp_overlap_x = 0;
+    let tmp_overlap_y = 0;
+
+    if (result && a_in_b && coord_x * coord_x + coord_y * coord_y > radius_squared) {
+      a_in_b = false;
     }
 
-    if (result) {
-      const length = Math.sqrt(length_squared);
-
-      overlap = b_radius - length;
-      overlap_x = coord_x / length;
-      overlap_y = coord_y / length;
-      b_in_a = false;
-    }
-  } else {
-    for (let ix = 0, iy = 1; ix < count; ix += 2, iy += 2) {
-      const coord_x = b_x - a_coords[ix];
-      const coord_y = b_y - a_coords[iy];
-      const edge_x = a_edges[ix];
-      const edge_y = a_edges[iy];
-      const dot = coord_x * edge_x + coord_y * edge_y;
+    if (region) {
+      const left = region === -1;
       // prettier-ignore
-      const region = dot < 0
+      const other_x = left
+        ? ix === 0 ? count - 2 : ix - 2
+        : ix === count - 2 ? 0 : ix + 2;
+      const other_y = other_x + 1;
+      const coord2_x = b_x - a_coords[other_x];
+      const coord2_y = b_y - a_coords[other_y];
+      const edge2_x = a_edges[other_x];
+      const edge2_y = a_edges[other_y];
+      const dot2 = coord2_x * edge2_x + coord2_y * edge2_y;
+      // prettier-ignore
+      const region2 = dot2 < 0
         ? -1
-        : dot > edge_x * edge_x + edge_y * edge_y
+        : dot2 > edge2_x * edge2_x + edge2_y * edge2_y
           ? 1
           : 0;
 
-      let tmp_overlapping = false;
-      let tmp_overlap = 0;
-      let tmp_overlap_x = 0;
-      let tmp_overlap_y = 0;
+      if (region2 === -region) {
+        const target_x = left ? coord_x : coord2_x;
+        const target_y = left ? coord_y : coord2_y;
+        const length_squared = target_x * target_x + target_y * target_y;
 
-      if (result && a_in_b && coord_x * coord_x + coord_y * coord_y > radius_squared) {
-        a_in_b = false;
-      }
-
-      if (region) {
-        const left = region === -1;
-        // prettier-ignore
-        const other_x = left
-          ? ix === 0 ? count - 2 : ix - 2
-          : ix === count - 2 ? 0 : ix + 2;
-        const other_y = other_x + 1;
-        const coord2_x = b_x - a_coords[other_x];
-        const coord2_y = b_y - a_coords[other_y];
-        const edge2_x = a_edges[other_x];
-        const edge2_y = a_edges[other_y];
-        const dot2 = coord2_x * edge2_x + coord2_y * edge2_y;
-        // prettier-ignore
-        const region2 = dot2 < 0
-          ? -1
-          : dot2 > edge2_x * edge2_x + edge2_y * edge2_y
-            ? 1
-            : 0;
-
-        if (region2 === -region) {
-          const target_x = left ? coord_x : coord2_x;
-          const target_y = left ? coord_y : coord2_y;
-          const length_squared = target_x * target_x + target_y * target_y;
-
-          if (length_squared > radius_squared) {
-            return false;
-          }
-
-          if (result) {
-            const length = Math.sqrt(length_squared);
-
-            tmp_overlapping = true;
-            tmp_overlap = b_radius - length;
-            tmp_overlap_x = target_x / length;
-            tmp_overlap_y = target_y / length;
-            b_in_a = false;
-          }
-        }
-      } else {
-        const normal_x = a_normals[ix];
-        const normal_y = a_normals[iy];
-        const length = coord_x * normal_x + coord_y * normal_y;
-        const absolute_length = length < 0 ? -length : length;
-
-        if (length > 0 && absolute_length > b_radius) {
+        if (length_squared > radius_squared) {
           return false;
         }
 
         if (result) {
+          const length = Math.sqrt(length_squared);
+
           tmp_overlapping = true;
           tmp_overlap = b_radius - length;
-          tmp_overlap_x = normal_x;
-          tmp_overlap_y = normal_y;
-
-          if ((b_in_a && length >= 0) || tmp_overlap < b_radius2) {
-            b_in_a = false;
-          }
+          tmp_overlap_x = target_x / length;
+          tmp_overlap_y = target_y / length;
+          b_in_a = false;
         }
       }
+    } else {
+      const normal_x = a_normals[ix];
+      const normal_y = a_normals[iy];
+      const length = coord_x * normal_x + coord_y * normal_y;
+      const absolute_length = length < 0 ? -length : length;
 
-      if (tmp_overlapping && (overlap === undefined || overlap > tmp_overlap)) {
-        overlap = tmp_overlap;
-        overlap_x = tmp_overlap_x;
-        overlap_y = tmp_overlap_y;
+      if (length > 0 && absolute_length > b_radius) {
+        return false;
       }
+
+      if (result) {
+        tmp_overlapping = true;
+        tmp_overlap = b_radius - length;
+        tmp_overlap_x = normal_x;
+        tmp_overlap_y = normal_y;
+
+        if ((b_in_a && length >= 0) || tmp_overlap < b_radius2) {
+          b_in_a = false;
+        }
+      }
+    }
+
+    if (tmp_overlapping && (overlap === undefined || overlap > tmp_overlap)) {
+      overlap = tmp_overlap;
+      overlap_x = tmp_overlap_x;
+      overlap_y = tmp_overlap_y;
     }
   }
 

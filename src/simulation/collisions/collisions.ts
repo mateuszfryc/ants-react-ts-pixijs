@@ -103,71 +103,37 @@ export class Collisions {
     return bvh.potentials(shape);
   }
 
-  createWorldBounds(width: number, height: number, padding = 1): Polygon[] {
-    // the below is just in case js loop would not be able to handle all collision tests
-    const collisionSafeDistance = 30;
-    const top = this.addPolygon(
-      0,
-      0,
-      [
-        [0, 0],
-        [width, 0],
-        [width, padding],
-        [0, padding],
-      ],
-      TAGS.OBSTACLE,
-      0,
-      1,
-      1,
-      collisionSafeDistance,
-    );
-    const right = this.addPolygon(
-      0,
-      0,
-      [
-        [width - padding, 0],
-        [width, 0],
-        [width, height],
-        [width - padding, height],
-      ],
-      TAGS.OBSTACLE,
-      0,
-      1,
-      1,
-      collisionSafeDistance,
-    );
+  addSingleWorldBound(points: number[][], collisionPadding = 0): Polygon {
+    return this.addPolygon(0, 0, points, TAGS.OBSTACLE, 0, 1, 1, collisionPadding);
+  }
+
+  createWorldBounds(width: number, height: number, thickness = 10, offset = 0): Polygon[] {
     // this is required for the status bar
-    const bottomPadding = padding + 20;
-    const bottom = this.addPolygon(
-      0,
-      0,
-      [
-        [0, height - bottomPadding],
-        [width, height - bottomPadding],
-        [width, height],
-        [0, height],
-      ],
-      TAGS.OBSTACLE,
-      0,
-      1,
-      1,
-      collisionSafeDistance,
-    );
-    const left = this.addPolygon(
-      0,
-      0,
-      [
-        [0, 0],
-        [padding, 0],
-        [padding, height],
-        [0, height],
-      ],
-      TAGS.OBSTACLE,
-      0,
-      1,
-      1,
-      collisionSafeDistance,
-    );
+    const bottomPadding = 20;
+    const top = this.addSingleWorldBound([
+      [offset, offset],
+      [width - offset, offset],
+      [width - offset, thickness + offset],
+      [offset, thickness + offset],
+    ]);
+    const right = this.addSingleWorldBound([
+      [width - thickness - offset, offset],
+      [width - offset, offset],
+      [width - offset, height - offset - bottomPadding],
+      [width - thickness - offset, height - offset - bottomPadding],
+    ]);
+    const bottom = this.addSingleWorldBound([
+      [offset, height - thickness - bottomPadding - offset],
+      [width - offset, height - thickness - bottomPadding - offset],
+      [width - offset, height - bottomPadding - offset],
+      [offset, height - bottomPadding - offset],
+    ]);
+    const left = this.addSingleWorldBound([
+      [0 + offset, offset],
+      [thickness + offset, offset],
+      [thickness + offset, height - bottomPadding - offset],
+      [0 + offset, height - bottomPadding - offset],
+    ]);
 
     return [top, right, bottom, left];
   }

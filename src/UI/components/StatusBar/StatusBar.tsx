@@ -52,7 +52,7 @@ export const StatusBar: React.FC = () => {
           Ants total: <span>0</span>
         </Status>
         <Status id='status-ants-on-screen' style={{ width: '120px' }}>
-          Ants on screen: <span>0</span>
+          Ants OFF screen: <span>0</span>
         </Status>
       </Flex>
     </Bar>
