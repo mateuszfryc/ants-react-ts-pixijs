@@ -5,6 +5,7 @@ import { Navigation } from 'UI/components/Navigation';
 import { SEO } from 'UI/components/SEO';
 import { setupGraphics, updateRendererSize } from 'utils/graphics';
 import { setupSimulation } from 'simulation/simulation';
+import { setupCollisionsTest } from 'simulation/collisions/collisions-test';
 import { StatusBar } from '../StatusBar';
 
 export const AppContainer = styled.div(
@@ -33,7 +34,8 @@ export const App: React.FC = () => {
       const { current } = contentRef;
       if (current) {
         const { app, particles, draw } = setupGraphics(current);
-        setupSimulation(current, app, particles, draw);
+        // setupSimulation(current, app, particles, draw);
+        setupCollisionsTest(app, current, draw);
         app.start();
         updateRendererSize(current);
 

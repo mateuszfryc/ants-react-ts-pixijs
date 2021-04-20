@@ -25,8 +25,8 @@ export class Collisions {
     this._bvh = new BVH();
   }
 
-  addCircle(x = 0, y = 0, radius = 0, tag = TAGS.ANT, scale = 1, padding = 0): Circle {
-    const body = new Circle(x, y, radius, tag, scale, padding) as Shape;
+  addCircle(x = 0, y = 0, radius = 1, tag = TAGS.ANT, scale = 1, padding = 0, id = 0): Circle {
+    const body = new Circle(x, y, radius, tag, scale, padding, id) as Shape;
 
     const removeSelf = (): void => {
       this.remove(body);

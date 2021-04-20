@@ -23,6 +23,7 @@ export class Ant extends SpriteWithCollisions {
   recentlyVistedScentParticles: number[];
   rotationSignChangeTimer: Timer;
   scentEmissionTimer: Timer;
+  followedScendAge: number;
 
   constructor(id: number, x: number, y: number, maxSpeed = 30, scale = 0.2, nestScent = 32) {
     const rotation = Math.atan2(randomInRange(-1, 1), randomInRange(-1, 1));
@@ -40,6 +41,7 @@ export class Ant extends SpriteWithCollisions {
     this.recentlyVistedScentParticles = [];
     this.rotationSignChangeTimer = new Timer(0.2, undefined, 0.2, 1);
     this.scentEmissionTimer = new Timer(0.15);
+    this.followedScendAge = 0;
   }
 
   getRotationAtPoint(x: number, y: number): number {

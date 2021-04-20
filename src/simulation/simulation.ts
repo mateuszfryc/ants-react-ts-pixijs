@@ -101,12 +101,12 @@ export const setupSimulation = (
     app.stage.addChild(foodPeace);
   }
 
-  const osbtacle = collisions.addPolygon(worldWidth * 0.45, worldHeight * 0.2, [
-    [0, 0],
-    [worldWidth * 0.1, 0],
-    [worldWidth * 0.1, worldHeight * 0.6],
-    [0, worldHeight * 0.6],
-  ]);
+  // const osbtacle = collisions.addPolygon(worldWidth * 0.45, worldHeight * 0.2, [
+  //   [0, 0],
+  //   [worldWidth * 0.1, 0],
+  //   [worldWidth * 0.1, worldHeight * 0.6],
+  //   [0, worldHeight * 0.6],
+  // ]);
 
   const ants: Ant[] = [];
 
@@ -136,7 +136,7 @@ export const setupSimulation = (
       const makes180turn = false;
       let followedScent: number | undefined;
       // used to test which scent is oldest, which might mean it leads to the nest
-      let followedScendAge = 0;
+      let { followedScendAge } = ant;
 
       if (speed < maxSpeed) speed += deltaTime * 4;
       if (speed > maxSpeed) speed = maxSpeed;
@@ -174,7 +174,7 @@ export const setupSimulation = (
               body.x -= overlap! * overlap_x;
               body.y -= overlap! * overlap_y;
               speed = maxSpeed * 0.3;
-              followedScent = targetRotation - PI * 0.5 * -ant.rotationSign;
+              followedScent = targetRotation - PI * -ant.rotationSign;
               break;
 
             case NEST_VISIBLE_AREA:
@@ -233,6 +233,7 @@ export const setupSimulation = (
                   !followedScent)
               ) {
                 followedScent = normalizeRadians(foodScent.pointsToDirection);
+                ant.recentlyVistedScentParticles.push(foodScent.id);
               }
               break;
 
@@ -246,6 +247,7 @@ export const setupSimulation = (
               ) {
                 followedScent = normalizeRadians(pointsToDirection);
                 followedScendAge = strength;
+                ant.recentlyVistedScentParticles.push(id);
               }
               break;
 
@@ -256,7 +258,7 @@ export const setupSimulation = (
         }
       }
 
-      if (ant.recentlyVistedScentParticles.length > 63) ant.recentlyVistedScentParticles = [];
+      if (ant.recentlyVistedScentParticles.length > 127) ant.recentlyVistedScentParticles.shift();
 
       if (leftMouseDown) {
         // targetRotation = ant.getRotationAtPoint(xMouse, yMouse);
@@ -332,6 +334,7 @@ export const setupSimulation = (
       ant.rotation = targetRotation;
       ant.hasFood = hasFood;
       ant.foundFood = foundFood;
+      ant.followedScendAge = followedScendAge;
 
       // debug: test if the ant is on screen
       if (ant.x > 0 && ant.y > 0 && ant.x < worldWidth && ant.y < worldHeight)
@@ -369,7 +372,7 @@ export const setupSimulation = (
 
     draw.clear();
     draw.lineStyle(1, 0x990000);
-    osbtacle.draw(draw);
+    // osbtacle.draw(draw);
     for (const bound of worldBounds) {
       bound.draw(draw);
     }

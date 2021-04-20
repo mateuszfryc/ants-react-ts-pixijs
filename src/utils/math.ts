@@ -70,3 +70,10 @@ export const getMiddleOfTwoRadians = (a: number, b: number): number => {
 export const getRadiansFromPointAtoB = (ax: number, ay: number, bx: number, by: number): number => {
   return -Math.atan2(ax - bx, ay - by);
 };
+
+export const doNTimes = (callback: () => void, n: number): void => {
+  let i = 0;
+  for (i; i < n; i++) {
+    callback();
+  }
+};
