@@ -23,8 +23,6 @@ export const setupCollisionsTest = (
   const { updateAntsCounter } = setupAntCounter();
   let antsOnScreenCounter = 0;
 
-  const antsCount = 100;
-  let antsIdCounter = 0;
   const ants: Circle[] = [];
   const antsProps: number[][] = [];
   const timers = new Map<number, Timer>();
@@ -51,6 +49,7 @@ export const setupCollisionsTest = (
       const props = antsProps[id];
       let [speed, xv, yv, xvTarget, yvTarget, maxSpeed, speedTarget, rotationDirectionSign] = props;
       let performInstanRotation = false;
+      let performInstanSpeedChange = false;
       for (const other of collisions.getPotentials(ant as Shape)) {
         if (collisions.isCollision(ant as Shape, other, result)) {
           const { overlap, overlap_x, overlap_y } = result;
@@ -61,6 +60,7 @@ export const setupCollisionsTest = (
           let dot = xvTarget * overlap_y + yvTarget * -overlap_x;
           xvTarget = 2 * dot * overlap_y - xvTarget;
           yvTarget = 2 * dot * -overlap_x - yvTarget;
+          performInstanSpeedChange = true;
           speedTarget = maxSpeed * 0;
         }
       }
@@ -70,7 +70,7 @@ export const setupCollisionsTest = (
         rotationDirectionSign *= -1;
         if (!performInstanRotation) {
           speedTarget = randomInRange(maxSpeed * 0.5, maxSpeed);
-          const angle = random() * 15;
+          const angle = random() * 5;
           xvTarget += (random() * angle - angle * 0.5) * rotationDirectionSign;
           yvTarget += (random() * angle - angle * 0.5) * rotationDirectionSign;
           // normalize velocity
@@ -81,8 +81,15 @@ export const setupCollisionsTest = (
       }
 
       if (speedTarget !== speed) {
-        speed = interpolate(speed, speedTarget, deltaTime, 2);
-      } else if (speedTarget !== maxSpeed) speedTarget = maxSpeed;
+        speed = interpolate(
+          speed,
+          speedTarget,
+          deltaTime,
+          performInstanSpeedChange ? maxSpeed * 0.9 : 2,
+        );
+      } else if (speedTarget !== maxSpeed) {
+        speedTarget = maxSpeed;
+      }
 
       if (performInstanRotation) {
         xv = xvTarget;
@@ -126,6 +133,9 @@ export const setupCollisionsTest = (
     lastTime = frameStartTime;
   }
 
+  const antsCount = 100;
+  let antsIdCounter = 0;
+
   function releaseTheAnts() {
     setTimeout(() => {
       const ant = collisions.addCircle(
@@ -137,7 +147,7 @@ export const setupCollisionsTest = (
         0, // padding
         antsIdCounter,
       );
-      timers.set(antsIdCounter, new Timer(undefined, undefined, 0.1, 1.5));
+      timers.set(antsIdCounter, new Timer(undefined, undefined, 0.3, 1.5));
 
       // x and y random and normalized velocity
       let xv = Math.random() * 2 - 1;
@@ -147,9 +157,9 @@ export const setupCollisionsTest = (
       yv /= lenght;
       const xvTarget = xv;
       const yvTarget = yv;
-      const speed = randomInRange(60, 70);
-      const maxSpeed = speed;
-      const targetSpeed = speed;
+      const maxSpeed = randomInRange(60, 70);
+      const speed = maxSpeed * 0.5;
+      const targetSpeed = maxSpeed;
       const rotationDirection = randomSign();
       antsProps[antsIdCounter] = [
         speed,
@@ -165,7 +175,7 @@ export const setupCollisionsTest = (
       ants.push(ant);
       antsIdCounter++;
       if (ants.length < antsCount) releaseTheAnts();
-    }, 50);
+    }, 100);
   }
 
   releaseTheAnts();
