@@ -3,52 +3,71 @@ import * as PIXI from 'pixi.js';
 import AntImage from 'assets/ant-red.png';
 import { Circle } from 'simulation/collisions/circle';
 import { TAGS } from 'simulation/collisions/collisions';
-import { randomInRange } from 'utils/math';
-import { SpriteWithCollisions } from 'simulation/SpriteWithCollisions';
-import { Shape } from 'simulation/collisions/proxyTypes';
+import { randomInRange, randomSign } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 
-const { ANT } = TAGS;
+let antsIdCounter = 0;
 
-export class Ant extends SpriteWithCollisions {
-  id: number;
-  speed: number;
-  maxSpeed: number;
-  rotationSign: number;
-  nestScent: number;
-  foodScent: number;
-  hasFood: boolean;
-  foundFood: boolean;
-  attachedFoodSprite: PIXI.Sprite | undefined;
-  recentlyVistedScentParticles: number[];
-  rotationSignChangeTimer: Timer;
-  scentEmissionTimer: Timer;
-  followedScendAge: number;
+export function spawnAnt(x: number, y: number, size = 3): any {
+  const antCollisionShape = new Circle(
+    x,
+    y,
+    size, // radius
+    TAGS.ANT,
+    1, // scale
+    0, // padding
+    antsIdCounter,
+  );
 
-  constructor(id: number, x: number, y: number, maxSpeed = 30, scale = 0.2, nestScent = 32) {
-    const rotation = Math.atan2(randomInRange(-1, 1), randomInRange(-1, 1));
-    super(AntImage, new Circle(x, y, scale * 8, ANT) as Shape, x, y, scale, rotation);
+  const antSprite = PIXI.Sprite.from(AntImage);
+  antSprite.scale.set(size * 0.09);
+  antSprite.anchor.set(0.5);
 
-    this.id = id;
-    this.maxSpeed = maxSpeed * 0.5;
-    this.speed = maxSpeed;
-    this.rotationSign = Math.random() * 2 - 1;
-    this.nestScent = nestScent;
-    this.foodScent = 0;
-    this.hasFood = false;
-    this.foundFood = false;
-    this.attachedFoodSprite = undefined;
-    this.recentlyVistedScentParticles = [];
-    this.rotationSignChangeTimer = new Timer(0.2, undefined, 0.2, 1);
-    this.scentEmissionTimer = new Timer(0.15);
-    this.followedScendAge = 0;
-  }
+  const rotationChangeTimer = new Timer(undefined, undefined, 0.2, 1);
 
-  getRotationAtPoint(x: number, y: number): number {
-    return -Math.atan2(this.x - x, this.y - y);
-  }
+  // x and y random and normalized velocity
+  let xv = Math.random() * 2 - 1;
+  let yv = Math.random() * 2 - 1;
+  const lenght = Math.sqrt(xv * xv + yv * yv);
+  xv /= lenght;
+  yv /= lenght;
+  const xvTarget = xv;
+  const yvTarget = yv;
+  const maxSpeed = randomInRange(40, 50);
+  const speed = maxSpeed;
+  const targetSpeed = maxSpeed;
+  const rotationDirection = randomSign();
+  const properties = [
+    /* indexes */
+    /* 0: */ speed,
+    /* 1: */ xv,
+    /* 2: */ yv,
+    /* 3: */ xvTarget,
+    /* 4: */ yvTarget,
+    /* 5: */ maxSpeed,
+    /* 6: */ targetSpeed,
+    /* 7: */ rotationDirection,
+  ];
 
-  getRotationAwayFromPoint(x: number, y: number): number {
-    return -Math.atan2(x - this.x, y - this.y);
-  }
+  antsIdCounter++;
+
+  return [antCollisionShape, antSprite, rotationChangeTimer, properties];
+}
+
+export function releaseTheAnts(
+  worldWidth: number,
+  worldHeight: number,
+  useAntCallback: (ant: any) => boolean,
+): void {
+  setTimeout(() => {
+    const [antCollisionShape, antSprite, rotationChangeTimer, properties] = spawnAnt(
+      worldWidth * 0.5,
+      worldHeight * 0.5,
+    );
+    const { id } = antCollisionShape;
+
+    if (useAntCallback({ id, antCollisionShape, antSprite, rotationChangeTimer, properties })) {
+      releaseTheAnts(worldHeight, worldHeight, useAntCallback);
+    }
+  }, 30);
 }
