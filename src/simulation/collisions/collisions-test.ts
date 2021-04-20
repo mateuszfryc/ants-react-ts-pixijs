@@ -4,7 +4,7 @@ import { Collisions } from 'simulation/collisions/collisions';
 import { Shape } from 'simulation/collisions/proxyTypes';
 import { Result } from 'simulation/collisions/result';
 import { setupAntCounter, setupFPSDisplay } from 'simulation/debug';
-import { randomInRange, randomSign } from 'utils/math';
+import { interpolate, randomInRange, randomSign } from 'utils/math';
 import { Timer } from '../Timer';
 import { Circle } from './circle';
 
@@ -23,7 +23,7 @@ export const setupCollisionsTest = (
   const { updateAntsCounter } = setupAntCounter();
   let antsOnScreenCounter = 0;
 
-  const antsCount = 2000;
+  const antsCount = 100;
   let antsIdCounter = 0;
   const ants: Circle[] = [];
   const antsProps: number[][] = [];
@@ -39,7 +39,7 @@ export const setupCollisionsTest = (
 
     for (const ant of ants) {
       const { id } = ant;
-      const [xv, yv, speed] = antsProps[id];
+      const [speed, xv, yv] = antsProps[id];
       ant.x += speed * xv * deltaTime;
       ant.y += speed * yv * deltaTime;
     }
@@ -49,42 +49,64 @@ export const setupCollisionsTest = (
     for (const ant of ants) {
       let { id } = ant;
       const props = antsProps[id];
-      let [xv, yv, speed, maxSpeed, rotationDirectionSign] = props;
-      let performRandomRotation = true;
+      let [speed, xv, yv, xvTarget, yvTarget, maxSpeed, speedTarget, rotationDirectionSign] = props;
+      let performInstanRotation = false;
       for (const other of collisions.getPotentials(ant as Shape)) {
         if (collisions.isCollision(ant as Shape, other, result)) {
           const { overlap, overlap_x, overlap_y } = result;
 
           ant.x -= overlap! * overlap_x;
           ant.y -= overlap! * overlap_y;
-          performRandomRotation = false;
-          let dot = xv * overlap_y + yv * -overlap_x;
-          xv = 2 * dot * overlap_y - xv;
-          yv = 2 * dot * -overlap_x - yv;
+          performInstanRotation = true;
+          let dot = xvTarget * overlap_y + yvTarget * -overlap_x;
+          xvTarget = 2 * dot * overlap_y - xvTarget;
+          yvTarget = 2 * dot * -overlap_x - yvTarget;
+          speedTarget = maxSpeed * 0;
         }
       }
 
       const rotationChangeTImer = timers.get(id);
       if (rotationChangeTImer!.update(deltaTime)) {
         rotationDirectionSign *= -1;
-        if (performRandomRotation) {
-          // const angle = random();
-          // // eslint-disable-next-line prettier/prettier
-          // xv += (cos(angle) * ant.x - sin(angle) * ant.y) - ant.x * rotationDirectionSign;
-          // // eslint-disable-next-line prettier/prettier
-          // yv += (sin(angle) * ant.x + cos(angle) * ant.y) - ant.y * rotationDirectionSign;
-          xv += (random() * 0.25 - 0.125) * rotationDirectionSign;
-          yv += (random() * 0.25 - 0.125) * rotationDirectionSign;
+        if (!performInstanRotation) {
+          speedTarget = randomInRange(maxSpeed * 0.5, maxSpeed);
+          const angle = random() * 15;
+          xvTarget += (random() * angle - angle * 0.5) * rotationDirectionSign;
+          yvTarget += (random() * angle - angle * 0.5) * rotationDirectionSign;
           // normalize velocity
-          const length = Math.sqrt(xv * xv + yv * yv);
-          xv /= length;
-          yv /= length;
+          const length = Math.sqrt(xvTarget * xvTarget + yvTarget * yvTarget);
+          xvTarget /= length;
+          yvTarget /= length;
         }
       }
 
-      if (speed < maxSpeed) speed += deltaTime + 4;
-      if (speed > maxSpeed) speed = maxSpeed;
-      antsProps[id] = [xv, yv, speed, maxSpeed, rotationDirectionSign];
+      if (speedTarget !== speed) {
+        speed = interpolate(speed, speedTarget, deltaTime, 2);
+      } else if (speedTarget !== maxSpeed) speedTarget = maxSpeed;
+
+      if (performInstanRotation) {
+        xv = xvTarget;
+        yv = yvTarget;
+      } else {
+        if (xvTarget !== xv) {
+          xv = interpolate(xv, xvTarget, deltaTime, (maxSpeed * 0.5) / speed);
+        }
+
+        if (yvTarget !== yv) {
+          yv = interpolate(yv, yvTarget, deltaTime, (maxSpeed * 0.5) / speed);
+        }
+      }
+
+      antsProps[id] = [
+        speed,
+        xv,
+        yv,
+        xvTarget,
+        yvTarget,
+        maxSpeed,
+        speedTarget,
+        rotationDirectionSign,
+      ];
 
       if (ant.x > 0 && ant.y > 0 && ant.x < worldWidth && ant.y < worldHeight)
         antsOnScreenCounter++;
@@ -115,7 +137,7 @@ export const setupCollisionsTest = (
         0, // padding
         antsIdCounter,
       );
-      timers.set(antsIdCounter, new Timer(undefined, undefined, 0.2, 1));
+      timers.set(antsIdCounter, new Timer(undefined, undefined, 0.1, 1.5));
 
       // x and y random and normalized velocity
       let xv = Math.random() * 2 - 1;
@@ -123,10 +145,22 @@ export const setupCollisionsTest = (
       const lenght = Math.sqrt(xv * xv + yv * yv);
       xv /= lenght;
       yv /= lenght;
-      const speed = randomInRange(40, 50);
+      const xvTarget = xv;
+      const yvTarget = yv;
+      const speed = randomInRange(60, 70);
       const maxSpeed = speed;
+      const targetSpeed = speed;
       const rotationDirection = randomSign();
-      antsProps[antsIdCounter] = [xv, yv, speed, maxSpeed, rotationDirection];
+      antsProps[antsIdCounter] = [
+        speed,
+        xv,
+        yv,
+        xvTarget,
+        yvTarget,
+        maxSpeed,
+        targetSpeed,
+        rotationDirection,
+      ];
 
       ants.push(ant);
       antsIdCounter++;

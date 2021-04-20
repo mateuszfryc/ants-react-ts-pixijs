@@ -45,6 +45,19 @@ export const normalizeRadians = (radians: number): number => {
   return radians;
 };
 
+export const interpolate = (
+  current: number,
+  target: number,
+  deltaTime: number,
+  speed = 4,
+): number => {
+  const diff = target - current;
+  const dffAbs = Math.abs(diff);
+  if (dffAbs < 0.05) return target;
+
+  return current + diff * deltaTime * speed;
+};
+
 export const interpolateRadians = (
   current: number,
   target: number,
