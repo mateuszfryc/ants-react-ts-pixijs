@@ -31,7 +31,7 @@ const Status = styled.div(
   `,
 );
 
-const fpsWidth = '40px';
+const fpsWidth = '45px';
 
 export const StatusBar: React.FC = () => {
   return (

@@ -8,7 +8,7 @@ import { Timer } from 'simulation/Timer';
 
 let antsIdCounter = 0;
 
-export function spawnAnt(x: number, y: number, size = 3): any {
+export function spawnAnt(x: number, y: number, size = 10): any {
   const antCollisionShape = new Circle(
     x,
     y,
@@ -34,9 +34,10 @@ export function spawnAnt(x: number, y: number, size = 3): any {
   const xvTarget = xv;
   const yvTarget = yv;
   const maxSpeed = randomInRange(40, 50);
-  const speed = maxSpeed;
+  const speed = maxSpeed * 0.5;
   const targetSpeed = maxSpeed;
   const rotationDirection = randomSign();
+  const hasFood = false;
   const properties = [
     /* indexes */
     /* 0: */ speed,
@@ -47,6 +48,7 @@ export function spawnAnt(x: number, y: number, size = 3): any {
     /* 5: */ maxSpeed,
     /* 6: */ targetSpeed,
     /* 7: */ rotationDirection,
+    /* 8: */ hasFood,
   ];
 
   antsIdCounter++;
@@ -55,19 +57,21 @@ export function spawnAnt(x: number, y: number, size = 3): any {
 }
 
 export function releaseTheAnts(
-  worldWidth: number,
-  worldHeight: number,
   useAntCallback: (ant: any) => boolean,
+  xSpawn: number,
+  ySpawn: number,
+  singleAntSize: number,
 ): void {
   setTimeout(() => {
     const [antCollisionShape, antSprite, rotationChangeTimer, properties] = spawnAnt(
-      worldWidth * 0.5,
-      worldHeight * 0.5,
+      xSpawn + randomInRange(-10, 10),
+      ySpawn + randomInRange(-10, 10),
+      singleAntSize,
     );
     const { id } = antCollisionShape;
 
     if (useAntCallback({ id, antCollisionShape, antSprite, rotationChangeTimer, properties })) {
-      releaseTheAnts(worldHeight, worldHeight, useAntCallback);
+      releaseTheAnts(useAntCallback, ySpawn, ySpawn, singleAntSize);
     }
   }, 30);
 }

@@ -6,7 +6,9 @@ export class Body extends BVHBranch {
   id: number;
   x: number;
   y: number;
-  rotation: number;
+  xv: number;
+  yv: number;
+  // rotation: number;
   padding: number;
   tag: number;
   removeSelfFromCollisions: () => void;
@@ -19,8 +21,10 @@ export class Body extends BVHBranch {
     this.id = id;
     this.x = x;
     this.y = y;
+    this.xv = 1;
+    this.yv = 0;
 
-    this.rotation = 0; // radians
+    // this.rotation = 0; // radians
     this.padding = padding;
     this.tag = tag;
     this.removeSelfFromCollisions = () => {};

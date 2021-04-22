@@ -1,30 +1,43 @@
 export const { PI } = Math;
 export const halfPI = PI * 0.5;
 export const twoPI = 2 * Math.PI;
+const { atan2, min, max, random, abs, round } = Math;
 
-export const clamp = (value: number, min = 0, max = 1): number => {
-  if (value > max) return max;
-  if (value < min) return min;
+export const clamp = (value: number, minimum = 0, maximum = 1): number => {
+  if (value > maximum) return maximum;
+  if (value < minimum) return minimum;
 
   return value;
 };
 
-export const mapRangeClamped = (
-  mappedValue: number,
+export const mapRange = (
+  x: number,
+  inMin: number,
   inMax: number,
-  inMin = 0,
-  outMax = 1,
-  outMin = 0,
+  outMin: number,
+  outMax: number,
 ): number => {
-  const ratio = mappedValue / Math.abs(inMin - inMax);
-  const valueInRange = outMax * ratio;
-
-  return clamp(valueInRange, outMin, outMax);
+  return ((x - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
 };
 
-export const randomSign = (): number => Math.round(Math.random()) * 2 - 1;
+export const mapRangeClamped = (
+  mappedValue: number,
+  inMin = 0,
+  inMax = 1,
+  outMin = 0,
+  outMax = 1,
+): number => {
+  const value = ((mappedValue - inMin) * (outMax - outMin)) / (inMax - inMin);
+  if (value > outMax) return outMax;
+  if (value < outMin) return outMin;
 
-export const randomInRange = (min = 0, max = 1): number => Math.random() * (max - min) + min;
+  return value;
+};
+
+export const randomSign = (): number => round(random()) * 2 - 1;
+
+export const randomInRange = (minimum = 0, maximum = 1): number =>
+  random() * (maximum - minimum) + minimum;
 
 export const getDistanceFromPointAtoB = (
   ax: number,
@@ -52,7 +65,7 @@ export const interpolate = (
   speed = 4,
 ): number => {
   const diff = target - current;
-  const dffAbs = Math.abs(diff);
+  const dffAbs = abs(diff);
   if (dffAbs < 0.05) return target;
 
   return current + diff * deltaTime * speed;
@@ -65,7 +78,7 @@ export const interpolateRadians = (
   speed = 4,
 ): number => {
   const diff = target - current;
-  const dffAbs = Math.abs(diff);
+  const dffAbs = abs(diff);
   if (dffAbs < 0.05) return target;
   if (dffAbs > PI) return current - diff * deltaTime * speed;
 
@@ -73,15 +86,15 @@ export const interpolateRadians = (
 };
 
 export const getMiddleOfTwoRadians = (a: number, b: number): number => {
-  const max = Math.max(a, b);
-  const min = Math.min(a, b);
-  const result = max - (max - min) * 0.5;
+  const maximum = max(a, b);
+  const minimum = min(a, b);
+  const result = maximum - (maximum - minimum) * 0.5;
 
-  return Math.abs(a) + Math.abs(b) > PI ? result - PI : result;
+  return abs(a) + abs(b) > PI ? result - PI : result;
 };
 
 export const getRadiansFromPointAtoB = (ax: number, ay: number, bx: number, by: number): number => {
-  return -Math.atan2(ax - bx, ay - by);
+  return -atan2(ax - bx, ay - by);
 };
 
 export const doNTimes = (callback: () => void, n: number): void => {

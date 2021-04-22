@@ -2,6 +2,8 @@ import * as PIXI from 'pixi.js';
 
 import { Body } from 'simulation/collisions/body';
 
+const { sin, cos } = Math;
+
 export class Circle extends Body {
   radius: number;
   scale: number;
@@ -14,10 +16,13 @@ export class Circle extends Body {
   }
 
   draw(context: PIXI.Graphics): void {
-    const { x, y } = this;
-    const radius = this.radius * this.scale;
+    const { x, y, xv, yv, radius: radiusWithoutScale, scale } = this;
+    const radius = radiusWithoutScale * scale;
 
     context.moveTo(x + radius, y);
     context.drawCircle(x, y, radius);
+    // draw angle indicator
+    context.moveTo(x, y);
+    context.lineTo(x + xv * radius, y + yv * radius);
   }
 }

@@ -1,34 +1,60 @@
+import * as PIXI from 'pixi.js';
+
 import FoodImage from 'assets/food.png';
 import { Circle } from 'simulation/collisions/circle';
 import { TAGS } from 'simulation/collisions/collisions';
-import { SpriteWithCollisions } from 'simulation/SpriteWithCollisions';
-import { Shape } from 'simulation/collisions/proxyTypes';
-import { mapRangeClamped } from 'utils/math';
+import { doNTimes, mapRangeClamped } from 'utils/math';
 
-const { FOOD, FOOD_SCENT_AREA } = TAGS;
+const { random } = Math;
 
-export class Food extends SpriteWithCollisions {
-  amount: number;
-  isEmpty: boolean;
-  scentArea: Shape;
+// export function haveABite(chunk = 1): void {
+//   const newSize = this.scale.x - mapRangeClamped(chunk, this.amount);
+//   if (newSize <= 0) {
+//     this.isEmpty = true;
+//     this.parent.removeChild(this);
+//     this.body.removeSelfFromCollisions();
+//   }
+//   this.scale.set(newSize);
+//   this.body.radius = newSize * 6;
+//   this.amount -= chunk;
+// }
 
-  constructor(x: number, y: number, size = 1) {
-    super(FoodImage, new Circle(x, y, size * 6, FOOD) as Shape, x, y, size * 0.5);
+let foodIdCounter = 0;
 
-    this.amount = size * 50;
-    this.isEmpty = false;
-    this.scentArea = new Circle(x, y, size * 16, FOOD_SCENT_AREA) as Shape;
-  }
+export function makeSomeFood(
+  useFoodCallback: (food: any) => void,
+  xSpawn: number,
+  ySpawn: number,
+  foodAmount = 10,
+  range = 100,
+  size = 10,
+): void {
+  doNTimes((): void => {
+    const id = foodIdCounter;
+    const x = xSpawn + (random() * range - range * 0.5);
+    const y = ySpawn + (random() * range - range * 0.5);
+    const foodCollisionShape = new Circle(
+      x,
+      y,
+      size, // radius
+      TAGS.FOOD,
+      1, // scale
+      0, // padding
+      id,
+    );
 
-  haveABite(chunk = 1): void {
-    const newSize = this.scale.x - mapRangeClamped(chunk, this.amount);
-    if (newSize <= 0) {
-      this.isEmpty = true;
-      this.parent.removeChild(this);
-      this.body.removeSelfFromCollisions();
-    }
-    this.scale.set(newSize);
-    this.body.radius = newSize * 6;
-    this.amount -= chunk;
-  }
+    const foodSprite = PIXI.Sprite.from(FoodImage);
+    foodSprite.x = x;
+    foodSprite.y = y;
+    foodSprite.scale.set(size * 0.09);
+    foodSprite.anchor.set(0.5);
+
+    const amount = size * 50;
+    const isEmpty = false;
+
+    const properties = [amount, isEmpty];
+
+    useFoodCallback({ id, foodCollisionShape, foodSprite, properties });
+    foodIdCounter++;
+  }, foodAmount);
 }
