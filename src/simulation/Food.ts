@@ -8,18 +8,6 @@ import { doNTimes, mapRangeClamped } from 'utils/math';
 const { random } = Math;
 let lastCreatedFoodId = 0;
 
-// export function haveABite(chunk = 1): void {
-//   const newSize = this.scale.x - mapRangeClamped(chunk, this.amount);
-//   if (newSize <= 0) {
-//     this.isEmpty = true;
-//     this.parent.removeChild(this);
-//     this.body.removeSelfFromCollisions();
-//   }
-//   this.scale.set(newSize);
-//   this.body.radius = newSize * 6;
-//   this.amount -= chunk;
-// }
-
 export const foodImageTexture = PIXI.Texture.from(FoodImage);
 
 export function spawnFood(id: number, x: number, y: number, size = 10): any {

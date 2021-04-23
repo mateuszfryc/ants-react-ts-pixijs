@@ -78,8 +78,8 @@ export function releaseTheAnts(
       propertiesFloat16,
     ] = spawnAnt(
       lastCreatedAntId,
-      xSpawn /*  + randomInRange(-10, 10) */,
-      ySpawn /*  + randomInRange(-10, 10) */,
+      xSpawn + randomInRange(-10, 10),
+      ySpawn + randomInRange(-10, 10),
       singleAntSize,
     );
     lastCreatedAntId++;
