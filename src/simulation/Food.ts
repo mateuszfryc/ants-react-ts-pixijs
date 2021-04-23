@@ -6,6 +6,7 @@ import { TAGS } from 'simulation/collisions/collisions';
 import { doNTimes, mapRangeClamped } from 'utils/math';
 
 const { random } = Math;
+let lastCreatedFoodId = 0;
 
 // export function haveABite(chunk = 1): void {
 //   const newSize = this.scale.x - mapRangeClamped(chunk, this.amount);
@@ -19,7 +20,30 @@ const { random } = Math;
 //   this.amount -= chunk;
 // }
 
-let foodIdCounter = 0;
+export function spawnFood(id: number, x: number, y: number, size = 10): any {
+  const foodCollisionShape = new Circle(
+    x,
+    y,
+    size, // radius
+    TAGS.FOOD,
+    1, // scale
+    0, // padding
+    id,
+  );
+
+  const foodSprite = PIXI.Sprite.from(FoodImage);
+  foodSprite.x = x;
+  foodSprite.y = y;
+  foodSprite.scale.set(size * 0.09);
+  foodSprite.anchor.set(0.5);
+
+  const amount = size * 50;
+  const isEmpty = false;
+
+  const properties = [amount, isEmpty];
+
+  return [id, foodCollisionShape, foodSprite, properties];
+}
 
 export function makeSomeFood(
   useFoodCallback: (food: any) => void,
@@ -30,31 +54,17 @@ export function makeSomeFood(
   size = 10,
 ): void {
   doNTimes((): void => {
-    const id = foodIdCounter;
     const x = xSpawn + (random() * range - range * 0.5);
     const y = ySpawn + (random() * range - range * 0.5);
-    const foodCollisionShape = new Circle(
+
+    const [id, foodCollisionShape, foodSprite, properties] = spawnFood(
+      lastCreatedFoodId,
       x,
       y,
-      size, // radius
-      TAGS.FOOD,
-      1, // scale
-      0, // padding
-      id,
+      size,
     );
-
-    const foodSprite = PIXI.Sprite.from(FoodImage);
-    foodSprite.x = x;
-    foodSprite.y = y;
-    foodSprite.scale.set(size * 0.09);
-    foodSprite.anchor.set(0.5);
-
-    const amount = size * 50;
-    const isEmpty = false;
-
-    const properties = [amount, isEmpty];
+    lastCreatedFoodId++;
 
     useFoodCallback({ id, foodCollisionShape, foodSprite, properties });
-    foodIdCounter++;
   }, foodAmount);
 }

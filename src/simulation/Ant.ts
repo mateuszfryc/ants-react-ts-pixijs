@@ -6,9 +6,21 @@ import { TAGS } from 'simulation/collisions/collisions';
 import { randomInRange, randomSign } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 
-let antsIdCounter = 0;
+let lastCreatedAntId = 0;
+export const singleAntPropsCount = 9;
+export const antsPropsIDs = {
+  speedId: 0,
+  xvId: 1,
+  yvId: 2,
+  xvTargetId: 3,
+  yvTargetId: 4,
+  maxSpeedId: 5,
+  targetSpeedId: 6,
+  rotationDirectionId: 7,
+  hasFoodId: 8,
+};
 
-export function spawnAnt(x: number, y: number, size = 10): any {
+export function spawnAnt(id: number, x: number, y: number, size = 10): any {
   const antCollisionShape = new Circle(
     x,
     y,
@@ -16,7 +28,7 @@ export function spawnAnt(x: number, y: number, size = 10): any {
     TAGS.ANT,
     1, // scale
     0, // padding
-    antsIdCounter,
+    id,
   );
 
   const antSprite = PIXI.Sprite.from(AntImage);
@@ -33,27 +45,24 @@ export function spawnAnt(x: number, y: number, size = 10): any {
   yv /= lenght;
   const xvTarget = xv;
   const yvTarget = yv;
-  const maxSpeed = randomInRange(40, 50);
+  const maxSpeed = randomInRange(30, 35);
   const speed = maxSpeed * 0.5;
   const targetSpeed = maxSpeed;
   const rotationDirection = randomSign();
   const hasFood = false;
   const properties = [
-    /* indexes */
-    /* 0: */ speed,
-    /* 1: */ xv,
-    /* 2: */ yv,
-    /* 3: */ xvTarget,
-    /* 4: */ yvTarget,
-    /* 5: */ maxSpeed,
-    /* 6: */ targetSpeed,
-    /* 7: */ rotationDirection,
-    /* 8: */ hasFood,
+    speed,
+    xv,
+    yv,
+    xvTarget,
+    yvTarget,
+    maxSpeed,
+    targetSpeed,
+    rotationDirection,
+    hasFood,
   ];
 
-  antsIdCounter++;
-
-  return [antCollisionShape, antSprite, rotationChangeTimer, properties];
+  return [id, antCollisionShape, antSprite, rotationChangeTimer, properties];
 }
 
 export function releaseTheAnts(
@@ -63,15 +72,16 @@ export function releaseTheAnts(
   singleAntSize: number,
 ): void {
   setTimeout(() => {
-    const [antCollisionShape, antSprite, rotationChangeTimer, properties] = spawnAnt(
+    const [id, antCollisionShape, antSprite, rotationChangeTimer, properties] = spawnAnt(
+      lastCreatedAntId,
       xSpawn + randomInRange(-10, 10),
       ySpawn + randomInRange(-10, 10),
       singleAntSize,
     );
-    const { id } = antCollisionShape;
+    lastCreatedAntId++;
 
     if (useAntCallback({ id, antCollisionShape, antSprite, rotationChangeTimer, properties })) {
       releaseTheAnts(useAntCallback, ySpawn, ySpawn, singleAntSize);
     }
-  }, 30);
+  }, 0);
 }
