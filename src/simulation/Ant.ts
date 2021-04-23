@@ -3,22 +3,26 @@ import * as PIXI from 'pixi.js';
 import AntImage from 'assets/ant-red.png';
 import { Circle } from 'simulation/collisions/circle';
 import { TAGS } from 'simulation/collisions/collisions';
-import { randomInRange, randomSign } from 'utils/math';
+import { doNTimes, randomInRange, randomSign } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 
 let lastCreatedAntId = 0;
 export const singleAntPropsCount = 9;
-export const antsPropsIDs = {
+export const antsPropsInt8IDs = {
   speedId: 0,
-  xvId: 1,
-  yvId: 2,
-  xvTargetId: 3,
-  yvTargetId: 4,
-  maxSpeedId: 5,
-  targetSpeedId: 6,
-  rotationDirectionId: 7,
-  hasFoodId: 8,
+  targetSpeedId: 1,
+  maxSpeedId: 2,
+  rotationDirectionId: 3,
+  hasFoodId: 4,
 };
+export const antPropsInt8Count = Object.keys(antsPropsInt8IDs).length;
+export const antsPropsFloat16IDs = {
+  xvId: 0,
+  yvId: 1,
+  xvTargetId: 2,
+  yvTargetId: 3,
+};
+export const antPropsFloat16Count = Object.keys(antsPropsFloat16IDs).length;
 
 export function spawnAnt(id: number, x: number, y: number, size = 10): any {
   const antCollisionShape = new Circle(
@@ -49,20 +53,13 @@ export function spawnAnt(id: number, x: number, y: number, size = 10): any {
   const speed = maxSpeed * 0.5;
   const targetSpeed = maxSpeed;
   const rotationDirection = randomSign();
-  const hasFood = false;
-  const properties = [
-    speed,
-    xv,
-    yv,
-    xvTarget,
-    yvTarget,
-    maxSpeed,
-    targetSpeed,
-    rotationDirection,
-    hasFood,
-  ];
+  const hasFood = 0;
+  // eslint-disable-next-line prettier/prettier
+  const propertiesInt8 = [speed, targetSpeed, maxSpeed, rotationDirection, hasFood];
+  // eslint-disable-next-line prettier/prettier
+  const propertiesFloat16 = [xv, yv, xvTarget, yvTarget];
 
-  return [id, antCollisionShape, antSprite, rotationChangeTimer, properties];
+  return [id, antCollisionShape, antSprite, rotationChangeTimer, propertiesInt8, propertiesFloat16];
 }
 
 export function releaseTheAnts(
@@ -72,7 +69,14 @@ export function releaseTheAnts(
   singleAntSize: number,
 ): void {
   setTimeout(() => {
-    const [id, antCollisionShape, antSprite, rotationChangeTimer, properties] = spawnAnt(
+    const [
+      id,
+      antCollisionShape,
+      antSprite,
+      rotationChangeTimer,
+      propertiesInt8,
+      propertiesFloat16,
+    ] = spawnAnt(
       lastCreatedAntId,
       xSpawn + randomInRange(-10, 10),
       ySpawn + randomInRange(-10, 10),
@@ -80,8 +84,50 @@ export function releaseTheAnts(
     );
     lastCreatedAntId++;
 
-    if (useAntCallback({ id, antCollisionShape, antSprite, rotationChangeTimer, properties })) {
+    if (
+      useAntCallback({
+        id,
+        antCollisionShape,
+        antSprite,
+        rotationChangeTimer,
+        propertiesInt8,
+        propertiesFloat16,
+      })
+    ) {
       releaseTheAnts(useAntCallback, ySpawn, ySpawn, singleAntSize);
     }
   }, 0);
 }
+
+export const throwAllAntsAtOnce = (
+  useAntCallback: (ant: any) => boolean,
+  worldWidth: number,
+  worldHeight: number,
+  singleAntSize: number,
+  antsCount: number,
+): void => {
+  doNTimes(() => {
+    const [
+      id,
+      antCollisionShape,
+      antSprite,
+      rotationChangeTimer,
+      propertiesInt8,
+      propertiesFloat16,
+    ] = spawnAnt(
+      lastCreatedAntId,
+      randomInRange(worldWidth * 0.05, worldWidth * 0.95),
+      randomInRange(worldHeight * 0.05, worldHeight * 0.95),
+      singleAntSize,
+    );
+    lastCreatedAntId++;
+    useAntCallback({
+      id,
+      antCollisionShape,
+      antSprite,
+      rotationChangeTimer,
+      propertiesInt8,
+      propertiesFloat16,
+    });
+  }, antsCount);
+};
