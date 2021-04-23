@@ -127,7 +127,6 @@ export const setupSimulation = (
       let speedInterpolationSpeed = 2;
       let velocityInterpolationSpeed = 1;
       let skipRandomDirectionChange = false;
-      let collidedWithAntsOnly = true;
       let turnAngle = 0;
       let collisionsCount = 0;
 
@@ -136,7 +135,6 @@ export const setupSimulation = (
           collisionsCount++;
           const { overlap, overlap_x, overlap_y } = result;
           const { id: otherId, tag, radius } = other;
-          const otherHasFood = antsPropsInt8[otherId * antPropsInt8Count + hasFoodId];
 
           /* eslint-disable indent */
           switch (tag) {
@@ -193,7 +191,6 @@ export const setupSimulation = (
                 }
               }
               skipRandomDirectionChange = true;
-              collidedWithAntsOnly = false;
               velocityInterpolationSpeed = 10;
               turnAngle =
                 randomInRange(0.5, 1) *
@@ -232,7 +229,7 @@ export const setupSimulation = (
       xv /= length;
       yv /= length;
 
-      if (collisionsCount > 1 && collidedWithAntsOnly) {
+      if (collisionsCount > 1 && !hasFood) {
         /* 
           Any situation with more than one collision means run the hell out of here
           or ants will start creating tight groups like hippies at woodstock and eventually
@@ -242,7 +239,7 @@ export const setupSimulation = (
          */
         velocityInterpolationSpeed = 20;
         speedInterpolationSpeed = 5;
-        speedTarget = maxSpeed * 1.5;
+        speedTarget = maxSpeed * 1.2;
       }
 
       if (xvTarget !== xv) {
