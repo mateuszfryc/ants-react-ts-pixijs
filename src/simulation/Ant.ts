@@ -24,11 +24,11 @@ export const antsPropsFloat16IDs = {
 };
 export const antPropsFloat16Count = Object.keys(antsPropsFloat16IDs).length;
 
-export function spawnAnt(id: number, x: number, y: number, size = 10): any {
+export function spawnAnt(id: number, x: number, y: number, size = 8): any {
   const antCollisionShape = new Circle(
     x,
     y,
-    size, // radius
+    size * 0.85, // radius
     TAGS.ANT,
     1, // scale
     0, // padding
@@ -36,14 +36,14 @@ export function spawnAnt(id: number, x: number, y: number, size = 10): any {
   );
 
   const antSprite = PIXI.Sprite.from(AntImage);
-  antSprite.scale.set(size * 0.09);
+  antSprite.scale.set(size * 0.095);
   antSprite.anchor.set(0.5);
 
   const rotationChangeTimer = new Timer(undefined, undefined, 0.2, 1);
 
   // x and y random and normalized velocity
-  let xv = Math.random() * 2 - 1;
-  let yv = Math.random() * 2 - 1;
+  let xv = randomInRange(-1, 1);
+  let yv = randomInRange(-1, 1);
   const lenght = Math.sqrt(xv * xv + yv * yv);
   xv /= lenght;
   yv /= lenght;

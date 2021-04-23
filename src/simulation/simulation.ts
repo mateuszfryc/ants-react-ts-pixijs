@@ -24,7 +24,7 @@ import {
   throwAllAntsAtOnce,
 } from './Ant';
 import { makeSomeFood, foodImageTexture } from './Food';
-import { Body } from './collisions/body';
+import { Nest } from './Nest';
 
 const { random, min, atan2, cos, sin, abs, sign } = Math;
 const { Sprite } = PIXI;
@@ -34,7 +34,6 @@ export const setupSimulation = (
   container: HTMLElement,
   _draw: PIXI.Graphics,
 ): void => {
-  const isDebugDrawOn = false;
   const result = new Result();
   const collisions = new Collisions();
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
@@ -45,10 +44,10 @@ export const setupSimulation = (
   const { speedId, targetSpeedId, maxSpeedId, rotationDirectionId, hasFoodId } = antsPropsInt8IDs;
   // eslint-disable-next-line prettier/prettier
   const { xvId, yvId, xvTargetId, yvTargetId } = antsPropsFloat16IDs;
-  const { ANT, FOOD } = TAGS;
+  const { ANT, FOOD, NEST } = TAGS;
   let antsOnScreenCounter = 0;
 
-  const antsCount = 3000;
+  const antsCount = 2000;
   const antsCollisionShapes = new Map<number, Circle>();
   /*
     One (1) dimensional array of properties of all the ants.
@@ -76,6 +75,11 @@ export const setupSimulation = (
   const foodCollisionShapes = new Map<number, Circle>();
   const foodProps = new Map<number, number[]>();
   const timers = new Map<number, Timer>();
+
+  const nest = new Nest(worldWidth * 0.5, worldHeight * 0.5);
+  app.stage.addChild(nest);
+  app.stage.addChild(nest.entranceCoverSprite);
+  collisions.insert(nest.body);
 
   const debugTimer = new Timer(0.5);
   let lastTime = performance.now();
@@ -132,16 +136,32 @@ export const setupSimulation = (
           collisionsCount++;
           const { overlap, overlap_x, overlap_y } = result;
           const { id: otherId, tag, radius } = other;
-          ant.x -= overlap! * overlap_x;
-          ant.y -= overlap! * overlap_y;
+          const otherHasFood = antsPropsInt8[otherId * antPropsInt8Count + hasFoodId];
 
           /* eslint-disable indent */
           switch (tag) {
             case ANT:
-              skipRandomDirectionChange = true;
+              if (!hasFood) {
+                ant.x -= overlap! * overlap_x;
+                ant.y -= overlap! * overlap_y;
+                skipRandomDirectionChange = true;
+              }
+              break;
+
+            case NEST:
+              if (hasFood) {
+                hasFood = 0;
+                const foodChunkToBeRemoved = foodBeingCarriedSprites.get(id);
+                if (foodChunkToBeRemoved) {
+                  app.stage.removeChild(foodChunkToBeRemoved);
+                  foodBeingCarriedSprites.delete(id);
+                }
+              }
               break;
 
             default:
+              ant.x -= overlap! * overlap_x;
+              ant.y -= overlap! * overlap_y;
               if (tag === FOOD) {
                 let [amount, isEmpty] = foodProps.get(otherId)!;
                 if (!hasFood && !isEmpty) {
@@ -271,19 +291,18 @@ export const setupSimulation = (
         antsOnScreenCounter++;
     });
 
-    // if (isDebugDrawOn) {
-    // draw.clear();
-    // draw.lineStyle(1, 0xff0000);
+    _draw.clear();
+    // _draw.lineStyle(1, 0xff0000);
+    // _draw.lineStyle(1, 0x00ff00);
     // for (const bound of worldBounds) bound.draw(draw);
     // antsCollisionShapes.forEach((ant) => {
-    //   ant.draw(draw);
+    //   ant.draw(_draw);
     // });
     // draw.lineStyle(1, 0x00ff00);
     // foodCollisionShapes.forEach((bite) => {
     //   bite.draw(draw);
     // });
     // collisions.draw(draw);
-    // }
 
     if (debugTimer.update(deltaTime)) {
       updateFPSDisplay(deltaTime);
@@ -331,8 +350,8 @@ export const setupSimulation = (
 
       return antsCollisionShapes.size < antsCount;
     },
-    worldWidth * 0.5,
-    worldHeight * 0.5,
+    nest.x,
+    nest.y,
     // worldWidth,
     // worldHeight,
     3,
