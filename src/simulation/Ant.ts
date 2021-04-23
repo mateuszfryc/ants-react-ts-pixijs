@@ -49,7 +49,7 @@ export function spawnAnt(id: number, x: number, y: number, size = 10): any {
   yv /= lenght;
   const xvTarget = xv;
   const yvTarget = yv;
-  const maxSpeed = randomInRange(30, 35);
+  const maxSpeed = randomInRange(35, 40);
   const speed = maxSpeed * 0.5;
   const targetSpeed = maxSpeed;
   const rotationDirection = randomSign();
@@ -78,8 +78,8 @@ export function releaseTheAnts(
       propertiesFloat16,
     ] = spawnAnt(
       lastCreatedAntId,
-      xSpawn + randomInRange(-10, 10),
-      ySpawn + randomInRange(-10, 10),
+      xSpawn /*  + randomInRange(-10, 10) */,
+      ySpawn /*  + randomInRange(-10, 10) */,
       singleAntSize,
     );
     lastCreatedAntId++;
@@ -94,7 +94,7 @@ export function releaseTheAnts(
         propertiesFloat16,
       })
     ) {
-      releaseTheAnts(useAntCallback, ySpawn, ySpawn, singleAntSize);
+      releaseTheAnts(useAntCallback, xSpawn, ySpawn, singleAntSize);
     }
   }, 0);
 }

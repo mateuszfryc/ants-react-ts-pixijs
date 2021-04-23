@@ -4,7 +4,15 @@ import { Collisions, TAGS } from 'simulation/collisions/collisions';
 import { Shape } from 'simulation/collisions/proxyTypes';
 import { Result } from 'simulation/collisions/result';
 import { setupAntCounter, setupFPSDisplay } from 'simulation/debug';
-import { halfPI, interpolate, mapRange, normalizeRadians, PI, randomInRange } from 'utils/math';
+import {
+  halfPI,
+  interpolate,
+  mapRange,
+  mapRangeClamped,
+  normalizeRadians,
+  PI,
+  randomInRange,
+} from 'utils/math';
 import { Circle } from './collisions/circle';
 import { Timer } from './Timer';
 import {
@@ -15,14 +23,16 @@ import {
   antsPropsFloat16IDs,
   throwAllAntsAtOnce,
 } from './Ant';
-// import { makeSomeFood } from './Food';
+import { makeSomeFood, foodImageTexture } from './Food';
+import { Body } from './collisions/body';
 
 const { random, min, atan2, cos, sin, abs, sign } = Math;
+const { Sprite } = PIXI;
 
 export const setupSimulation = (
   app: PIXI.Application,
   container: HTMLElement,
-  draw: PIXI.Graphics,
+  _draw: PIXI.Graphics,
 ): void => {
   const isDebugDrawOn = false;
   const result = new Result();
@@ -32,19 +42,13 @@ export const setupSimulation = (
   const { updateFPSDisplay } = setupFPSDisplay();
   const { updateAntsCounter } = setupAntCounter();
   // eslint-disable-next-line prettier/prettier
-  const {
-    speedId,
-    targetSpeedId,
-    maxSpeedId,
-    rotationDirectionId,
-    // hasFoodId,
-  } = antsPropsInt8IDs;
+  const { speedId, targetSpeedId, maxSpeedId, rotationDirectionId, hasFoodId } = antsPropsInt8IDs;
   // eslint-disable-next-line prettier/prettier
   const { xvId, yvId, xvTargetId, yvTargetId } = antsPropsFloat16IDs;
   const { ANT, FOOD } = TAGS;
   let antsOnScreenCounter = 0;
 
-  const antsCount = 10000;
+  const antsCount = 3000;
   const antsCollisionShapes = new Map<number, Circle>();
   /*
     One (1) dimensional array of properties of all the ants.
@@ -66,10 +70,12 @@ export const setupSimulation = (
   const antsPropsFloat16: Float32Array = new Float32Array(
     new ArrayBuffer(antsCount * Float32ArrayItemSize * antPropsFloat16Count),
   );
+  const antsSprites = new Map<number, PIXI.Sprite>();
+  const foodSprites = new Map<number, PIXI.Sprite>();
+  const foodBeingCarriedSprites = new Map<number, PIXI.Sprite>();
   const foodCollisionShapes = new Map<number, Circle>();
-  // const foodProps = new Map<number, number[]>();
+  const foodProps = new Map<number, number[]>();
   const timers = new Map<number, Timer>();
-  const sprites = new Map<number, PIXI.Sprite>();
 
   const debugTimer = new Timer(0.5);
   let lastTime = performance.now();
@@ -107,7 +113,7 @@ export const setupSimulation = (
       let speedTarget = antsPropsInt8[propInt8Id + targetSpeedId];
       let maxSpeed = antsPropsInt8[propInt8Id + maxSpeedId];
       let rotationDirectionSign = antsPropsInt8[propInt8Id + rotationDirectionId];
-      // let hasFood = antsProps[id + hasFoodId];
+      let hasFood = antsPropsInt8[propInt8Id + hasFoodId];
 
       let xv = antsPropsFloat16[propFloat16Id + xvId];
       let yv = antsPropsFloat16[propFloat16Id + yvId];
@@ -125,16 +131,47 @@ export const setupSimulation = (
         if (collisions.isCollision(ant as Shape, other, result)) {
           collisionsCount++;
           const { overlap, overlap_x, overlap_y } = result;
+          const { id: otherId, tag, radius } = other;
           ant.x -= overlap! * overlap_x;
           ant.y -= overlap! * overlap_y;
 
           /* eslint-disable indent */
-          switch (other.tag) {
+          switch (tag) {
             case ANT:
               skipRandomDirectionChange = true;
               break;
 
             default:
+              if (tag === FOOD) {
+                let [amount, isEmpty] = foodProps.get(otherId)!;
+                if (!hasFood && !isEmpty) {
+                  const foodSprite = foodSprites.get(otherId);
+                  if (foodSprite) {
+                    const {
+                      scale,
+                      scale: { x },
+                    } = foodSprite;
+                    const newSize = x - mapRangeClamped(1, 0, amount, 0, x);
+                    scale.set(newSize);
+                    other.radius = (newSize * radius) / x;
+                  }
+                  hasFood = 1;
+                  const foodChunkSprite = Sprite.from(foodImageTexture);
+                  foodChunkSprite.scale.set(0.2);
+                  foodChunkSprite.anchor.set(0.5, -0.8);
+                  foodChunkSprite.zIndex = 3;
+                  app.stage.addChild(foodChunkSprite);
+                  foodBeingCarriedSprites.set(id, foodChunkSprite);
+                  amount--;
+                  isEmpty = amount <= 0 ? 1 : 0;
+                  if (isEmpty) {
+                    foodProps.delete(otherId);
+                    foodSprites.delete(otherId);
+                    foodCollisionShapes.delete(otherId);
+                  }
+                  foodProps.set(otherId, [amount, isEmpty]);
+                }
+              }
               skipRandomDirectionChange = true;
               collidedWithAntsOnly = false;
               velocityInterpolationSpeed = 10;
@@ -209,34 +246,44 @@ export const setupSimulation = (
       antsPropsInt8[propInt8Id + targetSpeedId] = speedTarget;
       antsPropsInt8[propInt8Id + maxSpeedId] = maxSpeed;
       antsPropsInt8[propInt8Id + rotationDirectionId] = rotationDirectionSign;
+      antsPropsInt8[propInt8Id + hasFoodId] = hasFood;
 
       antsPropsFloat16[propFloat16Id + xvTargetId] = xvTarget;
       antsPropsFloat16[propFloat16Id + yvTargetId] = yvTarget;
       antsPropsFloat16[propFloat16Id + xvId] = xv;
       antsPropsFloat16[propFloat16Id + yvId] = yv;
 
-      const antSprite = sprites.get(id)!;
+      const antSprite = antsSprites.get(id)!;
       antSprite.x = ant.x;
       antSprite.y = ant.y;
       antSprite.rotation = -atan2(xv, yv);
+
+      if (hasFood) {
+        const foodChunkSprite = foodBeingCarriedSprites.get(id);
+        if (foodChunkSprite) {
+          foodChunkSprite.x = ant.x;
+          foodChunkSprite.y = ant.y;
+          foodChunkSprite.rotation = antSprite.rotation;
+        }
+      }
 
       if (ant.x > 0 && ant.y > 0 && ant.x < worldWidth && ant.y < worldHeight)
         antsOnScreenCounter++;
     });
 
-    if (isDebugDrawOn) {
-      draw.clear();
-      draw.lineStyle(1, 0xff0000);
-      for (const bound of worldBounds) bound.draw(draw);
-      antsCollisionShapes.forEach((ant) => {
-        ant.draw(draw);
-      });
-      draw.lineStyle(1, 0x00ff00);
-      foodCollisionShapes.forEach((bite) => {
-        bite.draw(draw);
-      });
-      // collisions.draw(draw);
-    }
+    // if (isDebugDrawOn) {
+    // draw.clear();
+    // draw.lineStyle(1, 0xff0000);
+    // for (const bound of worldBounds) bound.draw(draw);
+    // antsCollisionShapes.forEach((ant) => {
+    //   ant.draw(draw);
+    // });
+    // draw.lineStyle(1, 0x00ff00);
+    // foodCollisionShapes.forEach((bite) => {
+    //   bite.draw(draw);
+    // });
+    // collisions.draw(draw);
+    // }
 
     if (debugTimer.update(deltaTime)) {
       updateFPSDisplay(deltaTime);
@@ -247,19 +294,19 @@ export const setupSimulation = (
     lastTime = frameStartTime;
   }
 
-  // makeSomeFood(
-  //   ({ id, foodCollisionShape, foodSprite, properties }): void => {
-  //     foodCollisionShapes.set(id, foodCollisionShape);
-  //     collisions.insert(foodCollisionShape);
-  //     sprites.set(id, foodSprite);
-  //     app.stage.addChild(foodSprite);
-  //     foodProps.set(id, properties);
-  //   },
-  //   worldWidth * 0.7,
-  //   worldHeight * 0.7,
-  // );
+  makeSomeFood(
+    ({ id, foodCollisionShape, foodSprite, properties }): void => {
+      foodCollisionShapes.set(id, foodCollisionShape);
+      collisions.insert(foodCollisionShape);
+      foodSprites.set(id, foodSprite);
+      app.stage.addChild(foodSprite);
+      foodProps.set(id, properties);
+    },
+    worldWidth * 0.7,
+    worldHeight * 0.7,
+  );
 
-  throwAllAntsAtOnce(
+  releaseTheAnts(
     ({
       id,
       antCollisionShape,
@@ -270,7 +317,7 @@ export const setupSimulation = (
     }): boolean => {
       antsCollisionShapes.set(id, antCollisionShape);
       collisions.insert(antCollisionShape);
-      sprites.set(id, antSprite);
+      antsSprites.set(id, antSprite);
       app.stage.addChild(antSprite);
       timers.set(id, rotationChangeTimer);
 
@@ -284,12 +331,12 @@ export const setupSimulation = (
 
       return antsCollisionShapes.size < antsCount;
     },
-    // worldWidth * 0.5,
-    // worldHeight * 0.5,
-    worldWidth,
-    worldHeight,
-    2,
-    antsCount,
+    worldWidth * 0.5,
+    worldHeight * 0.5,
+    // worldWidth,
+    // worldHeight,
+    3,
+    // antsCount,
   );
 
   app.ticker.add(simulationUpdate);
