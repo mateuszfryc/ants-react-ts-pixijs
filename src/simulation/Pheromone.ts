@@ -10,7 +10,7 @@ import { mapRangeClamped } from 'utils/math';
 
 const scentInitialLifetime = 48;
 
-const { SCENT_NEST } = TAGS;
+const { PHEROMONE_NEST } = TAGS;
 export class Pheromone extends SpriteWithCollisions {
   strength: number;
   initLifetime: number;
@@ -30,7 +30,7 @@ export class Pheromone extends SpriteWithCollisions {
     pointsToDirection: number,
   ) {
     const scale = 0.25;
-    const isNestScent = tag === SCENT_NEST;
+    const isNestScent = tag === PHEROMONE_NEST;
     super(
       isNestScent ? NestScentImage : FoodScentImage,
       new Circle(x, y, scale * 32, tag) as Shape,

@@ -20,8 +20,13 @@
   - [ ] finding the nest when there is no own scent
 
 - [ ] pheromones
+
   - [x] nest
   - [x] food
   - [ ] danger (released uppon death, this would have to work differently, meaby have bigger radius)
   - [ ] defend the nest
   - [ ] take care for the nest
+
+- [ ] class extending Sprite with preset defaults that currently are being set in runtime
+  - [ ] scale (mostly for pheromone sprites, since there is a huge number of them in each frame)
+  - [ ] anchor

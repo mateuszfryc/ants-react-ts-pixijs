@@ -14,8 +14,8 @@ export const TAGS = {
   NEST_VISIBLE_AREA: 3,
   FOOD: 4,
   FOOD_SCENT_AREA: 5,
-  SCENT_NEST: 6,
-  SCENT_FOOD: 7,
+  PHEROMONE_NEST: 6,
+  PHEROMONE_FOOD: 7,
 };
 
 export class Collisions {

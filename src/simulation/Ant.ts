@@ -6,6 +6,8 @@ import { TAGS } from 'simulation/collisions/collisions';
 import { doNTimes, randomInRange, randomSign } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 
+const antTexture = PIXI.Texture.from(AntImage);
+
 let lastCreatedAntId = 0;
 export const singleAntPropsCount = 9;
 export const antsPropsInt8IDs = {
@@ -14,6 +16,7 @@ export const antsPropsInt8IDs = {
   maxSpeedId: 2,
   rotationDirectionId: 3,
   hasFoodId: 4,
+  pheromoneEmissionTimeOffsetId: 5,
 };
 export const antPropsInt8Count = Object.keys(antsPropsInt8IDs).length;
 export const antsPropsFloat16IDs = {
@@ -35,7 +38,7 @@ export function spawnAnt(id: number, x: number, y: number, size = 8): any {
     id,
   );
 
-  const antSprite = PIXI.Sprite.from(AntImage);
+  const antSprite = PIXI.Sprite.from(antTexture);
   antSprite.scale.set(size * 0.095);
   antSprite.anchor.set(0.5);
 
@@ -54,8 +57,16 @@ export function spawnAnt(id: number, x: number, y: number, size = 8): any {
   const targetSpeed = maxSpeed;
   const rotationDirection = randomSign();
   const hasFood = 0;
+  const pheromoneEmissionTimeOffset = randomInRange(-127, 127);
   // eslint-disable-next-line prettier/prettier
-  const propertiesInt8 = [speed, targetSpeed, maxSpeed, rotationDirection, hasFood];
+  const propertiesInt8 = [
+    speed,
+    targetSpeed,
+    maxSpeed,
+    rotationDirection,
+    hasFood,
+    pheromoneEmissionTimeOffset,
+  ];
   // eslint-disable-next-line prettier/prettier
   const propertiesFloat16 = [xv, yv, xvTarget, yvTarget];
 
