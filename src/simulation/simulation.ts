@@ -30,6 +30,7 @@ import {
 } from './Ant';
 import { makeSomeFood, foodImageTexture } from './Food';
 import { Nest } from './Nest';
+import { Pheromone } from './Pheromones';
 
 const { random, min, atan2, cos, sin, abs, sign, round, sqrt, max } = Math;
 const { Sprite } = PIXI;
@@ -42,7 +43,6 @@ export const setupSimulation = (
   const { stage: graphics } = graphicsEngine;
   const result = new Result();
   const antsCollisions = new Collisions();
-  const pheromonesCollisions = new Collisions();
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = _container;
   // const worldWidth = 200;
   // const worldHeight = 200;
@@ -63,7 +63,7 @@ export const setupSimulation = (
   const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, ANT_SENSOR } = TAGS;
   let antsOnScreenCounter = 0;
 
-  const antsCount = 200;
+  const antsCount = 100;
   const antsScale = 3;
   const antsCollisionShapes = new Map<number, Circle>();
   /**
@@ -78,9 +78,9 @@ export const setupSimulation = (
    * these collisions sensory shapes for each ant.
    */
   const sensorScale = 1;
-  const sensorLeft = pheromonesCollisions.addCircle(0, 0, antsScale * sensorScale, ANT_SENSOR);
-  const sensorCenter = pheromonesCollisions.addCircle(0, 0, antsScale * sensorScale, ANT_SENSOR);
-  const sensorRight = pheromonesCollisions.addCircle(0, 0, antsScale * sensorScale, ANT_SENSOR);
+  const sensorLeft = antsCollisions.addCircle(0, 0, antsScale * sensorScale, ANT_SENSOR);
+  const sensorCenter = antsCollisions.addCircle(0, 0, antsScale * sensorScale, ANT_SENSOR);
+  const sensorRight = antsCollisions.addCircle(0, 0, antsScale * sensorScale, ANT_SENSOR);
   /**
    * * One (1) dimensional array of properties of all the ants.
    * Accessing single ant prop is done by:
@@ -94,7 +94,6 @@ export const setupSimulation = (
    * antsProps = [x1, y1, speed1, x2, y2, speed2, x3, y3, speed3...xn, yn, speedn]
    */
   const Int8ArrayItemSize = 1;
-  const Int16ArrayItemSize = 2;
   const Float32ArrayItemSize = 4;
 
   const antsPropsInt8: Int8Array = new Int8Array(
@@ -117,41 +116,23 @@ export const setupSimulation = (
   antsCollisions.insert(nest.body);
 
   /** One dimensional array of all ants pheromones */
-  const pheremonesCollisionShapes = new Map<number, Circle>();
+  let currentPheromoneId = 0;
+  const pheromones = new Map<number, Pheromone>();
   const pheromonesSprites = new Map<number, PIXI.Sprite>();
-  const pheromoneCollisionShapeRadius = 2;
-  /**
-   * Individual life time counter for all pheromones
-   * in all pheromones types.
-   *
-   * @pheromonesPerAntMulitplier is an arbitrary number that alows to scale
-   * how many active pheromones per ant can be on the map. If the ant
-   * wants to spawn new pheromone but used all avilable indexes
-   * it will overwritte the oldest (lowest index).
-   */
-  const pheromonesCountMultiplier = 128;
-  let lastPheromoneId = 0;
-  const pheromonesLifeTimers = new Uint16Array(
-    new ArrayBuffer(antsCount * Int16ArrayItemSize * pheromonesCountMultiplier),
-  );
-  const maxPheromonesAllowed = pheromonesLifeTimers.length;
-  /** 1000 = 1 second, these work as default life time of pheromons of each type */
-  pheromonesLifeTimers.fill(feromonesLifetime);
-  let pheromonesEmmisionCounter = 0;
-  const timeBetweenPhereomonesEmission = 0.2;
+  const pheromoneEmissionTimer = new Timer(0.2);
   const nestPheromoneTexture = PIXI.Texture.from(NestScentImage);
   const foodPheromoneTexture = PIXI.Texture.from(FoodScentImage);
 
   const debugTimer = new Timer(0.5);
   let lastTime = performance.now();
   let isTabFocused = true;
-  window.addEventListener('blur', () => {
-    isTabFocused = false;
-  });
-  window.addEventListener('focus', () => {
-    isTabFocused = true;
-    lastTime = performance.now();
-  });
+  // window.addEventListener('blur', () => {
+  //   isTabFocused = false;
+  // });
+  // window.addEventListener('focus', () => {
+  //   isTabFocused = true;
+  //   lastTime = performance.now();
+  // });
 
   /**
    * Variables used for ants update loop.
@@ -159,8 +140,7 @@ export const setupSimulation = (
    * to declare them on each step of the loop.
    */
   let frameStartTime = 0;
-  let deltaTimeMILISeconds = 0;
-  let deltaTimeSeconds = 0;
+  let deltaSeconds = 0;
   let propInt8Id = 0;
   let propFloat16Id = 0;
   let centerSensorInputSum = 0;
@@ -171,7 +151,7 @@ export const setupSimulation = (
   let maxSpeed = 0;
   let rotationDirectionSign = 0;
   let hasFood = 0;
-  let nestPheromoneStrength = 0;
+  let pheromoneStrength = 0;
   let xVelocity = 0;
   let yVelocity = 0;
   let xvTarget = 0;
@@ -182,21 +162,21 @@ export const setupSimulation = (
   let turnAngle = 0;
   let length = 0;
   let skipRandomDirectionChange = false;
+  let shouldSpawnPheromones = false;
 
   function simulationUpdate() {
     if (!isTabFocused) return;
     frameStartTime = performance.now();
-    deltaTimeMILISeconds = round(frameStartTime - lastTime);
-    deltaTimeSeconds = min(deltaTimeMILISeconds / 1000, 0.5);
+    deltaSeconds = min((frameStartTime - lastTime) / 1000, 0.5);
     antsOnScreenCounter = 0;
-    pheromonesEmmisionCounter += deltaTimeSeconds;
+    shouldSpawnPheromones = pheromoneEmissionTimer.update(deltaSeconds);
 
     antsCollisionShapes.forEach((ant) => {
       const { id } = ant;
       propFloat16Id = id * antPropsFloat16Count;
       speed = antsPropsInt8[id * antPropsInt8Count + speedId];
-      ant.x += speed * antsPropsFloat16[propFloat16Id + xvId] * deltaTimeSeconds;
-      ant.y += speed * antsPropsFloat16[propFloat16Id + yvId] * deltaTimeSeconds;
+      ant.x += speed * antsPropsFloat16[propFloat16Id + xvId] * deltaSeconds;
+      ant.y += speed * antsPropsFloat16[propFloat16Id + yvId] * deltaSeconds;
     });
 
     antsCollisions.update();
@@ -211,7 +191,7 @@ export const setupSimulation = (
       maxSpeed = antsPropsInt8[propInt8Id + maxSpeedId];
       rotationDirectionSign = antsPropsInt8[propInt8Id + rotationDirectionId];
       hasFood = antsPropsInt8[propInt8Id + hasFoodId];
-      nestPheromoneStrength = antsPropsInt8[propInt8Id + pheromoneStrengthId];
+      pheromoneStrength = antsPropsInt8[propInt8Id + pheromoneStrengthId];
 
       xVelocity = antsPropsFloat16[propFloat16Id + xvId];
       yVelocity = antsPropsFloat16[propFloat16Id + yvId];
@@ -249,47 +229,61 @@ export const setupSimulation = (
                   graphics.removeChild(foodChunkToBeRemoved);
                   foodBeingCarriedSprites.delete(id);
                 }
+                skipRandomDirectionChange = true;
+                velocityInterpolationSpeed = 20;
+                turnAngle =
+                  randomInRange(0.5, 1) *
+                    sign(overlap_y > 0 ? 1 : -1) *
+                    atan2(-overlap_x, -overlap_y) +
+                  atan2(xvTarget, yvTarget);
               } else {
-                nestPheromoneStrength = maxPheromonesEmission;
+                pheromoneStrength = maxPheromonesEmission;
               }
+              break;
+
+            case PHEROMONE_FOOD:
+              break;
+
+            case PHEROMONE_NEST:
               break;
 
             default:
               collisionsCount++;
               ant.x -= overlap! * overlap_x;
               ant.y -= overlap! * overlap_y;
-              if (tag === FOOD) {
-                let [amount, isEmpty] = foodProps.get(otherId)!;
-                if (!hasFood && !isEmpty) {
-                  const foodSprite = foodSprites.get(otherId);
-                  if (foodSprite) {
-                    const {
-                      scale,
-                      scale: { x },
-                    } = foodSprite;
-                    const newSize = x - mapRangeClamped(1, 0, amount, 0, x);
-                    scale.set(newSize);
-                    other.radius = (newSize * radius) / x;
-                  }
-                  hasFood = 1;
-                  const foodChunkSprite = Sprite.from(foodImageTexture);
-                  foodChunkSprite.scale.set(0.2);
-                  foodChunkSprite.anchor.set(0.5, -0.8);
-                  foodChunkSprite.zIndex = 3;
-                  graphics.addChild(foodChunkSprite);
-                  foodBeingCarriedSprites.set(id, foodChunkSprite);
-                  amount--;
-                  isEmpty = amount <= 0 ? 1 : 0;
-                  if (isEmpty) {
-                    foodProps.delete(otherId);
-                    foodSprites.delete(otherId);
-                    foodCollisionShapes.delete(otherId);
-                  }
-                  foodProps.set(otherId, [amount, isEmpty]);
-                }
-              }
+              // if (tag === FOOD) {
+              //   let [amount, isEmpty] = foodProps.get(otherId)!;
+              //   if (!hasFood && !isEmpty) {
+              //     const foodSprite = foodSprites.get(otherId);
+              //     if (foodSprite) {
+              //       const {
+              //         scale,
+              //         scale: { x },
+              //       } = foodSprite;
+              //       const newSize = x - mapRangeClamped(1, 0, amount, 0, x);
+              //       scale.set(newSize);
+              //       other.radius = (newSize * radius) / x;
+              //     }
+              //     hasFood = 1;
+              //     const foodChunkSprite = Sprite.from(foodImageTexture);
+              //     foodChunkSprite.scale.set(0.2);
+              //     foodChunkSprite.anchor.set(0.5, -0.8);
+              //     foodChunkSprite.zIndex = 3;
+              //     graphics.addChild(foodChunkSprite);
+              //     foodBeingCarriedSprites.set(id, foodChunkSprite);
+              //     amount--;
+              //     isEmpty = amount <= 0 ? 1 : 0;
+              //     if (isEmpty) {
+              //       foodProps.delete(otherId);
+              //       foodSprites.delete(otherId);
+              //       foodCollisionShapes.delete(otherId);
+              //     }
+              //     foodProps.set(otherId, [amount, isEmpty]);
+              //     pheromoneStrength = maxPheromonesEmission;
+              //   }
+              // }
               skipRandomDirectionChange = true;
-              velocityInterpolationSpeed = 10;
+              velocityInterpolationSpeed = 20;
               turnAngle =
                 randomInRange(0.5, 1) *
                   sign(overlap_y > 0 ? 1 : -1) *
@@ -316,53 +310,146 @@ export const setupSimulation = (
       sensorRight.x = x + xBase * 1.8 + yVelocity * 1.5 * antsScale;
       sensorRight.y = y + yBase * 1.8 - xVelocity * 1.5 * antsScale;
 
-      pheromonesCollisions.update();
+      antsCollisions.update();
 
-      for (const other of pheromonesCollisions.getPotentials(sensorCenter as Shape)) {
-        if (pheromonesCollisions.isCollision(sensorCenter as Shape, other, result)) {
-          const { id: otherId, tag } = other;
+      for (const other of antsCollisions.getPotentials(sensorCenter as Shape)) {
+        if (antsCollisions.isCollision(sensorCenter as Shape, other, result)) {
+          const { id: otherId, tag, radius } = other;
           if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
-            centerSensorInputSum += pheromonesLifeTimers[otherId];
+            centerSensorInputSum += pheromones.get(otherId)!.lifeSpan;
+          else if (tag === FOOD) {
+            let [amount, isEmpty] = foodProps.get(otherId)!;
+            if (!hasFood && !isEmpty) {
+              const foodSprite = foodSprites.get(otherId);
+              if (foodSprite) {
+                const {
+                  scale,
+                  scale: { x: xs },
+                } = foodSprite;
+                const newSize = xs - mapRangeClamped(1, 0, amount, 0, xs);
+                scale.set(newSize);
+                other.radius = (newSize * radius) / xs;
+              }
+              hasFood = 1;
+              const foodChunkSprite = Sprite.from(foodImageTexture);
+              foodChunkSprite.scale.set(0.2);
+              foodChunkSprite.anchor.set(0.5, -0.8);
+              foodChunkSprite.zIndex = 3;
+              graphics.addChild(foodChunkSprite);
+              foodBeingCarriedSprites.set(id, foodChunkSprite);
+              amount--;
+              isEmpty = amount <= 0 ? 1 : 0;
+              if (isEmpty) {
+                foodProps.delete(otherId);
+                foodSprites.delete(otherId);
+                foodCollisionShapes.delete(otherId);
+              }
+              foodProps.set(otherId, [amount, isEmpty]);
+              pheromoneStrength = maxPheromonesEmission;
+            }
+          }
         }
       }
 
-      for (const other of pheromonesCollisions.getPotentials(sensorLeft as Shape)) {
-        if (pheromonesCollisions.isCollision(sensorLeft as Shape, other, result)) {
-          const { id: otherId, tag } = other;
+      for (const other of antsCollisions.getPotentials(sensorLeft as Shape)) {
+        if (antsCollisions.isCollision(sensorLeft as Shape, other, result)) {
+          const { id: otherId, tag, radius } = other;
           if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
-            leftSensorInputSum += pheromonesLifeTimers[otherId];
+            leftSensorInputSum += pheromones.get(otherId)!.lifeSpan;
+          else if (tag === FOOD) {
+            let [amount, isEmpty] = foodProps.get(otherId)!;
+            if (!hasFood && !isEmpty) {
+              const foodSprite = foodSprites.get(otherId);
+              if (foodSprite) {
+                const {
+                  scale,
+                  scale: { x: xs },
+                } = foodSprite;
+                const newSize = xs - mapRangeClamped(1, 0, amount, 0, xs);
+                scale.set(newSize);
+                other.radius = (newSize * radius) / xs;
+              }
+              hasFood = 1;
+              const foodChunkSprite = Sprite.from(foodImageTexture);
+              foodChunkSprite.scale.set(0.2);
+              foodChunkSprite.anchor.set(0.5, -0.8);
+              foodChunkSprite.zIndex = 3;
+              graphics.addChild(foodChunkSprite);
+              foodBeingCarriedSprites.set(id, foodChunkSprite);
+              amount--;
+              isEmpty = amount <= 0 ? 1 : 0;
+              if (isEmpty) {
+                foodProps.delete(otherId);
+                foodSprites.delete(otherId);
+                foodCollisionShapes.delete(otherId);
+              }
+              foodProps.set(otherId, [amount, isEmpty]);
+              pheromoneStrength = maxPheromonesEmission;
+            }
+          }
         }
       }
 
-      for (const other of pheromonesCollisions.getPotentials(sensorRight as Shape)) {
-        if (pheromonesCollisions.isCollision(sensorRight as Shape, other, result)) {
-          const { id: otherId, tag } = other;
+      for (const other of antsCollisions.getPotentials(sensorRight as Shape)) {
+        if (antsCollisions.isCollision(sensorRight as Shape, other, result)) {
+          const { id: otherId, tag, radius } = other;
           if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
-            rightSensorInputSum += pheromonesLifeTimers[otherId];
+            rightSensorInputSum += pheromones.get(otherId)!.lifeSpan;
+          else if (tag === FOOD) {
+            let [amount, isEmpty] = foodProps.get(otherId)!;
+            if (!hasFood && !isEmpty) {
+              const foodSprite = foodSprites.get(otherId);
+              if (foodSprite) {
+                const {
+                  scale,
+                  scale: { x: xs },
+                } = foodSprite;
+                const newSize = xs - mapRangeClamped(1, 0, amount, 0, xs);
+                scale.set(newSize);
+                other.radius = (newSize * radius) / xs;
+              }
+              hasFood = 1;
+              const foodChunkSprite = Sprite.from(foodImageTexture);
+              foodChunkSprite.scale.set(0.2);
+              foodChunkSprite.anchor.set(0.5, -0.8);
+              foodChunkSprite.zIndex = 3;
+              graphics.addChild(foodChunkSprite);
+              foodBeingCarriedSprites.set(id, foodChunkSprite);
+              amount--;
+              isEmpty = amount <= 0 ? 1 : 0;
+              if (isEmpty) {
+                foodProps.delete(otherId);
+                foodSprites.delete(otherId);
+                foodCollisionShapes.delete(otherId);
+              }
+              foodProps.set(otherId, [amount, isEmpty]);
+              pheromoneStrength = maxPheromonesEmission;
+            }
+          }
         }
       }
 
       if (centerSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
         xvTarget = sensorCenter.x - x;
         yvTarget = sensorCenter.y - y;
-        velocityInterpolationSpeed = 12;
+        velocityInterpolationSpeed = 10;
         skipRandomDirectionChange = true;
       } else if (leftSensorInputSum > rightSensorInputSum) {
         xvTarget = sensorLeft.x - x;
         yvTarget = sensorLeft.y - y;
-        velocityInterpolationSpeed = 12;
+        velocityInterpolationSpeed = 10;
         skipRandomDirectionChange = true;
       } else if (rightSensorInputSum > leftSensorInputSum) {
         xvTarget = sensorRight.x - x;
         yvTarget = sensorRight.y - y;
-        velocityInterpolationSpeed = 12;
+        velocityInterpolationSpeed = 10;
         skipRandomDirectionChange = true;
       }
       // otherwise keep moving forward
 
       if (!skipRandomDirectionChange) {
         const rotationChangeTImer = timers.get(id);
-        if (rotationChangeTImer!.update(deltaTimeSeconds)) {
+        if (rotationChangeTImer!.update(deltaSeconds)) {
           rotationDirectionSign *= -1;
           turnAngle = random() * halfPI * rotationDirectionSign;
         }
@@ -400,11 +487,11 @@ export const setupSimulation = (
       }
 
       if (xvTarget !== xVelocity) {
-        xVelocity = interpolate(xVelocity, xvTarget, deltaTimeSeconds, velocityInterpolationSpeed);
+        xVelocity = interpolate(xVelocity, xvTarget, deltaSeconds, velocityInterpolationSpeed);
       }
 
       if (yvTarget !== yVelocity) {
-        yVelocity = interpolate(yVelocity, yvTarget, deltaTimeSeconds, velocityInterpolationSpeed);
+        yVelocity = interpolate(yVelocity, yvTarget, deltaSeconds, velocityInterpolationSpeed);
       }
 
       length = sqrt(xVelocity * xVelocity + yVelocity * yVelocity);
@@ -414,7 +501,7 @@ export const setupSimulation = (
       ant.xv = xVelocity;
       ant.yv = yVelocity;
 
-      speed = interpolate(speed, speedTarget, deltaTimeSeconds, speedInterpolationSpeed);
+      speed = interpolate(speed, speedTarget, deltaSeconds, speedInterpolationSpeed);
 
       const antSprite = antsSprites.get(id)!;
       antSprite.x = x;
@@ -430,47 +517,28 @@ export const setupSimulation = (
         }
       }
 
-      if (
-        nestPheromoneStrength > 0 &&
-        pheromonesEmmisionCounter >= timeBetweenPhereomonesEmission
-      ) {
-        const pheromoneId = lastPheromoneId;
-        const collisionShape = pheremonesCollisionShapes.get(pheromoneId);
-        if (!collisionShape) {
-          const newPheromoneCollisionShape = pheromonesCollisions.addCircle(
-            x,
-            y,
-            pheromoneCollisionShapeRadius,
-            hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
-            1,
-            0,
-            pheromoneId,
-          );
-          pheremonesCollisionShapes.set(pheromoneId, newPheromoneCollisionShape);
-          const pheromoneSprite = Sprite.from(
-            hasFood ? foodPheromoneTexture : nestPheromoneTexture,
-          );
-          pheromoneSprite.x = x;
-          pheromoneSprite.y = y;
-          pheromoneSprite.anchor.set(0.5);
-          pheromoneSprite.scale.set(0.2 * pheromoneCollisionShapeRadius);
-          pheromoneSprite.zIndex = 0;
-          pheromonesSprites.set(pheromoneId, pheromoneSprite);
-          graphics.addChild(pheromoneSprite);
-        } else {
-          collisionShape.x = x;
-          collisionShape.y = y;
-          collisionShape.id = pheromoneId;
-          collisionShape.tag = hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST;
-          const existingSprite = pheromonesSprites.get(pheromoneId)!;
-          existingSprite.x = x;
-          existingSprite.y = y;
-        }
-        pheromonesLifeTimers[pheromoneId] = feromonesLifetime;
+      if (pheromoneStrength > 0 && shouldSpawnPheromones) {
+        const pheromoneId = currentPheromoneId;
+        const newPheromone = new Pheromone(
+          x,
+          y,
+          hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
+          pheromoneId,
+        );
+        antsCollisions.insert((newPheromone as unknown) as Shape);
+        pheromones.set(pheromoneId, newPheromone);
 
-        lastPheromoneId++;
-        if (lastPheromoneId >= maxPheromonesAllowed) lastPheromoneId = 0;
-        nestPheromoneStrength--;
+        const pheromoneSprite = Sprite.from(hasFood ? foodPheromoneTexture : nestPheromoneTexture);
+        pheromoneSprite.x = x;
+        pheromoneSprite.y = y;
+        pheromoneSprite.anchor.set(0.5);
+        pheromoneSprite.scale.set(0.2 * newPheromone.radius);
+        pheromoneSprite.zIndex = 0;
+        pheromonesSprites.set(pheromoneId, pheromoneSprite);
+        graphics.addChild(pheromoneSprite);
+
+        currentPheromoneId++;
+        pheromoneStrength--;
       }
 
       if (x > 0 && y > 0 && x < worldWidth && y < worldHeight) antsOnScreenCounter++;
@@ -480,7 +548,7 @@ export const setupSimulation = (
       antsPropsInt8[propInt8Id + maxSpeedId] = maxSpeed;
       antsPropsInt8[propInt8Id + rotationDirectionId] = rotationDirectionSign;
       antsPropsInt8[propInt8Id + hasFoodId] = hasFood;
-      antsPropsInt8[propInt8Id + pheromoneStrengthId] = nestPheromoneStrength;
+      antsPropsInt8[propInt8Id + pheromoneStrengthId] = pheromoneStrength;
 
       antsPropsFloat16[propFloat16Id + xvTargetId] = xvTarget;
       antsPropsFloat16[propFloat16Id + yvTargetId] = yvTarget;
@@ -488,19 +556,16 @@ export const setupSimulation = (
       antsPropsFloat16[propFloat16Id + yvId] = yVelocity;
     });
 
-    if (pheromonesEmmisionCounter >= timeBetweenPhereomonesEmission) {
-      pheromonesEmmisionCounter = 0;
-    }
-
-    pheromonesLifeTimers.forEach((lifeTime: number, id: number): void => {
-      if (pheromonesLifeTimers[id] > 0) {
-        const remainingLife = lifeTime - deltaTimeMILISeconds;
-        pheromonesLifeTimers[id] = remainingLife > 0 ? remainingLife : 0;
+    pheromones.forEach((pheromone: Pheromone): void => {
+      const { lifeSpan, id } = pheromone;
+      if (lifeSpan > 0) {
+        const remainingLife = lifeSpan - deltaSeconds;
+        pheromone.lifeSpan = remainingLife > 0 ? remainingLife : 0;
         if (remainingLife < 1) {
-          const shape = pheremonesCollisionShapes.get(id);
+          const shape = pheromones.get(id);
           if (shape) {
-            pheromonesCollisions.remove(shape as Shape);
-            pheremonesCollisionShapes.delete(id);
+            antsCollisions.remove((shape as unknown) as Shape);
+            pheromones.delete(id);
           }
           const sprite = pheromonesSprites.get(id)!;
           graphics.removeChild(sprite);
@@ -509,9 +574,9 @@ export const setupSimulation = (
       }
     });
 
-    _draw.clear();
+    // _draw.clear();
     // _draw.lineStyle(1, 0xff0000);
-    _draw.lineStyle(1, 0x005500);
+    // _draw.lineStyle(1, 0x005500);
     // pheremonesCollisionShapes.forEach((pheromone) => {
     //   pheromone.draw(_draw);
     // });
@@ -526,10 +591,10 @@ export const setupSimulation = (
     // sensorCenter.draw(_draw);
     // sensorLeft.draw(_draw);
     // sensorRight.draw(_draw);
-    // collisions.draw(_draw);
+    // antsCollisions.draw(_draw);
 
-    if (debugTimer.update(deltaTimeSeconds)) {
-      updateFPSDisplay(deltaTimeSeconds);
+    if (debugTimer.update(deltaSeconds)) {
+      updateFPSDisplay(deltaSeconds);
       const { size } = antsCollisionShapes;
       updateAntsCounter(size, size - antsOnScreenCounter);
     }
@@ -583,7 +648,6 @@ export const setupSimulation = (
   );
 
   let isMouseDown = false;
-  const spawnFoodPheromone = true;
 
   document.addEventListener('mousedown', () => {
     isMouseDown = true;
@@ -592,34 +656,10 @@ export const setupSimulation = (
     isMouseDown = false;
   });
 
-  document.addEventListener('mousemove', (event: MouseEvent) => {
+  document.addEventListener('mousemove', (/* event: MouseEvent */) => {
     if (isMouseDown) {
-      const [x, y] = getMousePositionFromEvent(event);
-      const pheromoneId = lastPheromoneId;
-      const newPheromoneCollisionShape = antsCollisions.addCircle(
-        x,
-        y,
-        pheromoneCollisionShapeRadius,
-        spawnFoodPheromone ? PHEROMONE_FOOD : PHEROMONE_NEST,
-        1,
-        0,
-        pheromoneId,
-      );
-      pheremonesCollisionShapes.set(pheromoneId, newPheromoneCollisionShape);
-      const pheromoneSprite = Sprite.from(
-        spawnFoodPheromone ? foodPheromoneTexture : nestPheromoneTexture,
-      );
-      pheromoneSprite.x = x;
-      pheromoneSprite.y = y;
-      pheromoneSprite.anchor.set(0.5);
-      pheromoneSprite.scale.set(0.2 * pheromoneCollisionShapeRadius);
-      pheromoneSprite.zIndex = 0;
-      pheromonesSprites.set(pheromoneId, pheromoneSprite);
-      graphics.addChild(pheromoneSprite);
-      pheromonesLifeTimers[pheromoneId] = feromonesLifetime;
-
-      lastPheromoneId++;
-      if (lastPheromoneId >= maxPheromonesAllowed) lastPheromoneId = 0;
+      // const [x, y] = getMousePositionFromEvent(event);
+      // spawn pheromone
     }
   });
 

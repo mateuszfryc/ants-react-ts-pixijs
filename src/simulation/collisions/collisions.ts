@@ -52,11 +52,11 @@ export class Collisions {
   ): Polygon {
     const body = new Polygon(x, y, points, tag, angle, scale_x, scale_y, padding) as Shape;
 
-    const removeSelf = (): void => {
-      this.remove(body);
-    };
-    removeSelf.bind(this);
-    body.removeSelfFromCollisions = removeSelf;
+    // const removeSelf = (): void => {
+    //   this.remove(body);
+    // };
+    // removeSelf.bind(this);
+    // body.removeSelfFromCollisions = removeSelf;
 
     this._bvh.insert(body);
 
