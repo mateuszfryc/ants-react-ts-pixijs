@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 
 const app = new PIXI.Application({
-  backgroundColor: 0x111111,
+  backgroundColor: 0x000000,
 });
 app.stop();
 

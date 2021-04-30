@@ -16,6 +16,7 @@ export const TAGS = {
   FOOD_SCENT_AREA: 5,
   PHEROMONE_NEST: 6,
   PHEROMONE_FOOD: 7,
+  ANT_SENSOR: 8,
 };
 
 export class Collisions {
@@ -28,11 +29,11 @@ export class Collisions {
   addCircle(x = 0, y = 0, radius = 1, tag = TAGS.ANT, scale = 1, padding = 0, id = 0): Circle {
     const body = new Circle(x, y, radius, tag, scale, padding, id) as Shape;
 
-    const removeSelf = (): void => {
-      this.remove(body);
-    };
-    removeSelf.bind(this);
-    body.removeSelfFromCollisions = removeSelf;
+    // const removeSelf = (): void => {
+    //   this.remove(body);
+    // };
+    // removeSelf.bind(this);
+    // body.removeSelfFromCollisions = removeSelf;
 
     this._bvh.insert(body);
 
@@ -74,6 +75,7 @@ export class Collisions {
   // Removes bodies from the collision system
   remove(...bodies: Shape[]): Collisions {
     for (const body of bodies) {
+      body.markedForRemoval = true;
       this._bvh.remove(body, false);
     }
 

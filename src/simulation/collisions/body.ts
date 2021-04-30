@@ -8,11 +8,11 @@ export class Body extends BVHBranch {
   y: number;
   xv: number;
   yv: number;
-  // rotation: number;
   padding: number;
   tag: number;
-  removeSelfFromCollisions: () => void;
+  // removeSelfFromCollisions: () => void;
   spriteRef: PIXI.Sprite | undefined;
+  markedForRemoval: boolean;
   _polygon: boolean;
   _bvh_padding: number;
 
@@ -24,11 +24,11 @@ export class Body extends BVHBranch {
     this.xv = 1;
     this.yv = 0;
 
-    // this.rotation = 0; // radians
     this.padding = padding;
     this.tag = tag;
-    this.removeSelfFromCollisions = () => {};
+    // this.removeSelfFromCollisions = () => {};
     this.spriteRef = undefined;
+    this.markedForRemoval = false;
     this._polygon = false;
     this._bvh_padding = padding;
   }

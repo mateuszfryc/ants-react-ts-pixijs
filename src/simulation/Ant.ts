@@ -6,6 +6,15 @@ import { TAGS } from 'simulation/collisions/collisions';
 import { doNTimes, randomInRange, randomSign } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 
+/**
+ * Desribes how many single pheromones
+ * can be emitted before ant
+ * will have to visit nest or find food,
+ * to start emitting pheromones again.
+ */
+export const maxPheromonesEmission = 64;
+export const feromonesLifetime = 32000; // miliseconds
+
 const antTexture = PIXI.Texture.from(AntImage);
 
 let lastCreatedAntId = 0;
@@ -16,7 +25,7 @@ export const antsPropsInt8IDs = {
   maxSpeedId: 2,
   rotationDirectionId: 3,
   hasFoodId: 4,
-  pheromoneEmissionTimeOffsetId: 5,
+  pheromoneStrengthId: 5,
 };
 export const antPropsInt8Count = Object.keys(antsPropsInt8IDs).length;
 export const antsPropsFloat16IDs = {
@@ -41,7 +50,7 @@ export function spawnAnt(id: number, x: number, y: number, size = 8): any {
   const antSprite = PIXI.Sprite.from(antTexture);
   antSprite.scale.set(size * 0.095);
   antSprite.anchor.set(0.5);
-
+  antSprite.zIndex = 1;
   const rotationChangeTimer = new Timer(undefined, undefined, 0.2, 1);
 
   // x and y random and normalized velocity
@@ -57,7 +66,7 @@ export function spawnAnt(id: number, x: number, y: number, size = 8): any {
   const targetSpeed = maxSpeed;
   const rotationDirection = randomSign();
   const hasFood = 0;
-  const pheromoneEmissionTimeOffset = randomInRange(-127, 127);
+  const pheromoneStrength = maxPheromonesEmission;
   // eslint-disable-next-line prettier/prettier
   const propertiesInt8 = [
     speed,
@@ -65,7 +74,7 @@ export function spawnAnt(id: number, x: number, y: number, size = 8): any {
     maxSpeed,
     rotationDirection,
     hasFood,
-    pheromoneEmissionTimeOffset,
+    pheromoneStrength,
   ];
   // eslint-disable-next-line prettier/prettier
   const propertiesFloat16 = [xv, yv, xvTarget, yvTarget];
@@ -73,7 +82,7 @@ export function spawnAnt(id: number, x: number, y: number, size = 8): any {
   return [id, antCollisionShape, antSprite, rotationChangeTimer, propertiesInt8, propertiesFloat16];
 }
 
-export function releaseTheAnts(
+export function releaseTheAntsOneByOne(
   useAntCallback: (ant: any) => boolean,
   xSpawn: number,
   ySpawn: number,
@@ -105,7 +114,7 @@ export function releaseTheAnts(
         propertiesFloat16,
       })
     ) {
-      releaseTheAnts(useAntCallback, xSpawn, ySpawn, singleAntSize);
+      releaseTheAntsOneByOne(useAntCallback, xSpawn, ySpawn, singleAntSize);
     }
   }, 0);
 }
