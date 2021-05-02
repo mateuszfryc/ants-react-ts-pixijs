@@ -29,12 +29,6 @@ export class Collisions {
   addCircle(x = 0, y = 0, radius = 1, tag = TAGS.ANT, scale = 1, padding = 0, id = 0): Circle {
     const body = new Circle(x, y, radius, tag, scale, padding, id) as Shape;
 
-    // const removeSelf = (): void => {
-    //   this.remove(body);
-    // };
-    // removeSelf.bind(this);
-    // body.removeSelfFromCollisions = removeSelf;
-
     this._bvh.insert(body);
 
     return body;
@@ -51,12 +45,6 @@ export class Collisions {
     padding = 0,
   ): Polygon {
     const body = new Polygon(x, y, points, tag, angle, scale_x, scale_y, padding) as Shape;
-
-    // const removeSelf = (): void => {
-    //   this.remove(body);
-    // };
-    // removeSelf.bind(this);
-    // body.removeSelfFromCollisions = removeSelf;
 
     this._bvh.insert(body);
 
@@ -96,13 +84,7 @@ export class Collisions {
 
   // Returns a list of potential collisions
   getPotentials(shape: Shape): Shape[] {
-    const bvh = this._bvh;
-
-    if (bvh === undefined) {
-      throw new Error('Body does not belong to a collision system');
-    }
-
-    return bvh.potentials(shape);
+    return this._bvh.potentials(shape);
   }
 
   addSingleWorldBound(points: number[][], collisionPadding = 0): Polygon {

@@ -30,7 +30,12 @@ import {
 } from './Ant';
 import { makeSomeFood, foodImageTexture } from './Food';
 import { Nest } from './Nest';
-import { Pheromone } from './Pheromones';
+import { Pheromone, pheromoneInitialLifeSpan } from './Pheromones';
+import {
+  areMinimalCirclesColliding,
+  CircleMinimal,
+  CirclesMinimalCollisionsBVH,
+} from './collisions/circlesMinimalCollisions';
 
 const { random, min, atan2, cos, sin, abs, sign, round, sqrt, max } = Math;
 const { Sprite } = PIXI;
@@ -63,24 +68,9 @@ export const setupSimulation = (
   const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, ANT_SENSOR } = TAGS;
   let antsOnScreenCounter = 0;
 
-  const antsCount = 100;
+  const antsCount = 200;
   const antsScale = 3;
   const antsCollisionShapes = new Map<number, Circle>();
-  /**
-   * Below are three collision shapes that will be used
-   * to sample area before each ant. Left, center and right
-   * collision circles will sample pheromones collison
-   * shapes and sum strength of pheromones found in each
-   * sensor circle and based on that ant will either move
-   * forward, turn left or turn right.
-   * There are only three circles, their position will change
-   * at update step of each ant. It allows to avoid creating
-   * these collisions sensory shapes for each ant.
-   */
-  const sensorScale = 1;
-  const sensorLeft = antsCollisions.addCircle(0, 0, antsScale * sensorScale, ANT_SENSOR);
-  const sensorCenter = antsCollisions.addCircle(0, 0, antsScale * sensorScale, ANT_SENSOR);
-  const sensorRight = antsCollisions.addCircle(0, 0, antsScale * sensorScale, ANT_SENSOR);
   /**
    * * One (1) dimensional array of properties of all the ants.
    * Accessing single ant prop is done by:
@@ -117,6 +107,26 @@ export const setupSimulation = (
 
   /** One dimensional array of all ants pheromones */
   let currentPheromoneId = 0;
+  const pheromonesCollisions = new CirclesMinimalCollisionsBVH();
+  const pheromonesCollisionsResult = new Float32Array(3 * Float32ArrayItemSize);
+  /**
+   * Below are three collision shapes that will be used
+   * to sample area before each ant. Left, center and right
+   * collision circles will sample pheromones collison
+   * shapes and sum strength of pheromones found in each
+   * sensor circle and based on that ant will either move
+   * forward, turn left or turn right.
+   * There are only three circles, their position will change
+   * at update step of each ant. It allows to avoid creating
+   * these collisions sensory shapes for each ant.
+   */
+  const sensorScale = 1;
+  const sensorLeft = new CircleMinimal(0, 0, antsScale * sensorScale, ANT_SENSOR);
+  pheromonesCollisions.insert(sensorLeft);
+  const sensorCenter = new CircleMinimal(0, 0, antsScale * sensorScale, ANT_SENSOR);
+  pheromonesCollisions.insert(sensorCenter);
+  const sensorRight = new CircleMinimal(0, 0, antsScale * sensorScale, ANT_SENSOR);
+  pheromonesCollisions.insert(sensorRight);
   const pheromones = new Map<number, Pheromone>();
   const pheromonesSprites = new Map<number, PIXI.Sprite>();
   const pheromoneEmissionTimer = new Timer(0.2);
@@ -303,17 +313,17 @@ export const setupSimulation = (
       rightSensorInputSum = 0;
       const xBase = xVelocity * antsScale;
       const yBase = yVelocity * antsScale;
-      sensorCenter.x = x + xBase * 2.8;
-      sensorCenter.y = y + yBase * 2.8;
-      sensorLeft.x = x + xBase * 1.8 - yVelocity * 1.5 * antsScale;
-      sensorLeft.y = y + yBase * 1.8 + xVelocity * 1.5 * antsScale;
-      sensorRight.x = x + xBase * 1.8 + yVelocity * 1.5 * antsScale;
-      sensorRight.y = y + yBase * 1.8 - xVelocity * 1.5 * antsScale;
+      sensorCenter.x = x + xBase * 3.2;
+      sensorCenter.y = y + yBase * 3.2;
+      sensorLeft.x = x + xBase * 2 - yVelocity * 2 * antsScale;
+      sensorLeft.y = y + yBase * 2 + xVelocity * 2 * antsScale;
+      sensorRight.x = x + xBase * 2 + yVelocity * 2 * antsScale;
+      sensorRight.y = y + yBase * 2 - xVelocity * 2 * antsScale;
 
-      antsCollisions.update();
+      pheromonesCollisions.update();
 
-      for (const other of antsCollisions.getPotentials(sensorCenter as Shape)) {
-        if (antsCollisions.isCollision(sensorCenter as Shape, other, result)) {
+      for (const other of pheromonesCollisions.getPotentials(sensorCenter)) {
+        if (areMinimalCirclesColliding(sensorCenter, other)) {
           const { id: otherId, tag, radius } = other;
           if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
             centerSensorInputSum += pheromones.get(otherId)!.lifeSpan;
@@ -351,8 +361,8 @@ export const setupSimulation = (
         }
       }
 
-      for (const other of antsCollisions.getPotentials(sensorLeft as Shape)) {
-        if (antsCollisions.isCollision(sensorLeft as Shape, other, result)) {
+      for (const other of pheromonesCollisions.getPotentials(sensorLeft)) {
+        if (areMinimalCirclesColliding(sensorLeft, other)) {
           const { id: otherId, tag, radius } = other;
           if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
             leftSensorInputSum += pheromones.get(otherId)!.lifeSpan;
@@ -390,8 +400,8 @@ export const setupSimulation = (
         }
       }
 
-      for (const other of antsCollisions.getPotentials(sensorRight as Shape)) {
-        if (antsCollisions.isCollision(sensorRight as Shape, other, result)) {
+      for (const other of pheromonesCollisions.getPotentials(sensorRight)) {
+        if (areMinimalCirclesColliding(sensorRight, other)) {
           const { id: otherId, tag, radius } = other;
           if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
             rightSensorInputSum += pheromones.get(otherId)!.lifeSpan;
@@ -432,17 +442,17 @@ export const setupSimulation = (
       if (centerSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
         xvTarget = sensorCenter.x - x;
         yvTarget = sensorCenter.y - y;
-        velocityInterpolationSpeed = 10;
+        velocityInterpolationSpeed = 12;
         skipRandomDirectionChange = true;
       } else if (leftSensorInputSum > rightSensorInputSum) {
         xvTarget = sensorLeft.x - x;
         yvTarget = sensorLeft.y - y;
-        velocityInterpolationSpeed = 10;
+        velocityInterpolationSpeed = 12;
         skipRandomDirectionChange = true;
       } else if (rightSensorInputSum > leftSensorInputSum) {
         xvTarget = sensorRight.x - x;
         yvTarget = sensorRight.y - y;
-        velocityInterpolationSpeed = 10;
+        velocityInterpolationSpeed = 12;
         skipRandomDirectionChange = true;
       }
       // otherwise keep moving forward
@@ -520,12 +530,12 @@ export const setupSimulation = (
       if (pheromoneStrength > 0 && shouldSpawnPheromones) {
         const pheromoneId = currentPheromoneId;
         const newPheromone = new Pheromone(
+          pheromoneId,
           x,
           y,
           hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
-          pheromoneId,
         );
-        antsCollisions.insert((newPheromone as unknown) as Shape);
+        pheromonesCollisions.insert(newPheromone);
         pheromones.set(pheromoneId, newPheromone);
 
         const pheromoneSprite = Sprite.from(hasFood ? foodPheromoneTexture : nestPheromoneTexture);
@@ -559,15 +569,17 @@ export const setupSimulation = (
     pheromones.forEach((pheromone: Pheromone): void => {
       const { lifeSpan, id } = pheromone;
       if (lifeSpan > 0) {
-        const remainingLife = lifeSpan - deltaSeconds;
+        let remainingLife = lifeSpan - deltaSeconds;
+        remainingLife = remainingLife > 0 ? remainingLife : 0;
         pheromone.lifeSpan = remainingLife > 0 ? remainingLife : 0;
+        const sprite = pheromonesSprites.get(id)!;
+        sprite.alpha = remainingLife / pheromoneInitialLifeSpan;
         if (remainingLife < 1) {
-          const shape = pheromones.get(id);
-          if (shape) {
-            antsCollisions.remove((shape as unknown) as Shape);
+          const circle = pheromones.get(id);
+          if (circle) {
+            pheromonesCollisions.remove(circle);
             pheromones.delete(id);
           }
-          const sprite = pheromonesSprites.get(id)!;
           graphics.removeChild(sprite);
           pheromonesSprites.delete(id);
         }

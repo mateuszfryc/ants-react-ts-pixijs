@@ -1,13 +1,14 @@
-import { Circle } from 'simulation/collisions/circle';
+import { CircleMinimal } from './collisions/circlesMinimalCollisions';
 
+/** Time before pheromone will decay (in seconds) */
+export const pheromoneInitialLifeSpan = 32;
 const radius = 2;
-const initialStrength = 16; // seconds
 
-export class Pheromone extends Circle {
+export class Pheromone extends CircleMinimal {
   lifeSpan: number;
 
-  constructor(x: number, y: number, tag: number, id: number) {
-    super(x, y, radius, tag, 1, 0, id);
-    this.lifeSpan = initialStrength;
+  constructor(id: number, x: number, y: number, tag: number) {
+    super(id, x, y, radius, 1, tag);
+    this.lifeSpan = pheromoneInitialLifeSpan;
   }
 }
