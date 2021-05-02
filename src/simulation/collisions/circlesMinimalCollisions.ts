@@ -1,23 +1,41 @@
 /* eslint-disable max-classes-per-file */
 import * as PIXI from 'pixi.js';
-import { BVHBranch } from './BVHBranch';
 
-export class CircleMinimal extends BVHBranch {
+const branchPool: CircleMinimal[] = [];
+
+export class CircleMinimal {
   id: number;
   x: number;
   y: number;
   radius: number;
   scale: number;
   tag: number;
+  _bvh_parent: CircleMinimal | undefined;
+  _bvh_branch: boolean;
+  _bvh_left: CircleMinimal | undefined;
+  _bvh_right: CircleMinimal | undefined;
+  _bvh_sort: number;
+  _bvh_min_x: number;
+  _bvh_min_y: number;
+  _bvh_max_x: number;
+  _bvh_max_y: number;
 
-  constructor(id = 0, x = 0, y = 0, radius = 1, scale = 1, tag = 0) {
-    super(false);
+  constructor(id = 0, x = 0, y = 0, radius = 1, scale = 1, tag = 0, isBranch = false) {
     this.id = id;
     this.x = x;
     this.y = y;
     this.radius = radius;
     this.scale = scale;
     this.tag = tag;
+    this._bvh_parent = undefined;
+    this._bvh_branch = isBranch;
+    this._bvh_left = undefined;
+    this._bvh_right = undefined;
+    this._bvh_sort = 0;
+    this._bvh_min_x = 0;
+    this._bvh_min_y = 0;
+    this._bvh_max_x = 0;
+    this._bvh_max_y = 0;
   }
 
   draw(context: PIXI.Graphics): void {
@@ -30,7 +48,7 @@ export class CircleMinimal extends BVHBranch {
 }
 
 export class CirclesMinimalCollisionsBVH {
-  _hierarchy: BVHBranch | CircleMinimal | undefined;
+  _hierarchy: CircleMinimal | undefined;
   _bodies: CircleMinimal[];
   _dirty_branches: [];
 
@@ -114,7 +132,8 @@ export class CirclesMinimalCollisionsBVH {
         const parent_max_x = current._bvh_max_x;
         const parent_max_y = current._bvh_max_y;
         // eslint-disable-next-line no-multi-assign
-        const new_parent = (current._bvh_parent = circle._bvh_parent = BVHBranch.getBranch());
+        const new_parent = (current._bvh_parent = circle._bvh_parent =
+          branchPool.length > 0 ? branchPool.pop()! : new CircleMinimal(0, 0, 0, 0, 0, 0, true));
 
         new_parent._bvh_parent = grandparent;
         new_parent._bvh_left = current;
@@ -187,13 +206,13 @@ export class CirclesMinimalCollisionsBVH {
         branch._bvh_max_x = left_max_x > right_max_x ? left_max_x : right_max_x;
         branch._bvh_max_y = left_max_y > right_max_y ? left_max_y : right_max_y;
 
-        branch = branch._bvh_parent as BVHBranch;
+        branch = branch._bvh_parent as CircleMinimal;
       }
     } else {
       this._hierarchy = sibling;
     }
 
-    BVHBranch.releaseBranch(parent);
+    branchPool.push(parent);
   }
 
   // Updates the BVH. Moved bodies are removed/inserted.
@@ -284,52 +303,40 @@ export class CirclesMinimalCollisionsBVH {
 
     return shapes;
   }
+
+  areCirclesColliding = (a: CircleMinimal, b: CircleMinimal): boolean => {
+    /** Stage 1: step, by step AABB test */
+    const { x: xA, y: yA, radius: radiusA, scale: scaleA } = a;
+    const radiusAScaled = radiusA * scaleA;
+    const a_min_x = xA - radiusAScaled;
+    const a_min_y = yA - radiusAScaled;
+    const a_max_x = xA + radiusAScaled;
+    const a_max_y = yA + radiusAScaled;
+
+    const { x: xB, y: yB, radius: radiusB, scale: scaleB } = b;
+    const radiusBScaled = radiusB * scaleB;
+    const b_min_x = xB - radiusBScaled;
+    const b_min_y = yB - radiusBScaled;
+    const b_max_x = xB + radiusBScaled;
+    const b_max_y = yB + radiusBScaled;
+
+    if (a_min_x > b_max_x) return false;
+    if (a_min_y > b_max_y) return false;
+    if (a_max_x < b_min_x) return false;
+    if (a_max_y < b_min_y) return false;
+
+    /** Stage 2: circle vs circle collision/overlap detection */
+    const difference_x = xB - xA;
+    const difference_y = yB - yA;
+    const radius_sum = radiusAScaled + radiusBScaled;
+    const length_squared = difference_x * difference_x + difference_y * difference_y;
+
+    if (length_squared > radius_sum * radius_sum) {
+      return false;
+    }
+
+    return true;
+  };
 }
 
 /* eslint-enable max-classes-per-file */
-
-export const areMinimalCirclesColliding = (
-  a: CircleMinimal,
-  b: CircleMinimal,
-  // result?: Float32Array,
-): boolean => {
-  /** Stage 1: step, by step AABB test */
-  const { x: xA, y: yA, radius: radiusA, scale: scaleA } = a;
-  const radiusAScaled = radiusA * scaleA;
-  const a_min_x = xA - radiusAScaled;
-  const a_min_y = yA - radiusAScaled;
-  const a_max_x = xA + radiusAScaled;
-  const a_max_y = yA + radiusAScaled;
-
-  const { x: xB, y: yB, radius: radiusB, scale: scaleB } = b;
-  const radiusBScaled = radiusB * scaleB;
-  const b_min_x = xB - radiusBScaled;
-  const b_min_y = yB - radiusBScaled;
-  const b_max_x = xB + radiusBScaled;
-  const b_max_y = yB + radiusBScaled;
-
-  if (a_min_x > b_max_x) return false;
-  if (a_min_y > b_max_y) return false;
-  if (a_max_x < b_min_x) return false;
-  if (a_max_y < b_min_y) return false;
-
-  /** Stage 2: circle vs circle collision/overlap detection */
-  const difference_x = xB - xA;
-  const difference_y = yB - yA;
-  const radius_sum = radiusAScaled + radiusBScaled;
-  const length_squared = difference_x * difference_x + difference_y * difference_y;
-
-  if (length_squared > radius_sum * radius_sum) {
-    return false;
-  }
-
-  // const length = Math.sqrt(length_squared);
-  // // overlap length
-  // result[0] = radius_sum - length;
-  // // overlap x
-  // result[1] = difference_x / length;
-  // // overlap y
-  // result[2] = difference_y / length;
-
-  return true;
-};
