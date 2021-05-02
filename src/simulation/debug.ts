@@ -1,4 +1,8 @@
+import { Timer } from './Timer';
+
 const get = document.querySelector.bind(document);
+
+export const debugTimer = new Timer(0.5);
 
 export const setupFPSDisplay = (): { [key: string]: (deltaTime: number) => void } => {
   let fpsMax = 0;

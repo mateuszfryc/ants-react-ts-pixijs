@@ -2,22 +2,28 @@ import * as PIXI from 'pixi.js';
 
 import AntImage from 'assets/ant-red.png';
 import { Circle } from 'simulation/collisions/circle';
-import { TAGS } from 'simulation/collisions/collisions';
+import { Collisions, TAGS } from 'simulation/collisions/collisions';
 import { doNTimes, randomInRange, randomSign } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 
-/**
- * Desribes how many single pheromones
- * can be emitted before ant
- * will have to visit nest or find food,
- * to start emitting pheromones again.
- */
-export const maxPheromonesEmission = 64;
-export const feromonesLifetime = 32000; // miliseconds
-
-const antTexture = PIXI.Texture.from(AntImage);
-
+export const antsCount = 200;
+export const antsScale = 3;
 let lastCreatedAntId = 0;
+/**
+ * * One (1) dimensional array of properties of all the ants.
+ * Accessing single ant prop is done by:
+ *   antsProps[i * e + p]
+ * where:
+ * i = index of the ant
+ * e = number of properites single ant has
+ * p = index of single prop within range of ant props, starts with 0 and goes up to e - 1
+ *
+ * the array will look like this:
+ * antsProps = [x1, y1, speed1, x2, y2, speed2, x3, y3, speed3...xn, yn, speedn]
+ */
+const Int8ArrayItemSize = 1;
+const Float32ArrayItemSize = 4;
+
 export const singleAntPropsCount = 9;
 export const antsPropsInt8IDs = {
   speedId: 0,
@@ -35,6 +41,26 @@ export const antsPropsFloat16IDs = {
   yvTargetId: 3,
 };
 export const antPropsFloat16Count = Object.keys(antsPropsFloat16IDs).length;
+export const antsPropsInt8: Int8Array = new Int8Array(
+  new ArrayBuffer(antsCount * Int8ArrayItemSize * antPropsInt8Count),
+);
+export const antsPropsFloat16: Float32Array = new Float32Array(
+  new ArrayBuffer(antsCount * Float32ArrayItemSize * antPropsFloat16Count),
+);
+export const antsSprites = new Map<number, PIXI.Sprite>();
+
+/**
+ * Desribes how many single pheromones
+ * can be emitted before ant
+ * will have to visit nest or find food,
+ * to start emitting pheromones again.
+ */
+export const maxPheromonesEmission = 64;
+export const feromonesLifetime = 32000; // miliseconds
+export const antsCollisions = new Collisions();
+export const antsCollisionShapes = new Map<number, Circle>();
+
+const antTexture = PIXI.Texture.from(AntImage);
 
 export function spawnAnt(id: number, x: number, y: number, size = 8): any {
   const antCollisionShape = new Circle(
@@ -124,7 +150,6 @@ export const throwAllAntsAtOnce = (
   worldWidth: number,
   worldHeight: number,
   singleAntSize: number,
-  antsCount: number,
 ): void => {
   doNTimes(() => {
     const [
