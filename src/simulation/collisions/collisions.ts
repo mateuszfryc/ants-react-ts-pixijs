@@ -5,7 +5,6 @@ import { Circle } from './circle';
 import { aabbAABB, circleCircle, polygonCircle, polygonPolygon } from './SAT';
 import { Polygon } from './polygon';
 import { Shape } from './proxyTypes';
-import { Result } from './result';
 
 export const TAGS = {
   ANT: 0,

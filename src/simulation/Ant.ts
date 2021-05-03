@@ -6,7 +6,7 @@ import { Collisions, TAGS } from 'simulation/collisions/collisions';
 import { doNTimes, randomInRange, randomSign } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 
-export const antsCount = 200;
+export const antsCount = 500;
 export const antsScale = 3;
 let lastCreatedAntId = 0;
 /**
@@ -47,7 +47,7 @@ export const antsPropsInt8: Int8Array = new Int8Array(
 export const antsPropsFloat16: Float32Array = new Float32Array(
   new ArrayBuffer(antsCount * Float32ArrayItemSize * antPropsFloat16Count),
 );
-export const antsSprites = new Map<number, PIXI.Sprite>();
+export const antsSpritesMap = new Map<number, PIXI.Sprite>();
 
 /**
  * Desribes how many single pheromones

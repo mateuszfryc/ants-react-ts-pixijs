@@ -60,6 +60,6 @@ export function makeSomeFood(
 }
 
 export const foodSprites = new Map<number, PIXI.Sprite>();
-export const foodBeingCarriedSprites = new Map<number, PIXI.Sprite>();
+export const foodBitesSpritesMap = new Map<number, PIXI.Sprite>();
 export const foodCollisionShapes = new Map<number, Circle>();
 export const foodProps = new Map<number, number[]>();
