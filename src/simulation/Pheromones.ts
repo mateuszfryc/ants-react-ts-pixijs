@@ -8,14 +8,14 @@ import { TAGS } from './collisions/collisions';
 
 const radius = 2;
 /** Time before pheromone will decay (in seconds) */
-export const pheromoneInitialLifeSpan = 32;
+export const pheromonesLifeSpan = 32;
 
 export class Pheromone extends CircleMinimal {
-  lifeSpan: number;
+  emissionTimeStamp: number;
 
-  constructor(id: number, x: number, y: number, tag: number) {
+  constructor(id: number, x: number, y: number, tag: number, emissionTimeStamp: number) {
     super(id, x, y, radius, 1, tag);
-    this.lifeSpan = pheromoneInitialLifeSpan;
+    this.emissionTimeStamp = emissionTimeStamp;
   }
 }
 

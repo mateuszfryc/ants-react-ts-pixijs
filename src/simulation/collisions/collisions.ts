@@ -123,19 +123,16 @@ export class Collisions {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  isCollision(a: Shape, b: Shape, result?: Result): boolean {
+  areBodiesColliding(a: Shape, b: Shape, result: Float32Array): boolean {
     const a_polygon = a._polygon;
     const b_polygon = b._polygon;
 
-    if (result) {
-      result.a = a;
-      result.b = b;
-      result.a_in_b = true;
-      result.b_in_a = true;
-      result.overlap = undefined;
-      result.overlap_x = 0;
-      result.overlap_y = 0;
-    }
+    /** overlap length */
+    result[0] = 0;
+    /** overlap x */
+    result[1] = 0;
+    /** overlap y */
+    result[2] = 0;
 
     if (
       a_polygon &&

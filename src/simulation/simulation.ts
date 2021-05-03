@@ -18,7 +18,7 @@ import { makeSomeFood, foodImageTexture, foodSprites,
 // prettier-ignore
 import { Pheromone, setupAntsSensors, pheromonesCollisions, pheromones, sensorForwardDistance,
   sensorsSideDistance, sensorsSideSpread, sensorsTurnInterpolationSpeed, pheromonesSprites,
-  pheromoneEmissionTimer, nestPheromoneTexture, foodPheromoneTexture, pheromoneInitialLifeSpan } from './Pheromones';
+  pheromoneEmissionTimer, nestPheromoneTexture, foodPheromoneTexture, pheromonesLifeSpan  } from './Pheromones';
 import { Nest } from './Nest';
 
 const { random, min, atan2, cos, sin, abs, sign, sqrt, max } = Math;
@@ -30,8 +30,8 @@ export const setupSimulation = (
   _draw: PIXI.Graphics,
 ): void => {
   const { stage: graphics } = graphicsEngine;
-  const result = new Result();
-  // const result = new Float32Array(new ArrayBuffer(12)); // 3 numbers
+  // const result = new Result();
+  const result = new Float32Array(new ArrayBuffer(12)); // 3 numbers
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = _container;
   antsCollisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
   const { updateFPSDisplay } = setupFPSDisplay();
@@ -58,11 +58,12 @@ export const setupSimulation = (
    * to declare them on each step of the loop.
    */
   let lastTime = performance.now();
+  let lifeSpan = 0;
   let frameStartTime = 0;
   let deltaSeconds = 0;
   let propInt8Id = 0;
   let propFloat16Id = 0;
-  let centerSensorInputSum = 0;
+  let frontSensorInputSum = 0;
   let leftSensorInputSum = 0;
   let rightSensorInputSum = 0;
   let speed = 0;
@@ -124,8 +125,10 @@ export const setupSimulation = (
       skipRandomDirectionChange = false;
 
       for (const other of antsCollisions.getPotentials(ant as Shape)) {
-        if (antsCollisions.isCollision(ant as Shape, other, result)) {
-          const { overlap, overlap_x, overlap_y } = result;
+        if (antsCollisions.areBodiesColliding(ant as Shape, other, result)) {
+          const overlap = result[0];
+          const overlap_x = result[1];
+          const overlap_y = result[2];
           const { id: otherId, tag, radius } = other;
 
           /* eslint-disable indent */
@@ -216,7 +219,7 @@ export const setupSimulation = (
       const { x, y } = ant;
 
       /** Sum up pheromones values for each sensor and select direction */
-      centerSensorInputSum = 0;
+      frontSensorInputSum = 0;
       leftSensorInputSum = 0;
       rightSensorInputSum = 0;
       const xBase = xVelocity * antsScale;
@@ -246,7 +249,7 @@ export const setupSimulation = (
         if (pheromonesCollisions.areCirclesColliding(sensorForward, other)) {
           const { id: otherId, tag } = other;
           if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
-            centerSensorInputSum += pheromones.get(otherId)!.lifeSpan;
+            frontSensorInputSum += pheromones.get(otherId)!.emissionTimeStamp;
         }
       }
 
@@ -254,7 +257,7 @@ export const setupSimulation = (
         if (pheromonesCollisions.areCirclesColliding(sensorLeft, other)) {
           const { id: otherId, tag } = other;
           if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
-            leftSensorInputSum += pheromones.get(otherId)!.lifeSpan;
+            leftSensorInputSum += pheromones.get(otherId)!.emissionTimeStamp;
         }
       }
 
@@ -262,11 +265,11 @@ export const setupSimulation = (
         if (pheromonesCollisions.areCirclesColliding(sensorRight, other)) {
           const { id: otherId, tag } = other;
           if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
-            rightSensorInputSum += pheromones.get(otherId)!.lifeSpan;
+            rightSensorInputSum += pheromones.get(otherId)!.emissionTimeStamp;
         }
       }
 
-      if (centerSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
+      if (frontSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
         xvTarget = sensorForward.x - x;
         yvTarget = sensorForward.y - y;
         velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
@@ -345,6 +348,7 @@ export const setupSimulation = (
       antSprite.y = y;
       antSprite.rotation = -atan2(xVelocity, yVelocity);
 
+      /** Drag the food sprite along */
       if (hasFood) {
         const foodChunkSprite = foodBeingCarriedSprites.get(id);
         if (foodChunkSprite) {
@@ -361,6 +365,7 @@ export const setupSimulation = (
           x,
           y,
           hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
+          performance.now(),
         );
         pheromonesCollisions.insert(newPheromone);
         pheromones.set(pheromoneId, newPheromone);
@@ -393,28 +398,24 @@ export const setupSimulation = (
       antsPropsFloat16[propFloat16Id + yvId] = yVelocity;
     });
 
-    pheromones.forEach((pheromone: Pheromone): void => {
-      const { lifeSpan, id } = pheromone;
-      if (lifeSpan > 0) {
-        let remainingLife = lifeSpan - deltaSeconds;
-        remainingLife = remainingLife > 0 ? remainingLife : 0;
-        pheromone.lifeSpan = remainingLife > 0 ? remainingLife : 0;
-        const sprite = pheromonesSprites.get(id)!;
-        sprite.alpha = remainingLife / pheromoneInitialLifeSpan;
-        if (remainingLife < 1) {
-          const circle = pheromones.get(id);
-          if (circle) {
-            pheromonesCollisions.remove(circle);
-            pheromones.delete(id);
-          }
-          graphics.removeChild(sprite);
-          pheromonesSprites.delete(id);
+    pheromones.forEach(({ emissionTimeStamp, id }: Pheromone): void => {
+      lifeSpan = abs(frameStartTime - emissionTimeStamp) / 1000;
+      const sprite = pheromonesSprites.get(id)!;
+      if (lifeSpan >= pheromonesLifeSpan) {
+        const circle = pheromones.get(id);
+        if (circle) {
+          pheromonesCollisions.remove(circle);
+          pheromones.delete(id);
         }
+        graphics.removeChild(sprite);
+        pheromonesSprites.delete(id);
+      } else {
+        sprite.alpha = 1 - lifeSpan / pheromonesLifeSpan;
       }
     });
 
-    _draw.clear();
-    _draw.lineStyle(1, 0xff0000);
+    // _draw.clear();
+    // _draw.lineStyle(1, 0xff0000);
     // _draw.lineStyle(1, 0x005500);
     // pheremonesCollisionShapes.forEach((pheromone) => {
     //   pheromone.draw(_draw);
@@ -427,9 +428,9 @@ export const setupSimulation = (
     // foodCollisionShapes.forEach((bite) => {
     //   bite.draw(draw);
     // });
-    sensorForward.draw(_draw);
-    sensorLeft.draw(_draw);
-    sensorRight.draw(_draw);
+    // sensorForward.draw(_draw);
+    // sensorLeft.draw(_draw);
+    // sensorRight.draw(_draw);
     // antsCollisions.draw(_draw);
 
     if (debugTimer.update(deltaSeconds)) {
