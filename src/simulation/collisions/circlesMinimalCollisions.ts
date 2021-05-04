@@ -60,9 +60,9 @@ type setupReturnType = {
 };
 
 export function setupCircleMinimalCollisions(): setupReturnType {
+  const { min, max } = Math;
   const bodies: CircleMinimal[] = [];
   const branchPool: VolumeAABBType[] = [];
-  const { min, max } = Math;
   let root: VolumeAABBType | undefined;
 
   // Inserts a body into the BVH
@@ -158,7 +158,6 @@ export function setupCircleMinimalCollisions(): setupReturnType {
               yMin: 0,
               xMax: 0,
               yMax: 0,
-              isBranch: true,
             };
         current.parent = new_parent;
         circle.parent = new_parent;
@@ -265,7 +264,7 @@ export function setupCircleMinimalCollisions(): setupReturnType {
     const { xMin: min_x, yMin: min_y, xMax: max_x, yMax: max_y } = circle;
 
     let current = root;
-    if (!current || current.radius < 0 /** is of BranchType */) {
+    if (!current || current.radius > 0 /** isn't of BranchType */) {
       return potentials;
     }
 
