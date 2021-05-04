@@ -49,7 +49,7 @@ export const setupSimulation = (container: HTMLElement): void => {
   const { speedId, targetSpeedId, maxSpeedId, rotationDirectionId, hasFoodId, pheromoneStrengthId } = antsPropsInt8IDs;
   const { xvId, yvId, xvTargetId, yvTargetId } = antsPropsFloat16IDs;
   const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
-  const foodDistanceToNest = 300;
+  const foodDistanceToNest = 200;
   let antsOnScreenCounter = 0;
 
   const timers = new Map<number, Timer>();
@@ -276,9 +276,9 @@ export const setupSimulation = (container: HTMLElement): void => {
       turnAngle = normalizeRadians(turnAngle);
       // rotate velocity by turn angle
       if (turnAngle !== 0) {
-        const angleWithDirection = turnAngle * rotationDirectionSign;
-        const c = cos(angleWithDirection);
-        const s = sin(angleWithDirection);
+        // const angleWithDirection = turnAngle * rotationDirectionSign;
+        const c = cos(turnAngle);
+        const s = sin(turnAngle);
         xvTarget = c * xvTarget - s * yvTarget;
         yvTarget = s * xvTarget + c * yvTarget;
       }
@@ -395,8 +395,8 @@ export const setupSimulation = (container: HTMLElement): void => {
       }
     });
 
-    // _draw.clear();
-    // _draw.lineStyle(1, 0xff0000);
+    _draw.clear();
+    _draw.lineStyle(1, 0xff0000);
     // _draw.lineStyle(1, 0x005500);
     // pheremonesCollisionShapes.forEach((pheromone) => {
     //   pheromone.draw(_draw);
@@ -409,7 +409,7 @@ export const setupSimulation = (container: HTMLElement): void => {
     // foodCollisionShapes.forEach((bite) => {
     //   bite.draw(draw);
     // });
-    // drawAntSensors(_draw);
+    drawAntSensors(_draw);
     // antsCollisions.draw(_draw);
 
     if (debugTimer.update(deltaSeconds)) {

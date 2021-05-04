@@ -1,7 +1,7 @@
 export const { PI } = Math;
 export const halfPI = PI * 0.5;
 export const twoPI = 2 * Math.PI;
-const { atan2, min, max, random, abs, round } = Math;
+const { atan2, min, max, random, abs, round, cos, sin, sqrt } = Math;
 
 export const clamp = (value: number, minimum = 0, maximum = 1): number => {
   if (value > maximum) return maximum;
@@ -38,6 +38,20 @@ export const randomSign = (): number => round(random()) * 2 - 1;
 
 export const randomInRange = (minimum = 0, maximum = 1): number =>
   random() * (maximum - minimum) + minimum;
+
+export const randomUnitVector = (): number[] => {
+  const x = random() * 2 - 1;
+  const y = random() * 2 - 1;
+  const length = sqrt(x * x + y * y);
+
+  return [x / length, y / length];
+};
+
+export const randomUnitVectorOnCirclesEdge = (x = 0, y = 0, radius = 1): number[] => {
+  const randomAngle = random() * twoPI;
+
+  return [x + cos(randomAngle) * radius, y + sin(randomAngle) * radius];
+};
 
 export const getDistanceFromPointAtoB = (
   ax: number,

@@ -3,7 +3,7 @@ import * as PIXI from 'pixi.js';
 import AntImage from 'assets/ant-red.png';
 import { Circle } from 'simulation/collisions/circle';
 import { Collisions, TAGS } from 'simulation/collisions/collisions';
-import { doNTimes, randomInRange, randomSign } from 'utils/math';
+import { doNTimes, randomInRange, randomSign, randomUnitVector } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 
 export const antsCount = 200;
@@ -80,11 +80,7 @@ export function spawnAnt(id: number, x: number, y: number, size = 8): any {
   const rotationChangeTimer = new Timer(undefined, undefined, 0.2, 1);
 
   // x and y random and normalized velocity
-  let xv = randomInRange(-1, 1);
-  let yv = randomInRange(-1, 1);
-  const lenght = Math.sqrt(xv * xv + yv * yv);
-  xv /= lenght;
-  yv /= lenght;
+  let [xv, yv] = randomUnitVector();
   const xvTarget = xv;
   const yvTarget = yv;
   const maxSpeed = randomInRange(55, 60);
