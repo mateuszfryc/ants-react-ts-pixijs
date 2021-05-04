@@ -1,15 +1,15 @@
 import * as PIXI from 'pixi.js';
 
-interface BranchType {
+interface VolumeAABBType {
   id: number;
-  parent: BranchType | CircleMinimal | undefined;
-  left: BranchType | CircleMinimal | undefined;
-  right: BranchType | CircleMinimal | undefined;
+  radius: number;
+  parent: VolumeAABBType | CircleMinimal | undefined;
+  right: VolumeAABBType | CircleMinimal | undefined;
+  left: VolumeAABBType | CircleMinimal | undefined;
   xMin: number;
   yMin: number;
   xMax: number;
   yMax: number;
-  isBranch: boolean;
 }
 
 export class CircleMinimal {
@@ -19,14 +19,13 @@ export class CircleMinimal {
   radius: number;
   scale: number;
   tag: number;
-  parent: BranchType | CircleMinimal | undefined;
-  left: BranchType | CircleMinimal | undefined;
-  right: BranchType | CircleMinimal | undefined;
+  parent: VolumeAABBType | CircleMinimal | undefined;
+  right: VolumeAABBType | CircleMinimal | undefined;
+  left: VolumeAABBType | CircleMinimal | undefined;
   xMin: number;
   yMin: number;
   xMax: number;
   yMax: number;
-  isBranch: boolean;
 
   constructor(id = 0, x = 0, y = 0, radius = 1, scale = 1, tag = 0) {
     this.id = id;
@@ -36,13 +35,12 @@ export class CircleMinimal {
     this.scale = scale;
     this.tag = tag;
     this.parent = undefined;
-    this.left = undefined;
     this.right = undefined;
+    this.left = undefined;
     this.xMin = 0;
     this.yMin = 0;
     this.xMax = 0;
     this.yMax = 0;
-    this.isBranch = false;
   }
 
   draw(context: PIXI.Graphics): void {
@@ -63,8 +61,9 @@ type setupReturnType = {
 
 export function setupCircleMinimalCollisions(): setupReturnType {
   const bodies: CircleMinimal[] = [];
-  const branchPool: BranchType[] = [];
-  let root: BranchType | undefined;
+  const branchPool: VolumeAABBType[] = [];
+  const { min, max } = Math;
+  let root: VolumeAABBType | undefined;
 
   // Inserts a body into the BVH
   function insert(circle: CircleMinimal, updating = false): void {
@@ -93,17 +92,17 @@ export function setupCircleMinimalCollisions(): setupReturnType {
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      // Branch
-      if (current.isBranch) {
+      /** is of BranchType */
+      if (current.radius < 0) {
         const left = current.left!;
         /** Get left AABB */
         const { xMin: left_min_x, yMin: left_min_y, xMax: left_max_x, yMax: left_max_y } = left;
 
         /** Simulate new left AABB by extending it with newCircle AABB */
-        const left_new_min_x = body_min_x < left_min_x ? body_min_x : left_min_x;
-        const left_new_min_y = body_min_y < left_min_y ? body_min_y : left_min_y;
-        const left_new_max_x = body_max_x > left_max_x ? body_max_x : left_max_x;
-        const left_new_max_y = body_max_y > left_max_y ? body_max_y : left_max_y;
+        const left_new_min_x = min(body_min_x, left_min_x);
+        const left_new_min_y = min(body_min_y, left_min_y);
+        const left_new_max_x = max(body_max_x, left_max_x);
+        const left_new_max_y = max(body_max_y, left_max_y);
 
         const left_volume = (left_max_x - left_min_x) * (left_max_y - left_min_y);
         const left_new_volume =
@@ -120,20 +119,20 @@ export function setupCircleMinimalCollisions(): setupReturnType {
         } = right;
 
         /** Simulate new right AABB by extending it with newCircle AABB */
-        const right_new_min_x = body_min_x < right_min_x ? body_min_x : right_min_x;
-        const right_new_min_y = body_min_y < right_min_y ? body_min_y : right_min_y;
-        const right_new_max_x = body_max_x > right_max_x ? body_max_x : right_max_x;
-        const right_new_max_y = body_max_y > right_max_y ? body_max_y : right_max_y;
+        const right_new_min_x = min(body_min_x, right_min_x);
+        const right_new_min_y = min(body_min_y, right_min_y);
+        const right_new_max_x = max(body_max_x, right_max_x);
+        const right_new_max_y = max(body_max_y, right_max_y);
 
         const right_volume = (right_max_x - right_min_x) * (right_max_y - right_min_y);
         const right_new_volume =
           (right_new_max_x - right_new_min_x) * (right_new_max_y - right_new_min_y);
         const right_difference = right_new_volume - right_volume;
 
-        current.xMin = left_new_min_x < right_new_min_x ? left_new_min_x : right_new_min_x;
-        current.yMin = left_new_min_y < right_new_min_y ? left_new_min_y : right_new_min_y;
-        current.xMax = left_new_max_x > right_new_max_x ? left_new_max_x : right_new_max_x;
-        current.yMax = left_new_max_y > right_new_max_y ? left_new_max_y : right_new_max_y;
+        current.xMin = min(left_new_min_x, right_new_min_x);
+        current.yMin = min(left_new_min_y, right_new_min_y);
+        current.xMax = max(left_new_max_x, right_new_max_x);
+        current.yMax = max(left_new_max_y, right_new_max_y);
 
         current = left_difference <= right_difference ? left : right;
       }
@@ -151,6 +150,7 @@ export function setupCircleMinimalCollisions(): setupReturnType {
             ? branchPool.pop()!
             : /* prettier-ignore */ {
               id: -9,
+              radius: -1,
               parent: undefined,
               left: undefined,
               right: undefined,
@@ -166,10 +166,10 @@ export function setupCircleMinimalCollisions(): setupReturnType {
         new_parent.left = current;
         new_parent.right = circle;
         new_parent.parent = grandparent;
-        new_parent.xMin = body_min_x < parent_min_x ? body_min_x : parent_min_x;
-        new_parent.yMin = body_min_y < parent_min_y ? body_min_y : parent_min_y;
-        new_parent.xMax = body_max_x > parent_max_x ? body_max_x : parent_max_x;
-        new_parent.yMax = body_max_y > parent_max_y ? body_max_y : parent_max_y;
+        new_parent.xMin = min(body_min_x, parent_min_x);
+        new_parent.yMin = min(body_min_y, parent_min_y);
+        new_parent.xMax = max(body_max_x, parent_max_x);
+        new_parent.yMax = max(body_max_y, parent_max_y);
 
         if (!grandparent) {
           root = new_parent;
@@ -224,10 +224,10 @@ export function setupCircleMinimalCollisions(): setupReturnType {
           yMax: right_max_y,
         } = branch.right!;
 
-        branch.xMin = left_min_x < right_min_x ? left_min_x : right_min_x;
-        branch.yMin = left_min_y < right_min_y ? left_min_y : right_min_y;
-        branch.xMax = left_max_x > right_max_x ? left_max_x : right_max_x;
-        branch.yMax = left_max_y > right_max_y ? left_max_y : right_max_y;
+        branch.xMin = min(left_min_x, right_min_x);
+        branch.yMin = min(left_min_y, right_min_y);
+        branch.xMax = max(left_max_x, right_max_x);
+        branch.yMax = max(left_max_y, right_max_y);
 
         branch = branch.parent as CircleMinimal;
       }
@@ -265,7 +265,7 @@ export function setupCircleMinimalCollisions(): setupReturnType {
     const { xMin: min_x, yMin: min_y, xMax: max_x, yMax: max_y } = circle;
 
     let current = root;
-    if (!current || !current.isBranch) {
+    if (!current || current.radius < 0 /** is of BranchType */) {
       return potentials;
     }
 
@@ -274,7 +274,7 @@ export function setupCircleMinimalCollisions(): setupReturnType {
       if (traverse_left) {
         traverse_left = false;
 
-        let left = current.isBranch ? current.left : undefined;
+        let left = current.radius < 0 /** is of BranchType */ ? current.left : undefined;
 
         while (
           left &&
@@ -284,11 +284,11 @@ export function setupCircleMinimalCollisions(): setupReturnType {
           left.yMin <= max_y
         ) {
           current = left;
-          left = current!.isBranch ? current!.left : undefined;
+          left = current!.radius < 0 /** is of BranchType */ ? current!.left : undefined;
         }
       }
 
-      const { isBranch } = current!;
+      const isBranch = current.radius < 0;
       const right = isBranch ? current!.right : undefined;
 
       if (

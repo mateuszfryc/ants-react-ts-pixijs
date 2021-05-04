@@ -3,20 +3,23 @@ import * as PIXI from 'pixi.js';
 import { BVHBranch } from './BVHBranch';
 import { Shape } from './proxyTypes';
 
+const branchPool: BVHBranch[] = [];
+const { min, max } = Math;
+
 export class BVH {
-  _hierarchy: BVHBranch | Shape | undefined;
-  _bodies: Shape[];
+  root: BVHBranch | Shape | undefined;
+  bodies: Shape[];
 
   constructor() {
-    this._hierarchy = undefined;
-    this._bodies = [];
+    this.root = undefined;
+    this.bodies = [];
   }
 
   // Inserts a body into the BVH
   insert(shape: Shape, updating = false): void {
     const isPolygon = shape._polygon;
     if (!updating) {
-      this._bodies.push(shape);
+      this.bodies.push(shape);
     }
 
     const body_x = shape.x;
@@ -46,11 +49,10 @@ export class BVH {
     shape._bvh_max_x = body_max_x;
     shape._bvh_max_y = body_max_y;
 
-    let current = this._hierarchy!;
-    let sort = 0;
+    let current = this.root!;
 
     if (!current) {
-      this._hierarchy = shape;
+      this.root = shape;
 
       return;
     }
@@ -58,64 +60,90 @@ export class BVH {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       // Branch
-      sort += 1;
       if (current._bvh_branch) {
         const left = current._bvh_left!;
-        const left_min_y = left._bvh_min_y;
-        const left_max_x = left._bvh_max_x;
-        const left_max_y = left._bvh_max_y;
-        const left_new_min_x = body_min_x < left._bvh_min_x ? body_min_x : left._bvh_min_x;
-        const left_new_min_y = body_min_y < left_min_y ? body_min_y : left_min_y;
-        const left_new_max_x = body_max_x > left_max_x ? body_max_x : left_max_x;
-        const left_new_max_y = body_max_y > left_max_y ? body_max_y : left_max_y;
-        const left_volume = (left_max_x - left._bvh_min_x) * (left_max_y - left_min_y);
+        /** Get left AABB */
+        const {
+          _bvh_min_x: left_min_x,
+          _bvh_min_y: left_min_y,
+          _bvh_max_x: left_max_x,
+          _bvh_max_y: left_max_y,
+        } = left;
+
+        /** Simulate new left AABB by extending it with newCircle AABB */
+        const left_new_min_x = min(body_min_x, left_min_x);
+        const left_new_min_y = min(body_min_y, left_min_y);
+        const left_new_max_x = max(body_max_x, left_max_x);
+        const left_new_max_y = max(body_max_y, left_max_y);
+
+        const left_volume = (left_max_x - left_min_x) * (left_max_y - left_min_y);
         const left_new_volume =
           (left_new_max_x - left_new_min_x) * (left_new_max_y - left_new_min_y);
         const left_difference = left_new_volume - left_volume;
 
+        /** Get right AABB */
         const right = current._bvh_right!;
-        const right_min_x = right._bvh_min_x;
-        const right_min_y = right._bvh_min_y;
-        const right_max_x = right._bvh_max_x;
-        const right_max_y = right._bvh_max_y;
-        const right_new_min_x = body_min_x < right_min_x ? body_min_x : right_min_x;
-        const right_new_min_y = body_min_y < right_min_y ? body_min_y : right_min_y;
-        const right_new_max_x = body_max_x > right_max_x ? body_max_x : right_max_x;
-        const right_new_max_y = body_max_y > right_max_y ? body_max_y : right_max_y;
+        const {
+          _bvh_min_x: right_min_x,
+          _bvh_min_y: right_min_y,
+          _bvh_max_x: right_max_x,
+          _bvh_max_y: right_max_y,
+        } = right;
+
+        /** Simulate new right AABB by extending it with newCircle AABB */
+        const right_new_min_x = min(body_min_x, right_min_x);
+        const right_new_min_y = min(body_min_y, right_min_y);
+        const right_new_max_x = max(body_max_x, right_max_x);
+        const right_new_max_y = max(body_max_y, right_max_y);
+
         const right_volume = (right_max_x - right_min_x) * (right_max_y - right_min_y);
         const right_new_volume =
           (right_new_max_x - right_new_min_x) * (right_new_max_y - right_new_min_y);
         const right_difference = right_new_volume - right_volume;
 
-        current._bvh_sort = sort;
-        current._bvh_min_x = left_new_min_x < right_new_min_x ? left_new_min_x : right_new_min_x;
-        current._bvh_min_y = left_new_min_y < right_new_min_y ? left_new_min_y : right_new_min_y;
-        current._bvh_max_x = left_new_max_x > right_new_max_x ? left_new_max_x : right_new_max_x;
-        current._bvh_max_y = left_new_max_y > right_new_max_y ? left_new_max_y : right_new_max_y;
+        current._bvh_min_x = min(left_new_min_x, right_new_min_x);
+        current._bvh_min_y = min(left_new_min_y, right_new_min_y);
+        current._bvh_max_x = max(left_new_max_x, right_new_max_x);
+        current._bvh_max_y = max(left_new_max_y, right_new_max_y);
 
         current = left_difference <= right_difference ? left : right;
       }
       // Leaf
       else {
         const grandparent = current._bvh_parent;
-        const parent_min_x = current._bvh_min_x;
-        const parent_min_y = current._bvh_min_y;
-        const parent_max_x = current._bvh_max_x;
-        const parent_max_y = current._bvh_max_y;
+        const {
+          _bvh_min_x: parent_min_x,
+          _bvh_min_y: parent_min_y,
+          _bvh_max_x: parent_max_x,
+          _bvh_max_y: parent_max_y,
+        } = current;
         // eslint-disable-next-line no-multi-assign
-        const new_parent = (current._bvh_parent = shape._bvh_parent = BVHBranch.getBranch());
+        const new_parent =
+          branchPool.length > 0
+            ? branchPool.pop()!
+            : /* prettier-ignore */ {
+              _bvh_parent: undefined,
+              _bvh_left: undefined,
+              _bvh_right: undefined,
+              _bvh_min_x: 0,
+              _bvh_min_y: 0,
+              _bvh_max_x: 0,
+              _bvh_max_y: 0,
+              _bvh_branch: true,
+            };
+        shape._bvh_parent = new_parent;
+        current._bvh_parent = new_parent;
 
         new_parent._bvh_parent = grandparent;
         new_parent._bvh_left = current;
         new_parent._bvh_right = shape;
-        new_parent._bvh_sort = sort;
-        new_parent._bvh_min_x = body_min_x < parent_min_x ? body_min_x : parent_min_x;
-        new_parent._bvh_min_y = body_min_y < parent_min_y ? body_min_y : parent_min_y;
-        new_parent._bvh_max_x = body_max_x > parent_max_x ? body_max_x : parent_max_x;
-        new_parent._bvh_max_y = body_max_y > parent_max_y ? body_max_y : parent_max_y;
+        new_parent._bvh_min_x = min(body_min_x, parent_min_x);
+        new_parent._bvh_min_y = min(body_min_y, parent_min_y);
+        new_parent._bvh_max_x = max(body_max_x, parent_max_x);
+        new_parent._bvh_max_y = max(body_max_y, parent_max_y);
 
         if (!grandparent) {
-          this._hierarchy = new_parent;
+          this.root = new_parent;
         } else if (grandparent._bvh_left === current) {
           grandparent._bvh_left = new_parent;
         } else {
@@ -129,11 +157,11 @@ export class BVH {
 
   remove(shape: Shape, updating = false): void {
     if (!updating) {
-      this._bodies.splice(this._bodies.indexOf(shape), 1);
+      this.bodies.splice(this.bodies.indexOf(shape), 1);
     }
 
-    if (this._hierarchy === shape) {
-      this._hierarchy = undefined;
+    if (this.root === shape) {
+      this.root = undefined;
 
       return;
     }
@@ -144,10 +172,6 @@ export class BVH {
     const sibling = (parent_left === shape ? parent._bvh_right : parent_left)!;
 
     sibling._bvh_parent = grandparent;
-
-    if (sibling._bvh_branch) {
-      sibling._bvh_sort = parent._bvh_sort;
-    }
 
     if (grandparent) {
       if (grandparent._bvh_left === parent) {
@@ -179,15 +203,15 @@ export class BVH {
         branch = branch._bvh_parent as BVHBranch;
       }
     } else {
-      this._hierarchy = sibling;
+      this.root = sibling;
     }
 
-    BVHBranch.releaseBranch(parent);
+    branchPool.push(parent);
   }
 
   // Updates the BVH. Moved bodies are removed/inserted.
   update(): void {
-    const bodies = this._bodies;
+    const { bodies } = this;
     const count = bodies.length;
 
     for (let i = 0; i < count; ++i) {
@@ -240,12 +264,9 @@ export class BVH {
   // Returns a list of potential collisions for a body
   potentials(body: Shape): Shape[] {
     const shapes: Shape[] = [];
-    const min_x = body._bvh_min_x;
-    const min_y = body._bvh_min_y;
-    const max_x = body._bvh_max_x;
-    const max_y = body._bvh_max_y;
+    const { _bvh_min_x: min_x, _bvh_min_y: min_y, _bvh_max_x: max_x, _bvh_max_y: max_y } = body;
 
-    let current = this._hierarchy;
+    let current = this.root;
     let traverse_left = true;
 
     if (!current || !current._bvh_branch) {
@@ -307,7 +328,7 @@ export class BVH {
 
   // Draws the bodies within the BVH to a CanvasRenderingContext2D's current path
   draw(context: PIXI.Graphics): void {
-    const bodies = this._bodies;
+    const { bodies } = this;
     const count = bodies.length;
 
     for (let i = 0; i < count; ++i) {

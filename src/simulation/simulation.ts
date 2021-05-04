@@ -394,8 +394,8 @@ export const setupSimulation = (container: HTMLElement): void => {
       }
     });
 
-    _draw.clear();
-    _draw.lineStyle(1, 0xff0000);
+    // _draw.clear();
+    // _draw.lineStyle(1, 0xff0000);
     // _draw.lineStyle(1, 0x005500);
     // pheremonesCollisionShapes.forEach((pheromone) => {
     //   pheromone.draw(_draw);
@@ -408,7 +408,7 @@ export const setupSimulation = (container: HTMLElement): void => {
     // foodCollisionShapes.forEach((bite) => {
     //   bite.draw(draw);
     // });
-    drawAntSensors(_draw);
+    // drawAntSensors(_draw);
     // antsCollisions.draw(_draw);
 
     if (debugTimer.update(deltaSeconds)) {
