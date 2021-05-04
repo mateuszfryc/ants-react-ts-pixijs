@@ -2,28 +2,28 @@ import * as PIXI from 'pixi.js';
 
 import { TAGS } from 'simulation/collisions/collisions';
 import { Shape } from 'simulation/collisions/proxyTypes';
-import {
-  debugTimer,
-  setupAntCounter,
-  setupFPSDisplay,
-  setupPheromonesCounter,
-} from 'simulation/debug';
-// prettier-ignore
-import { halfPI, interpolate, mapRange, mapRangeClamped,
-  normalizeRadians, PI, randomInRange } from 'utils/math';
 import { setupGraphics } from 'utils/graphics';
+// prettier-ignore
+import { debugTimer, setupAntCounter, setupFPSDisplay, setupPheromonesCounter } from 'simulation/debug';
+// prettier-ignore
+import {
+  halfPI, interpolate, mapRange, mapRangeClamped,
+  normalizeRadians, PI, randomInRange } from 'utils/math';
+import { Nest } from './Nest';
 import { Timer } from './Timer';
 // prettier-ignore
-import { antsCount, antsScale, releaseTheAntsOneByOne, antPropsInt8Count,
+import {
+  antsCount, antsScale, releaseTheAntsOneByOne, antPropsInt8Count,
   antPropsFloat16Count, antsPropsInt8IDs, antsPropsFloat16IDs, maxPheromonesEmission,
   antsCollisions, antsCollisionShapes, antsPropsInt8, antsPropsFloat16, antsSpritesMap } from './Ant';
 // prettier-ignore
-import { makeSomeFood, foodImageTexture, foodSprites,
+import {
+  makeSomeFood, foodImageTexture, foodSprites,
   foodBitesSpritesMap, foodCollisionShapes, foodProps } from './Food';
 // prettier-ignore
-import { Pheromone, setupAntsPheromonesSensors, pheromones, sensorsTurnInterpolationSpeed, pheromonesSpritesMap,
-  pheromoneEmissionTimer, nestPheromoneTexture, foodPheromoneTexture, pheromonesLifeSpan  } from './Pheromones';
-import { Nest } from './Nest';
+import {
+  Pheromone, setupAntsPheromonesSensors, pheromones, sensorsTurnInterpolationSpeed,
+  pheromonesSpritesMap, pheromonesLifeSpan, foodPheromoneTexture, nestPheromoneTexture } from './Pheromones';
 
 const { random, min, atan2, cos, sin, abs, sign, sqrt, max } = Math;
 const { Sprite } = PIXI;
@@ -35,7 +35,8 @@ export const setupSimulation = (container: HTMLElement): void => {
     stage,
     antsSprites,
     foodBitesSprites,
-    pheromonesSprites,
+    foodPheromonesSprites,
+    nestPheromonesSprites,
     _draw,
   } = setupGraphics(container, antsCount);
   const result = new Float32Array(new ArrayBuffer(12)); // 3 numbers
@@ -48,6 +49,7 @@ export const setupSimulation = (container: HTMLElement): void => {
   const { speedId, targetSpeedId, maxSpeedId, rotationDirectionId, hasFoodId, pheromoneStrengthId } = antsPropsInt8IDs;
   const { xvId, yvId, xvTargetId, yvTargetId } = antsPropsFloat16IDs;
   const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
+  const foodDistanceToNest = 300;
   let antsOnScreenCounter = 0;
 
   const timers = new Map<number, Timer>();
@@ -65,6 +67,8 @@ export const setupSimulation = (container: HTMLElement): void => {
     updateAntSensors,
     addPheromoneShape,
     removePheromoneShape,
+    pheromoneEmissionTimer,
+    drawAntSensors,
   } = setupAntsPheromonesSensors(antsScale);
 
   /**
@@ -350,7 +354,9 @@ export const setupSimulation = (container: HTMLElement): void => {
         pheromoneSprite.anchor.set(0.5);
         pheromoneSprite.scale.set(0.2 * newPheromone.radius);
         pheromonesSpritesMap.set(pheromoneId, pheromoneSprite);
-        pheromonesSprites.addChild(pheromoneSprite);
+        if (hasFood) {
+          foodPheromonesSprites.addChild(pheromoneSprite);
+        } else nestPheromonesSprites.addChild(pheromoneSprite);
 
         currentPheromoneId++;
         pheromoneStrength--;
@@ -380,7 +386,9 @@ export const setupSimulation = (container: HTMLElement): void => {
           removePheromoneShape(circle);
           pheromones.delete(id);
         }
-        pheromonesSprites.removeChild(sprite);
+        if (hasFood) {
+          foodPheromonesSprites.removeChild(sprite);
+        } else nestPheromonesSprites.removeChild(sprite);
         pheromonesSpritesMap.delete(id);
       } else {
         sprite.alpha = 1 - lifeSpan / pheromonesLifeSpan;
@@ -401,9 +409,7 @@ export const setupSimulation = (container: HTMLElement): void => {
     // foodCollisionShapes.forEach((bite) => {
     //   bite.draw(draw);
     // });
-    // sensorForward.draw(_draw);
-    // sensorLeft.draw(_draw);
-    // sensorRight.draw(_draw);
+    // drawAntSensors(_draw);
     // antsCollisions.draw(_draw);
 
     if (debugTimer.update(deltaSeconds)) {
@@ -424,8 +430,8 @@ export const setupSimulation = (container: HTMLElement): void => {
       stage.addChild(foodSprite);
       foodProps.set(id, properties);
     },
-    worldWidth * 0.7,
-    worldHeight * 0.7,
+    nest.x + foodDistanceToNest,
+    nest.y + foodDistanceToNest,
   );
 
   releaseTheAntsOneByOne(

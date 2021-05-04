@@ -8,7 +8,13 @@ import { TAGS } from './collisions/collisions';
 
 const { ANT_SENSOR, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
 
-const radius = 2;
+export const sensorsTurnInterpolationSpeed = 16;
+export const pheromones = new Map<number, Pheromone>();
+export const pheromonesSpritesMap = new Map<number, PIXI.Sprite>();
+export const nestPheromoneTexture = PIXI.Texture.from(NestScentImage);
+export const foodPheromoneTexture = PIXI.Texture.from(FoodScentImage);
+
+let radius = 0.66;
 /** Time before pheromone will decay (in seconds) */
 export const pheromonesLifeSpan = 32;
 
@@ -28,18 +34,14 @@ const {
   getPotentials,
   areCirclesColliding,
 } = setupCircleMinimalCollisions();
-export const sensorScale = 0.14;
-export const sensorForwardDistance = 3.3;
-export const sensorsSideDistance = 0.66;
-export const sensorsSideSpread = 0.6;
-export const sensorsTurnInterpolationSpeed = 24;
-export const pheromones = new Map<number, Pheromone>();
-export const pheromonesSpritesMap = new Map<number, PIXI.Sprite>();
-export const pheromoneEmissionTimer = new Timer(0.2);
-export const nestPheromoneTexture = PIXI.Texture.from(NestScentImage);
-export const foodPheromoneTexture = PIXI.Texture.from(FoodScentImage);
+const sensorScale = 0.18;
+const sensorForwardDistance = 3.6;
+const sensorsSideDistance = 0.46;
+const sensorsSideSpread = 0.7;
 
 export const setupAntsPheromonesSensors = (antsScale: number): any => {
+  radius *= antsScale;
+  const pheromoneEmissionTimer = new Timer(0.066 * antsScale);
   /**
    * Below are three collision shapes that will be used
    * to sample area before each ant. Left, center and right
@@ -116,7 +118,7 @@ export const setupAntsPheromonesSensors = (antsScale: number): any => {
         rightSensorInputSum += 1;
     }
 
-    return [frontSensorInputSum, leftSensorInputSum, rightSensorInputSum];
+    return [frontSensorInputSum, leftSensorInputSum, rightSensorInputSum, pheromoneEmissionTimer];
   }
 
   return {
@@ -126,5 +128,11 @@ export const setupAntsPheromonesSensors = (antsScale: number): any => {
     updateAntSensors,
     addPheromoneShape: insert,
     removePheromoneShape: remove,
+    pheromoneEmissionTimer,
+    drawAntSensors: (context: PIXI.Graphics) => {
+      sensorLeft.draw(context);
+      sensorForward.draw(context);
+      sensorRight.draw(context);
+    },
   };
 };

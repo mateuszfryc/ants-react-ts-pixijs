@@ -1,3 +1,5 @@
+import * as PIXI from 'pixi.js';
+
 const branchPool: CircleMinimal[] = [];
 
 export class CircleMinimal {
@@ -31,6 +33,13 @@ export class CircleMinimal {
     this._bvh_min_y = 0;
     this._bvh_max_x = 0;
     this._bvh_max_y = 0;
+  }
+
+  draw(context: PIXI.Graphics): void {
+    const { x, y, radius: radiusWithoutScale, scale } = this;
+    const radius = radiusWithoutScale * scale;
+    context.moveTo(x + radius, y);
+    context.drawCircle(x, y, radius);
   }
 }
 
