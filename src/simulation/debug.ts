@@ -48,3 +48,17 @@ export const setupAntCounter = (): { [key: string]: (t: number, o: number) => vo
     },
   };
 };
+
+export const setupPheromonesCounter = (): { [key: string]: (newCount: number) => void } => {
+  let pheromonesCount = 0;
+  const pheromonesCountElement = get('#status-pheromones-total span');
+
+  return {
+    updatePheromonesCounter: (newCount: number): void => {
+      if (pheromonesCount !== newCount && pheromonesCountElement) {
+        pheromonesCountElement.innerHTML = `${newCount}`;
+        pheromonesCount = newCount;
+      }
+    },
+  };
+};

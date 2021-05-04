@@ -2,7 +2,12 @@ import * as PIXI from 'pixi.js';
 
 import { TAGS } from 'simulation/collisions/collisions';
 import { Shape } from 'simulation/collisions/proxyTypes';
-import { debugTimer, setupAntCounter, setupFPSDisplay } from 'simulation/debug';
+import {
+  debugTimer,
+  setupAntCounter,
+  setupFPSDisplay,
+  setupPheromonesCounter,
+} from 'simulation/debug';
 // prettier-ignore
 import { halfPI, interpolate, mapRange, mapRangeClamped,
   normalizeRadians, PI, randomInRange } from 'utils/math';
@@ -39,6 +44,7 @@ export const setupSimulation = (container: HTMLElement): void => {
   antsCollisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
   const { updateFPSDisplay } = setupFPSDisplay();
   const { updateAntsCounter } = setupAntCounter();
+  const { updatePheromonesCounter } = setupPheromonesCounter();
   // prettier-ignore
   const { speedId, targetSpeedId, maxSpeedId, rotationDirectionId, hasFoodId, pheromoneStrengthId } = antsPropsInt8IDs;
   const { xvId, yvId, xvTargetId, yvTargetId } = antsPropsFloat16IDs;
@@ -444,6 +450,7 @@ export const setupSimulation = (container: HTMLElement): void => {
       updateFPSDisplay(deltaSeconds);
       const { size } = antsCollisionShapes;
       updateAntsCounter(size, size - antsOnScreenCounter);
+      updatePheromonesCounter(pheromones.size);
     }
 
     lastTime = frameStartTime;
