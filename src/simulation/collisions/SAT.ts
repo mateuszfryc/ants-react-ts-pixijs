@@ -1,4 +1,3 @@
-import { Result } from './result';
 import { Shape } from './proxyTypes';
 
 // Determines if two bodies' axis aligned bounding boxes are colliding
@@ -30,7 +29,7 @@ export const separatingAxis = (
   b_coords: number[] | Float64Array,
   x: number,
   y: number,
-  result?: Result,
+  result: Float32Array,
 ): boolean => {
   const a_count = a_coords.length;
   const b_count = b_coords.length;
@@ -72,55 +71,48 @@ export const separatingAxis = (
     return true;
   }
 
-  if (result) {
-    let overlap = 0;
+  let overlap = 0;
 
-    if (a_start! < b_start!) {
-      result.a_in_b = false;
-
-      if (a_end! < b_end!) {
-        overlap = a_end! - b_start!;
-        result.b_in_a = false;
-      } else {
-        const option1 = a_end! - b_start!;
-        const option2 = b_end! - a_start!;
-
-        overlap = option1 < option2 ? option1 : -option2;
-      }
+  if (a_start! < b_start!) {
+    if (a_end! < b_end!) {
+      overlap = a_end! - b_start!;
     } else {
-      result.b_in_a = false;
+      const option1 = a_end! - b_start!;
+      const option2 = b_end! - a_start!;
 
-      if (a_end! > b_end!) {
-        overlap = a_start! - b_end!;
-        result.a_in_b = false;
-      } else {
-        const option1 = a_end! - b_start!;
-        const option2 = b_end! - a_start!;
-
-        overlap = option1 < option2 ? option1 : -option2;
-      }
+      overlap = option1 < option2 ? option1 : -option2;
     }
+  } else if (a_end! > b_end!) {
+    overlap = a_start! - b_end!;
+  } else {
+    const option1 = a_end! - b_start!;
+    const option2 = b_end! - a_start!;
 
-    const current_overlap = result.overlap;
-    const absolute_overlap = overlap < 0 ? -overlap : overlap;
+    overlap = option1 < option2 ? option1 : -option2;
+  }
 
-    if (current_overlap === undefined || current_overlap > absolute_overlap) {
-      // prettier-ignore
-      const sign = overlap < 0
-        ? -1
-        : 1;
+  const current_overlap = result[0];
+  const absolute_overlap = overlap < 0 ? -overlap : overlap;
 
-      result.overlap = absolute_overlap;
-      result.overlap_x = x * sign;
-      result.overlap_y = y * sign;
-    }
+  if (current_overlap === undefined || current_overlap > absolute_overlap) {
+    // prettier-ignore
+    const sign = overlap < 0
+      ? -1
+      : 1;
+
+    /** overlap length */
+    result[0] = absolute_overlap;
+    /** overlap x */
+    result[1] = x * sign;
+    /** overlap y */
+    result[2] = y * sign;
   }
 
   return false;
 };
 
 // Determines if two polygons are colliding
-export const polygonPolygon = (a: Shape, b: Shape, result?: Result): boolean => {
+export const polygonPolygon = (a: Shape, b: Shape, result: Float32Array): boolean => {
   const a_count = a._coords.length;
   const b_count = b._coords.length;
 
@@ -129,9 +121,7 @@ export const polygonPolygon = (a: Shape, b: Shape, result?: Result): boolean => 
     const a_coords = a._coords;
     const b_coords = b._coords;
 
-    if (result) {
-      result.overlap = 0;
-    }
+    result[0] = 0;
 
     return a_coords[0] === b_coords[0] && a_coords[1] === b_coords[1];
   }
@@ -164,7 +154,7 @@ export const polygonPolygon = (a: Shape, b: Shape, result?: Result): boolean => 
 export const polygonCircle = (
   polygon: Shape,
   circle: Shape,
-  result?: Result,
+  result: Float32Array,
   reverse = false,
 ): boolean => {
   const a_coords = polygon._coords;
@@ -183,115 +173,87 @@ export const polygonCircle = (
   let overlap_x = 0;
   let overlap_y = 0;
 
-  // Handle points specially
-  if (count === 2) {
-    const coord_x = b_x - a_coords[0];
-    const coord_y = b_y - a_coords[1];
-    const length_squared = coord_x * coord_x + coord_y * coord_y;
+  for (let ix = 0, iy = 1; ix < count; ix += 2, iy += 2) {
+    const coord_x = b_x - a_coords[ix];
+    const coord_y = b_y - a_coords[iy];
+    const edge_x = a_edges[ix];
+    const edge_y = a_edges[iy];
+    const dot = coord_x * edge_x + coord_y * edge_y;
+    const region = dot < 0 ? -1 : dot > edge_x * edge_x + edge_y * edge_y ? 1 : 0;
 
-    if (length_squared > radius_squared) {
-      return false;
+    let tmp_overlapping = false;
+    let tmp_overlap = 0;
+    let tmp_overlap_x = 0;
+    let tmp_overlap_y = 0;
+
+    if (a_in_b && coord_x * coord_x + coord_y * coord_y > radius_squared) {
+      a_in_b = false;
     }
 
-    if (result) {
-      const length = Math.sqrt(length_squared);
+    if (region) {
+      const left = region === -1;
+      const other_x = left ? (ix === 0 ? count - 2 : ix - 2) : ix === count - 2 ? 0 : ix + 2;
+      const other_y = other_x + 1;
+      const coord2_x = b_x - a_coords[other_x];
+      const coord2_y = b_y - a_coords[other_y];
+      const edge2_x = a_edges[other_x];
+      const edge2_y = a_edges[other_y];
+      const dot2 = coord2_x * edge2_x + coord2_y * edge2_y;
+      const region2 = dot2 < 0 ? -1 : dot2 > edge2_x * edge2_x + edge2_y * edge2_y ? 1 : 0;
 
-      overlap = b_radius - length;
-      overlap_x = coord_x / length;
-      overlap_y = coord_y / length;
-      b_in_a = false;
-    }
-  } else {
-    for (let ix = 0, iy = 1; ix < count; ix += 2, iy += 2) {
-      const coord_x = b_x - a_coords[ix];
-      const coord_y = b_y - a_coords[iy];
-      const edge_x = a_edges[ix];
-      const edge_y = a_edges[iy];
-      const dot = coord_x * edge_x + coord_y * edge_y;
-      const region = dot < 0 ? -1 : dot > edge_x * edge_x + edge_y * edge_y ? 1 : 0;
+      if (region2 === -region) {
+        const target_x = left ? coord_x : coord2_x;
+        const target_y = left ? coord_y : coord2_y;
+        const length_squared = target_x * target_x + target_y * target_y;
 
-      let tmp_overlapping = false;
-      let tmp_overlap = 0;
-      let tmp_overlap_x = 0;
-      let tmp_overlap_y = 0;
-
-      if (result && a_in_b && coord_x * coord_x + coord_y * coord_y > radius_squared) {
-        a_in_b = false;
-      }
-
-      if (region) {
-        const left = region === -1;
-        const other_x = left ? (ix === 0 ? count - 2 : ix - 2) : ix === count - 2 ? 0 : ix + 2;
-        const other_y = other_x + 1;
-        const coord2_x = b_x - a_coords[other_x];
-        const coord2_y = b_y - a_coords[other_y];
-        const edge2_x = a_edges[other_x];
-        const edge2_y = a_edges[other_y];
-        const dot2 = coord2_x * edge2_x + coord2_y * edge2_y;
-        const region2 = dot2 < 0 ? -1 : dot2 > edge2_x * edge2_x + edge2_y * edge2_y ? 1 : 0;
-
-        if (region2 === -region) {
-          const target_x = left ? coord_x : coord2_x;
-          const target_y = left ? coord_y : coord2_y;
-          const length_squared = target_x * target_x + target_y * target_y;
-
-          if (length_squared > radius_squared) {
-            return false;
-          }
-
-          if (result) {
-            const length = Math.sqrt(length_squared);
-
-            tmp_overlapping = true;
-            tmp_overlap = b_radius - length;
-            tmp_overlap_x = target_x / length;
-            tmp_overlap_y = target_y / length;
-            b_in_a = false;
-          }
-        }
-      } else {
-        const normal_x = a_normals[ix];
-        const normal_y = a_normals[iy];
-        const length = coord_x * normal_x + coord_y * normal_y;
-        const absolute_length = length < 0 ? -length : length;
-
-        if (length > 0 && absolute_length > b_radius) {
+        if (length_squared > radius_squared) {
           return false;
         }
 
-        if (result) {
-          tmp_overlapping = true;
-          tmp_overlap = b_radius - length;
-          tmp_overlap_x = normal_x;
-          tmp_overlap_y = normal_y;
+        const length = Math.sqrt(length_squared);
 
-          if ((b_in_a && length >= 0) || tmp_overlap < b_radius2) {
-            b_in_a = false;
-          }
-        }
+        tmp_overlapping = true;
+        tmp_overlap = b_radius - length;
+        tmp_overlap_x = target_x / length;
+        tmp_overlap_y = target_y / length;
+        b_in_a = false;
+      }
+    } else {
+      const normal_x = a_normals[ix];
+      const normal_y = a_normals[iy];
+      const length = coord_x * normal_x + coord_y * normal_y;
+      const absolute_length = length < 0 ? -length : length;
+
+      if (length > 0 && absolute_length > b_radius) {
+        return false;
       }
 
-      if (tmp_overlapping && (overlap === undefined || overlap > tmp_overlap)) {
-        overlap = tmp_overlap;
-        overlap_x = tmp_overlap_x;
-        overlap_y = tmp_overlap_y;
+      tmp_overlapping = true;
+      tmp_overlap = b_radius - length;
+      tmp_overlap_x = normal_x;
+      tmp_overlap_y = normal_y;
+
+      if ((b_in_a && length >= 0) || tmp_overlap < b_radius2) {
+        b_in_a = false;
       }
+    }
+
+    if (tmp_overlapping && (overlap === undefined || overlap > tmp_overlap)) {
+      overlap = tmp_overlap;
+      overlap_x = tmp_overlap_x;
+      overlap_y = tmp_overlap_y;
     }
   }
 
-  if (result) {
-    result.a_in_b = reverse ? b_in_a : a_in_b;
-    result.b_in_a = reverse ? a_in_b : b_in_a;
-    result.overlap = overlap;
-    result.overlap_x = reverse ? -overlap_x : overlap_x;
-    result.overlap_y = reverse ? -overlap_y : overlap_y;
-  }
+  result[0] = overlap ?? 0;
+  result[1] = reverse ? -overlap_x : overlap_x;
+  result[2] = reverse ? -overlap_y : overlap_y;
 
   return true;
 };
 
 // Determines if two circles are colliding
-export const circleCircle = (a: Shape, b: Shape, result?: Result): boolean => {
+export const circleCircle = (a: Shape, b: Shape, result: Float32Array): boolean => {
   const a_radius = a.radius * a.scale;
   const b_radius = b.radius * b.scale;
   const difference_x = b.x - a.x;
@@ -303,15 +265,11 @@ export const circleCircle = (a: Shape, b: Shape, result?: Result): boolean => {
     return false;
   }
 
-  if (result) {
-    const length = Math.sqrt(length_squared);
+  const length = Math.sqrt(length_squared);
 
-    result.a_in_b = a_radius <= b_radius && length <= b_radius - a_radius;
-    result.b_in_a = b_radius <= a_radius && length <= a_radius - b_radius;
-    result.overlap = radius_sum - length;
-    result.overlap_x = difference_x / length;
-    result.overlap_y = difference_y / length;
-  }
+  result[0] = radius_sum - length;
+  result[1] = difference_x / length;
+  result[2] = difference_y / length;
 
   return true;
 };

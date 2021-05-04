@@ -3,7 +3,7 @@ import styled, { css } from 'styled-components';
 
 import { Navigation } from 'UI/components/Navigation';
 import { SEO } from 'UI/components/SEO';
-import { setupGraphics, updateRendererSize } from 'utils/graphics';
+import { updateRendererSize } from 'utils/graphics';
 import { setupSimulation } from 'simulation/simulation';
 import { StatusBar } from '../StatusBar';
 
@@ -32,9 +32,7 @@ export const App: React.FC = () => {
     if (!simInitLock.current) {
       const { current } = contentRef;
       if (current) {
-        const { app, particles, draw } = setupGraphics(current);
-        setupSimulation(current, app, particles, draw);
-        app.start();
+        setupSimulation(current);
         updateRendererSize(current);
 
         window.addEventListener('resize', () => {

@@ -6,6 +6,7 @@ export class Polygon extends Body {
   angle: number;
   scale_x: number;
   scale_y: number;
+  id: number;
   _polygon: boolean;
   _x: number;
   _y: number;
@@ -33,8 +34,10 @@ export class Polygon extends Body {
     scale_x = 1,
     scale_y = 1,
     padding = 0,
+    id = 0,
   ) {
     super(x, y, padding, tag);
+    this.id = id;
 
     // The angle of the body in radians
     this.angle = angle;

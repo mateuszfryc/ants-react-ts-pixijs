@@ -1,4 +1,8 @@
+import { Timer } from './Timer';
+
 const get = document.querySelector.bind(document);
+
+export const debugTimer = new Timer(0.5);
 
 export const setupFPSDisplay = (): { [key: string]: (deltaTime: number) => void } => {
   let fpsMax = 0;
@@ -40,6 +44,20 @@ export const setupAntCounter = (): { [key: string]: (t: number, o: number) => vo
       if (antsOnScreenCount !== onScreen) {
         antsOnScreenElement.innerHTML = onScreen;
         antsOnScreenCount = onScreen;
+      }
+    },
+  };
+};
+
+export const setupPheromonesCounter = (): { [key: string]: (newCount: number) => void } => {
+  let pheromonesCount = 0;
+  const pheromonesCountElement = get('#status-pheromones-total span');
+
+  return {
+    updatePheromonesCounter: (newCount: number): void => {
+      if (pheromonesCount !== newCount && pheromonesCountElement) {
+        pheromonesCountElement.innerHTML = `${newCount}`;
+        pheromonesCount = newCount;
       }
     },
   };

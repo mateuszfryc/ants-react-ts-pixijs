@@ -22,7 +22,7 @@ export class Nest extends SpriteWithCollisions {
     const entranceCover = PIXI.Sprite.from(NestEntranceCoverImage);
     entranceCover.x = x;
     entranceCover.y = y;
-    entranceCover.scale.set(scale * 0.8);
+    entranceCover.scale.set(scale * 0.6);
     entranceCover.anchor.set(0.5);
     entranceCover.zIndex = 3;
     this.entranceCoverSprite = entranceCover;

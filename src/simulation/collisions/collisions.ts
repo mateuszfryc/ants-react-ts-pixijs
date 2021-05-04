@@ -5,7 +5,6 @@ import { Circle } from './circle';
 import { aabbAABB, circleCircle, polygonCircle, polygonPolygon } from './SAT';
 import { Polygon } from './polygon';
 import { Shape } from './proxyTypes';
-import { Result } from './result';
 
 export const TAGS = {
   ANT: 0,
@@ -14,8 +13,9 @@ export const TAGS = {
   NEST_VISIBLE_AREA: 3,
   FOOD: 4,
   FOOD_SCENT_AREA: 5,
-  SCENT_NEST: 6,
-  SCENT_FOOD: 7,
+  PHEROMONE_NEST: 6,
+  PHEROMONE_FOOD: 7,
+  ANT_SENSOR: 8,
 };
 
 export class Collisions {
@@ -25,14 +25,8 @@ export class Collisions {
     this._bvh = new BVH();
   }
 
-  addCircle(x = 0, y = 0, radius = 0, tag = TAGS.ANT, scale = 1, padding = 0): Circle {
-    const body = new Circle(x, y, radius, tag, scale, padding) as Shape;
-
-    const removeSelf = (): void => {
-      this.remove(body);
-    };
-    removeSelf.bind(this);
-    body.removeSelfFromCollisions = removeSelf;
+  addCircle(x = 0, y = 0, radius = 1, tag = TAGS.ANT, scale = 1, padding = 0, id = 0): Circle {
+    const body = new Circle(x, y, radius, tag, scale, padding, id) as Shape;
 
     this._bvh.insert(body);
 
@@ -51,12 +45,6 @@ export class Collisions {
   ): Polygon {
     const body = new Polygon(x, y, points, tag, angle, scale_x, scale_y, padding) as Shape;
 
-    const removeSelf = (): void => {
-      this.remove(body);
-    };
-    removeSelf.bind(this);
-    body.removeSelfFromCollisions = removeSelf;
-
     this._bvh.insert(body);
 
     return body;
@@ -74,6 +62,7 @@ export class Collisions {
   // Removes bodies from the collision system
   remove(...bodies: Shape[]): Collisions {
     for (const body of bodies) {
+      body.markedForRemoval = true;
       this._bvh.remove(body, false);
     }
 
@@ -94,13 +83,7 @@ export class Collisions {
 
   // Returns a list of potential collisions
   getPotentials(shape: Shape): Shape[] {
-    const bvh = this._bvh;
-
-    if (bvh === undefined) {
-      throw new Error('Body does not belong to a collision system');
-    }
-
-    return bvh.potentials(shape);
+    return this._bvh.potentials(shape);
   }
 
   addSingleWorldBound(points: number[][], collisionPadding = 0): Polygon {
@@ -139,19 +122,16 @@ export class Collisions {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  isCollision(a: Shape, b: Shape, result?: Result): boolean {
+  areBodiesColliding(a: Shape, b: Shape, result: Float32Array): boolean {
     const a_polygon = a._polygon;
     const b_polygon = b._polygon;
 
-    if (result) {
-      result.a = a;
-      result.b = b;
-      result.a_in_b = true;
-      result.b_in_a = true;
-      result.overlap = undefined;
-      result.overlap_x = 0;
-      result.overlap_y = 0;
-    }
+    /** overlap length */
+    result[0] = 0;
+    /** overlap x */
+    result[1] = 0;
+    /** overlap y */
+    result[2] = 0;
 
     if (
       a_polygon &&
