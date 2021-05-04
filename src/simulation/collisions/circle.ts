@@ -2,8 +2,6 @@ import * as PIXI from 'pixi.js';
 
 import { Body } from 'simulation/collisions/body';
 
-const { sin, cos } = Math;
-
 export class Circle extends Body {
   radius: number;
   scale: number;
