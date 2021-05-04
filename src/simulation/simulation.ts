@@ -337,23 +337,22 @@ export const setupSimulation = (container: HTMLElement): void => {
       }
 
       if (pheromoneStrength > 0 && shouldSpawnPheromones && !isStandingOnPheromone) {
-        const pheromoneId = currentPheromoneId;
         const newPheromone = new Pheromone(
-          pheromoneId,
+          currentPheromoneId,
           x,
           y,
           hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
           frameStartTime,
         );
         addPheromoneShape(newPheromone);
-        pheromones.set(pheromoneId, newPheromone);
+        pheromones.set(currentPheromoneId, newPheromone);
 
         const pheromoneSprite = Sprite.from(hasFood ? foodPheromoneTexture : nestPheromoneTexture);
         pheromoneSprite.x = x;
         pheromoneSprite.y = y;
         pheromoneSprite.anchor.set(0.5);
         pheromoneSprite.scale.set(0.2 * newPheromone.radius);
-        pheromonesSpritesMap.set(pheromoneId, pheromoneSprite);
+        pheromonesSpritesMap.set(currentPheromoneId, pheromoneSprite);
         if (hasFood) {
           foodPheromonesSprites.addChild(pheromoneSprite);
         } else nestPheromonesSprites.addChild(pheromoneSprite);

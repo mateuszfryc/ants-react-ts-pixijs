@@ -1,7 +1,7 @@
 export const { PI } = Math;
 export const halfPI = PI * 0.5;
 export const twoPI = 2 * Math.PI;
-const { atan2, min, max, random, abs, round, cos, sin, sqrt } = Math;
+const { atan2, min, max, random, abs, round, cos, sin } = Math;
 
 export const clamp = (value: number, minimum = 0, maximum = 1): number => {
   if (value > maximum) return maximum;

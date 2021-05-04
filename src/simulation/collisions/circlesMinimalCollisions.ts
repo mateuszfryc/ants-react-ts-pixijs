@@ -1,6 +1,16 @@
 import * as PIXI from 'pixi.js';
 
-const branchPool: CircleMinimal[] = [];
+interface BranchType {
+  id: number;
+  parent: BranchType | CircleMinimal | undefined;
+  left: BranchType | CircleMinimal | undefined;
+  right: BranchType | CircleMinimal | undefined;
+  xMin: number;
+  yMin: number;
+  xMax: number;
+  yMax: number;
+  isBranch: boolean;
+}
 
 export class CircleMinimal {
   id: number;
@@ -9,30 +19,30 @@ export class CircleMinimal {
   radius: number;
   scale: number;
   tag: number;
-  _bvh_parent: CircleMinimal | undefined;
-  _bvh_branch: boolean;
-  _bvh_left: CircleMinimal | undefined;
-  _bvh_right: CircleMinimal | undefined;
-  _bvh_min_x: number;
-  _bvh_min_y: number;
-  _bvh_max_x: number;
-  _bvh_max_y: number;
+  parent: BranchType | CircleMinimal | undefined;
+  left: BranchType | CircleMinimal | undefined;
+  right: BranchType | CircleMinimal | undefined;
+  xMin: number;
+  yMin: number;
+  xMax: number;
+  yMax: number;
+  isBranch: boolean;
 
-  constructor(id = 0, x = 0, y = 0, radius = 1, scale = 1, tag = 0, isBranch = false) {
+  constructor(id = 0, x = 0, y = 0, radius = 1, scale = 1, tag = 0) {
     this.id = id;
     this.x = x;
     this.y = y;
     this.radius = radius;
     this.scale = scale;
     this.tag = tag;
-    this._bvh_parent = undefined;
-    this._bvh_branch = isBranch;
-    this._bvh_left = undefined;
-    this._bvh_right = undefined;
-    this._bvh_min_x = 0;
-    this._bvh_min_y = 0;
-    this._bvh_max_x = 0;
-    this._bvh_max_y = 0;
+    this.parent = undefined;
+    this.left = undefined;
+    this.right = undefined;
+    this.xMin = 0;
+    this.yMin = 0;
+    this.xMax = 0;
+    this.yMax = 0;
+    this.isBranch = false;
   }
 
   draw(context: PIXI.Graphics): void {
@@ -53,7 +63,8 @@ type setupReturnType = {
 
 export function setupCircleMinimalCollisions(): setupReturnType {
   const bodies: CircleMinimal[] = [];
-  let hierarchy: CircleMinimal | undefined;
+  const branchPool: BranchType[] = [];
+  let root: BranchType | undefined;
 
   // Inserts a body into the BVH
   function insert(circle: CircleMinimal, updating = false): void {
@@ -67,82 +78,105 @@ export function setupCircleMinimalCollisions(): setupReturnType {
     const body_max_x = x + radius;
     const body_max_y = y + radius;
 
-    circle._bvh_min_x = body_min_x;
-    circle._bvh_min_y = body_min_y;
-    circle._bvh_max_x = body_max_x;
-    circle._bvh_max_y = body_max_y;
+    circle.xMin = body_min_x;
+    circle.yMin = body_min_y;
+    circle.xMax = body_max_x;
+    circle.yMax = body_max_y;
 
-    let current = hierarchy!;
-
-    if (!current) {
-      hierarchy = circle;
+    if (!root) {
+      root = circle;
 
       return;
     }
 
+    let current = root;
+
     // eslint-disable-next-line no-constant-condition
     while (true) {
       // Branch
-      if (current._bvh_branch) {
-        const left = current._bvh_left!;
-        const left_min_y = left._bvh_min_y;
-        const left_max_x = left._bvh_max_x;
-        const left_max_y = left._bvh_max_y;
-        const left_new_min_x = body_min_x < left._bvh_min_x ? body_min_x : left._bvh_min_x;
+      if (current.isBranch) {
+        const left = current.left!;
+        /** Get left AABB */
+        const { xMin: left_min_x, yMin: left_min_y, xMax: left_max_x, yMax: left_max_y } = left;
+
+        /** Simulate new left AABB by extending it with newCircle AABB */
+        const left_new_min_x = body_min_x < left_min_x ? body_min_x : left_min_x;
         const left_new_min_y = body_min_y < left_min_y ? body_min_y : left_min_y;
         const left_new_max_x = body_max_x > left_max_x ? body_max_x : left_max_x;
         const left_new_max_y = body_max_y > left_max_y ? body_max_y : left_max_y;
-        const left_volume = (left_max_x - left._bvh_min_x) * (left_max_y - left_min_y);
+
+        const left_volume = (left_max_x - left_min_x) * (left_max_y - left_min_y);
         const left_new_volume =
           (left_new_max_x - left_new_min_x) * (left_new_max_y - left_new_min_y);
         const left_difference = left_new_volume - left_volume;
 
-        const right = current._bvh_right!;
-        const right_min_x = right._bvh_min_x;
-        const right_min_y = right._bvh_min_y;
-        const right_max_x = right._bvh_max_x;
-        const right_max_y = right._bvh_max_y;
+        /** Get right AABB */
+        const right = current.right!;
+        const {
+          xMin: right_min_x,
+          yMin: right_min_y,
+          xMax: right_max_x,
+          yMax: right_max_y,
+        } = right;
+
+        /** Simulate new right AABB by extending it with newCircle AABB */
         const right_new_min_x = body_min_x < right_min_x ? body_min_x : right_min_x;
         const right_new_min_y = body_min_y < right_min_y ? body_min_y : right_min_y;
         const right_new_max_x = body_max_x > right_max_x ? body_max_x : right_max_x;
         const right_new_max_y = body_max_y > right_max_y ? body_max_y : right_max_y;
+
         const right_volume = (right_max_x - right_min_x) * (right_max_y - right_min_y);
         const right_new_volume =
           (right_new_max_x - right_new_min_x) * (right_new_max_y - right_new_min_y);
         const right_difference = right_new_volume - right_volume;
 
-        current._bvh_min_x = left_new_min_x < right_new_min_x ? left_new_min_x : right_new_min_x;
-        current._bvh_min_y = left_new_min_y < right_new_min_y ? left_new_min_y : right_new_min_y;
-        current._bvh_max_x = left_new_max_x > right_new_max_x ? left_new_max_x : right_new_max_x;
-        current._bvh_max_y = left_new_max_y > right_new_max_y ? left_new_max_y : right_new_max_y;
+        current.xMin = left_new_min_x < right_new_min_x ? left_new_min_x : right_new_min_x;
+        current.yMin = left_new_min_y < right_new_min_y ? left_new_min_y : right_new_min_y;
+        current.xMax = left_new_max_x > right_new_max_x ? left_new_max_x : right_new_max_x;
+        current.yMax = left_new_max_y > right_new_max_y ? left_new_max_y : right_new_max_y;
 
         current = left_difference <= right_difference ? left : right;
       }
       // Leaf
       else {
-        const grandparent = current._bvh_parent;
-        const parent_min_x = current._bvh_min_x;
-        const parent_min_y = current._bvh_min_y;
-        const parent_max_x = current._bvh_max_x;
-        const parent_max_y = current._bvh_max_y;
-        // eslint-disable-next-line no-multi-assign
-        const new_parent = (current._bvh_parent = circle._bvh_parent =
-          branchPool.length > 0 ? branchPool.pop()! : new CircleMinimal(0, 0, 0, 0, 0, 0, true));
+        const grandparent = current.parent;
+        const {
+          xMin: parent_min_x,
+          yMin: parent_min_y,
+          xMax: parent_max_x,
+          yMax: parent_max_y,
+        } = current;
+        const new_parent =
+          branchPool.length > 0
+            ? branchPool.pop()!
+            : /* prettier-ignore */ {
+              id: -9,
+              parent: undefined,
+              left: undefined,
+              right: undefined,
+              xMin: 0,
+              yMin: 0,
+              xMax: 0,
+              yMax: 0,
+              isBranch: true,
+            };
+        current.parent = new_parent;
+        circle.parent = new_parent;
 
-        new_parent._bvh_parent = grandparent;
-        new_parent._bvh_left = current;
-        new_parent._bvh_right = circle;
-        new_parent._bvh_min_x = body_min_x < parent_min_x ? body_min_x : parent_min_x;
-        new_parent._bvh_min_y = body_min_y < parent_min_y ? body_min_y : parent_min_y;
-        new_parent._bvh_max_x = body_max_x > parent_max_x ? body_max_x : parent_max_x;
-        new_parent._bvh_max_y = body_max_y > parent_max_y ? body_max_y : parent_max_y;
+        new_parent.left = current;
+        new_parent.right = circle;
+        new_parent.parent = grandparent;
+        new_parent.xMin = body_min_x < parent_min_x ? body_min_x : parent_min_x;
+        new_parent.yMin = body_min_y < parent_min_y ? body_min_y : parent_min_y;
+        new_parent.xMax = body_max_x > parent_max_x ? body_max_x : parent_max_x;
+        new_parent.yMax = body_max_y > parent_max_y ? body_max_y : parent_max_y;
 
         if (!grandparent) {
-          hierarchy = new_parent;
-        } else if (grandparent._bvh_left === current) {
-          grandparent._bvh_left = new_parent;
+          root = new_parent;
+        } else if (grandparent.left === current) {
+          grandparent.left = new_parent;
         } else {
-          grandparent._bvh_right = new_parent;
+          grandparent.right = new_parent;
         }
 
         break;
@@ -151,72 +185,73 @@ export function setupCircleMinimalCollisions(): setupReturnType {
   }
 
   function remove(circle: CircleMinimal, updating = false): void {
+    if (root && root.id === circle.id) {
+      return;
+    }
+
     if (!updating) {
       bodies.splice(bodies.indexOf(circle), 1);
     }
 
-    if (hierarchy === circle) {
-      hierarchy = undefined;
+    const { parent } = circle;
+    const grandparent = parent!.parent;
+    const parent_left = parent!.left;
+    const sibling = (parent_left === circle ? parent!.right : parent_left)!;
 
-      return;
-    }
-
-    const parent = circle._bvh_parent!;
-    const grandparent = parent._bvh_parent;
-    const parent_left = parent._bvh_left;
-    const sibling = (parent_left === circle ? parent._bvh_right : parent_left)!;
-
-    sibling._bvh_parent = grandparent;
+    sibling.parent = grandparent;
 
     if (grandparent) {
-      if (grandparent._bvh_left === parent) {
-        grandparent._bvh_left = sibling;
+      if (grandparent.left === parent) {
+        grandparent.left = sibling;
       } else {
-        grandparent._bvh_right = sibling;
+        grandparent.right = sibling;
       }
 
       let branch = grandparent;
 
       while (branch) {
-        const left = branch._bvh_left!;
-        const left_min_x = left._bvh_min_x;
-        const left_min_y = left._bvh_min_y;
-        const left_max_x = left._bvh_max_x;
-        const left_max_y = left._bvh_max_y;
+        const {
+          xMin: left_min_x,
+          yMin: left_min_y,
+          xMax: left_max_x,
+          yMax: left_max_y,
+        } = branch.left!;
 
-        const right = branch._bvh_right!;
-        const right_min_x = right._bvh_min_x;
-        const right_min_y = right._bvh_min_y;
-        const right_max_x = right._bvh_max_x;
-        const right_max_y = right._bvh_max_y;
+        const {
+          xMin: right_min_x,
+          yMin: right_min_y,
+          xMax: right_max_x,
+          yMax: right_max_y,
+        } = branch.right!;
 
-        branch._bvh_min_x = left_min_x < right_min_x ? left_min_x : right_min_x;
-        branch._bvh_min_y = left_min_y < right_min_y ? left_min_y : right_min_y;
-        branch._bvh_max_x = left_max_x > right_max_x ? left_max_x : right_max_x;
-        branch._bvh_max_y = left_max_y > right_max_y ? left_max_y : right_max_y;
+        branch.xMin = left_min_x < right_min_x ? left_min_x : right_min_x;
+        branch.yMin = left_min_y < right_min_y ? left_min_y : right_min_y;
+        branch.xMax = left_max_x > right_max_x ? left_max_x : right_max_x;
+        branch.yMax = left_max_y > right_max_y ? left_max_y : right_max_y;
 
-        branch = branch._bvh_parent as CircleMinimal;
+        branch = branch.parent as CircleMinimal;
       }
     } else {
-      hierarchy = sibling;
+      root = sibling;
     }
 
-    branchPool.push(parent);
+    branchPool.push(parent!);
   }
 
   // Updates the BVH. Moved bodies are removed/inserted.
   function update(): void {
     const count = bodies.length;
 
-    for (let i = 0; i < count; ++i) {
+    let i = 0;
+    for (i = 0; i < count; ++i) {
       const body = bodies[i];
-      const { x, y, radius } = body;
+      const { x, y, radius } = body as CircleMinimal;
 
       if (
-        x - radius < body._bvh_min_x ||
-        y - radius < body._bvh_min_y ||
-        x + radius > body._bvh_max_x ||
-        y + radius > body._bvh_max_y
+        x - radius < body.xMin ||
+        y - radius < body.yMin ||
+        x + radius > body.xMax ||
+        y + radius > body.yMax
       ) {
         remove(body, true);
         insert(body, true);
@@ -225,75 +260,71 @@ export function setupCircleMinimalCollisions(): setupReturnType {
   }
 
   // Returns a list of potential collisions for a body
-  function getPotentials(body: CircleMinimal): CircleMinimal[] {
-    const shapes: CircleMinimal[] = [];
-    const min_x = body._bvh_min_x;
-    const min_y = body._bvh_min_y;
-    const max_x = body._bvh_max_x;
-    const max_y = body._bvh_max_y;
+  function getPotentials(circle: CircleMinimal): CircleMinimal[] {
+    const potentials: CircleMinimal[] = [];
+    const { xMin: min_x, yMin: min_y, xMax: max_x, yMax: max_y } = circle;
 
-    let current = hierarchy;
-    let traverse_left = true;
-
-    if (!current || !current._bvh_branch) {
-      return shapes;
+    let current = root;
+    if (!current || !current.isBranch) {
+      return potentials;
     }
 
+    let traverse_left = true;
     while (current) {
       if (traverse_left) {
         traverse_left = false;
 
-        let left = current._bvh_branch ? current._bvh_left : undefined;
+        let left = current.isBranch ? current.left : undefined;
 
         while (
           left &&
-          left._bvh_max_x >= min_x &&
-          left._bvh_max_y >= min_y &&
-          left._bvh_min_x <= max_x &&
-          left._bvh_min_y <= max_y
+          left.xMax >= min_x &&
+          left.yMax >= min_y &&
+          left.xMin <= max_x &&
+          left.yMin <= max_y
         ) {
           current = left;
-          left = current!._bvh_branch ? current!._bvh_left : undefined;
+          left = current!.isBranch ? current!.left : undefined;
         }
       }
 
-      const isBranch = current!._bvh_branch;
-      const right = isBranch ? current!._bvh_right : undefined;
+      const { isBranch } = current!;
+      const right = isBranch ? current!.right : undefined;
 
       if (
         right &&
-        right._bvh_max_x > min_x &&
-        right._bvh_max_y > min_y &&
-        right._bvh_min_x < max_x &&
-        right._bvh_min_y < max_y
+        right.xMax > min_x &&
+        right.yMax > min_y &&
+        right.xMin < max_x &&
+        right.yMin < max_y
       ) {
         current = right;
         traverse_left = true;
       } else {
-        if (!isBranch && current !== body) {
-          shapes.push(current as CircleMinimal);
+        if (!isBranch && current.id !== circle.id) {
+          potentials.push(current as CircleMinimal);
         }
 
-        let parent = current!._bvh_parent;
+        let { parent } = current!;
 
         if (parent) {
-          while (parent && parent._bvh_right === current) {
+          while (parent && parent.right === current) {
             current = parent;
-            parent = current._bvh_parent;
+            parent = current.parent;
           }
 
-          current = parent;
+          current = parent!;
         } else {
           break;
         }
       }
     }
 
-    return shapes;
+    return potentials;
   }
 
   function areCirclesColliding(a: CircleMinimal, b: CircleMinimal): boolean {
-    /** Stage 1: step, by step AABB test */
+    /** Stage 1: AABB test step by step */
     const { x: xA, y: yA, radius: radiusA, scale: scaleA } = a;
     const radiusAScaled = radiusA * scaleA;
     const a_min_x = xA - radiusAScaled;
