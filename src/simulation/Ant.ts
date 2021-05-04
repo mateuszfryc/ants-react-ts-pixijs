@@ -3,8 +3,9 @@ import * as PIXI from 'pixi.js';
 import AntImage from 'assets/ant-red.png';
 import { Circle } from 'simulation/collisions/circle';
 import { Collisions, TAGS } from 'simulation/collisions/collisions';
-import { doNTimes, randomInRange, randomSign, randomUnitVector } from 'utils/math';
+import { randomInRange, randomSign, randomUnitVector } from 'utils/math';
 import { Timer } from 'simulation/Timer';
+import { doNTimes } from 'utils/do-n-times';
 
 export const antsCount = 200;
 export const antsScale = 3;

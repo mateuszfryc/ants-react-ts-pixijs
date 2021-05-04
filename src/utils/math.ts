@@ -40,17 +40,9 @@ export const randomInRange = (minimum = 0, maximum = 1): number =>
   random() * (maximum - minimum) + minimum;
 
 export const randomUnitVector = (): number[] => {
-  const x = random() * 2 - 1;
-  const y = random() * 2 - 1;
-  const length = sqrt(x * x + y * y);
-
-  return [x / length, y / length];
-};
-
-export const randomUnitVectorOnCirclesEdge = (x = 0, y = 0, radius = 1): number[] => {
   const randomAngle = random() * twoPI;
 
-  return [x + cos(randomAngle) * radius, y + sin(randomAngle) * radius];
+  return [cos(randomAngle), sin(randomAngle)];
 };
 
 export const getDistanceFromPointAtoB = (
@@ -109,11 +101,4 @@ export const getMiddleOfTwoRadians = (a: number, b: number): number => {
 
 export const getRadiansFromPointAtoB = (ax: number, ay: number, bx: number, by: number): number => {
   return -atan2(ax - bx, ay - by);
-};
-
-export const doNTimes = (callback: () => void, n: number): void => {
-  let i = 0;
-  for (i; i < n; i++) {
-    callback();
-  }
 };

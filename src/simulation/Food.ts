@@ -3,7 +3,7 @@ import * as PIXI from 'pixi.js';
 import FoodImage from 'assets/food.png';
 import { Circle } from 'simulation/collisions/circle';
 import { TAGS } from 'simulation/collisions/collisions';
-import { doNTimes, mapRangeClamped } from 'utils/math';
+import { doNTimes } from 'utils/do-n-times';
 
 const { random } = Math;
 let lastCreatedFoodId = 0;
