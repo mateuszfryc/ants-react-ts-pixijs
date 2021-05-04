@@ -21,7 +21,13 @@ export class Pheromone extends CircleMinimal {
   }
 }
 
-const [insert, remove, update, getPotentials, areCirclesColliding] = setupCircleMinimalCollisions();
+const {
+  insert,
+  remove,
+  update,
+  getPotentials,
+  areCirclesColliding,
+} = setupCircleMinimalCollisions();
 export const sensorScale = 0.14;
 export const sensorForwardDistance = 3.3;
 export const sensorsSideDistance = 0.66;

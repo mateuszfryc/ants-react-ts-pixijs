@@ -36,7 +36,15 @@ export class CircleMinimal {
   }
 }
 
-export function setupCircleMinimalCollisions(): any {
+type setupReturnType = {
+  insert: (circle: CircleMinimal, updating?: boolean) => void;
+  remove: (circle: CircleMinimal, updating?: boolean) => void;
+  getPotentials: (body: CircleMinimal) => CircleMinimal[];
+  update: () => void;
+  areCirclesColliding: (a: CircleMinimal, b: CircleMinimal) => boolean;
+};
+
+export function setupCircleMinimalCollisions(): setupReturnType {
   const bodies: CircleMinimal[] = [];
   let hierarchy: CircleMinimal | undefined;
 
@@ -319,5 +327,5 @@ export function setupCircleMinimalCollisions(): any {
     return true;
   }
 
-  return [insert, remove, update, getPotentials, areCirclesColliding];
+  return { insert, remove, update, getPotentials, areCirclesColliding };
 }
