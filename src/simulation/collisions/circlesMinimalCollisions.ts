@@ -11,7 +11,6 @@ export class CircleMinimal {
   _bvh_branch: boolean;
   _bvh_left: CircleMinimal | undefined;
   _bvh_right: CircleMinimal | undefined;
-  _bvh_sort: number;
   _bvh_min_x: number;
   _bvh_min_y: number;
   _bvh_max_x: number;
@@ -28,7 +27,6 @@ export class CircleMinimal {
     this._bvh_branch = isBranch;
     this._bvh_left = undefined;
     this._bvh_right = undefined;
-    this._bvh_sort = 0;
     this._bvh_min_x = 0;
     this._bvh_min_y = 0;
     this._bvh_max_x = 0;
@@ -66,7 +64,6 @@ export function setupCircleMinimalCollisions(): setupReturnType {
     circle._bvh_max_y = body_max_y;
 
     let current = hierarchy!;
-    let sort = 0;
 
     if (!current) {
       hierarchy = circle;
@@ -77,7 +74,6 @@ export function setupCircleMinimalCollisions(): setupReturnType {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       // Branch
-      sort += 1;
       if (current._bvh_branch) {
         const left = current._bvh_left!;
         const left_min_y = left._bvh_min_y;
@@ -106,7 +102,6 @@ export function setupCircleMinimalCollisions(): setupReturnType {
           (right_new_max_x - right_new_min_x) * (right_new_max_y - right_new_min_y);
         const right_difference = right_new_volume - right_volume;
 
-        current._bvh_sort = sort;
         current._bvh_min_x = left_new_min_x < right_new_min_x ? left_new_min_x : right_new_min_x;
         current._bvh_min_y = left_new_min_y < right_new_min_y ? left_new_min_y : right_new_min_y;
         current._bvh_max_x = left_new_max_x > right_new_max_x ? left_new_max_x : right_new_max_x;
@@ -128,7 +123,6 @@ export function setupCircleMinimalCollisions(): setupReturnType {
         new_parent._bvh_parent = grandparent;
         new_parent._bvh_left = current;
         new_parent._bvh_right = circle;
-        new_parent._bvh_sort = sort;
         new_parent._bvh_min_x = body_min_x < parent_min_x ? body_min_x : parent_min_x;
         new_parent._bvh_min_y = body_min_y < parent_min_y ? body_min_y : parent_min_y;
         new_parent._bvh_max_x = body_max_x > parent_max_x ? body_max_x : parent_max_x;
@@ -164,10 +158,6 @@ export function setupCircleMinimalCollisions(): setupReturnType {
     const sibling = (parent_left === circle ? parent._bvh_right : parent_left)!;
 
     sibling._bvh_parent = grandparent;
-
-    if (sibling._bvh_branch) {
-      sibling._bvh_sort = parent._bvh_sort;
-    }
 
     if (grandparent) {
       if (grandparent._bvh_left === parent) {
