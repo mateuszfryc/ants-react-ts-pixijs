@@ -21,8 +21,7 @@ import { antsCount, antsScale, releaseTheAntsOneByOne, antPropsInt8Count,
 import { makeSomeFood, foodImageTexture, foodSprites,
   foodBitesSpritesMap, foodCollisionShapes, foodProps } from './Food';
 // prettier-ignore
-import { Pheromone, setupAntsSensors, pheromonesCollisions, pheromones, sensorForwardDistance,
-  sensorsSideDistance, sensorsSideSpread, sensorsTurnInterpolationSpeed, pheromonesSpritesMap,
+import { Pheromone, setupAntsPheromonesSensors, pheromones, sensorsTurnInterpolationSpeed, pheromonesSpritesMap,
   pheromoneEmissionTimer, nestPheromoneTexture, foodPheromoneTexture, pheromonesLifeSpan  } from './Pheromones';
 import { Nest } from './Nest';
 
@@ -59,7 +58,14 @@ export const setupSimulation = (container: HTMLElement): void => {
   antsCollisions.insert(nest.body);
 
   let currentPheromoneId = 0;
-  const { sensorLeft, sensorForward, sensorRight } = setupAntsSensors(antsScale);
+  const {
+    sensorLeft,
+    sensorForward,
+    sensorRight,
+    updateAntSensors,
+    addPheromoneShape,
+    removePheromoneShape,
+  } = setupAntsPheromonesSensors(antsScale);
 
   /**
    * Variables used for ants update loop.
@@ -72,9 +78,6 @@ export const setupSimulation = (container: HTMLElement): void => {
   let deltaSeconds = 0;
   let propInt8Id = 0;
   let propFloat16Id = 0;
-  let frontSensorInputSum = 0;
-  let leftSensorInputSum = 0;
-  let rightSensorInputSum = 0;
   let speed = 0;
   let speedTarget = 0;
   let maxSpeed = 0;
@@ -232,56 +235,13 @@ export const setupSimulation = (container: HTMLElement): void => {
 
       const { x, y } = ant;
 
-      /** Sum up pheromones values for each sensor and select direction */
-      frontSensorInputSum = 0;
-      leftSensorInputSum = 0;
-      rightSensorInputSum = 0;
-      const xBase = xVelocity * antsScale;
-      const yBase = yVelocity * antsScale;
-      sensorForward.x = x + xBase * sensorForwardDistance;
-      sensorForward.y = y + yBase * sensorForwardDistance;
-      sensorLeft.x =
-        x +
-        xBase * (sensorForwardDistance * sensorsSideDistance) -
-        yVelocity * (sensorForwardDistance * sensorsSideSpread) * antsScale;
-      sensorLeft.y =
-        y +
-        yBase * (sensorForwardDistance * sensorsSideDistance) +
-        xVelocity * (sensorForwardDistance * sensorsSideSpread) * antsScale;
-      sensorRight.x =
-        x +
-        xBase * (sensorForwardDistance * sensorsSideDistance) +
-        yVelocity * (sensorForwardDistance * sensorsSideSpread) * antsScale;
-      sensorRight.y =
-        y +
-        yBase * (sensorForwardDistance * sensorsSideDistance) -
-        xVelocity * (sensorForwardDistance * sensorsSideSpread) * antsScale;
-
-      pheromonesCollisions.update();
-
-      for (const other of pheromonesCollisions.getPotentials(sensorForward)) {
-        if (pheromonesCollisions.areCirclesColliding(sensorForward, other)) {
-          const { id: otherId, tag } = other;
-          if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
-            frontSensorInputSum += pheromones.get(otherId)!.emissionTimeStamp;
-        }
-      }
-
-      for (const other of pheromonesCollisions.getPotentials(sensorLeft)) {
-        if (pheromonesCollisions.areCirclesColliding(sensorLeft, other)) {
-          const { id: otherId, tag } = other;
-          if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
-            leftSensorInputSum += pheromones.get(otherId)!.emissionTimeStamp;
-        }
-      }
-
-      for (const other of pheromonesCollisions.getPotentials(sensorRight)) {
-        if (pheromonesCollisions.areCirclesColliding(sensorRight, other)) {
-          const { id: otherId, tag } = other;
-          if (tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD))
-            rightSensorInputSum += pheromones.get(otherId)!.emissionTimeStamp;
-        }
-      }
+      const [frontSensorInputSum, leftSensorInputSum, rightSensorInputSum] = updateAntSensors(
+        x,
+        y,
+        xVelocity,
+        yVelocity,
+        hasFood,
+      );
 
       if (frontSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
         xvTarget = sensorForward.x - x;
@@ -381,7 +341,7 @@ export const setupSimulation = (container: HTMLElement): void => {
           hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
           frameStartTime,
         );
-        pheromonesCollisions.insert(newPheromone);
+        addPheromoneShape(newPheromone);
         pheromones.set(pheromoneId, newPheromone);
 
         const pheromoneSprite = Sprite.from(hasFood ? foodPheromoneTexture : nestPheromoneTexture);
@@ -417,7 +377,7 @@ export const setupSimulation = (container: HTMLElement): void => {
       if (lifeSpan >= pheromonesLifeSpan) {
         const circle = pheromones.get(id);
         if (circle) {
-          pheromonesCollisions.remove(circle);
+          removePheromoneShape(circle);
           pheromones.delete(id);
         }
         pheromonesSprites.removeChild(sprite);

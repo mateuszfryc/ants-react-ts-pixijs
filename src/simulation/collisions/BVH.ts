@@ -6,12 +6,10 @@ import { Shape } from './proxyTypes';
 export class BVH {
   _hierarchy: BVHBranch | Shape | undefined;
   _bodies: Shape[];
-  _dirty_branches: [];
 
   constructor() {
     this._hierarchy = undefined;
     this._bodies = [];
-    this._dirty_branches = [];
   }
 
   // Inserts a body into the BVH

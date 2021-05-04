@@ -6,7 +6,7 @@ import { Collisions, TAGS } from 'simulation/collisions/collisions';
 import { doNTimes, randomInRange, randomSign } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 
-export const antsCount = 10000;
+export const antsCount = 500;
 export const antsScale = 3;
 let lastCreatedAntId = 0;
 /**

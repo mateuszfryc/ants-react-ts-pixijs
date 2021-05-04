@@ -1,6 +1,3 @@
-/* eslint-disable max-classes-per-file */
-import * as PIXI from 'pixi.js';
-
 const branchPool: CircleMinimal[] = [];
 
 export class CircleMinimal {
@@ -37,31 +34,16 @@ export class CircleMinimal {
     this._bvh_max_x = 0;
     this._bvh_max_y = 0;
   }
-
-  draw(context: PIXI.Graphics): void {
-    const { x, y, radius: radiusWithoutScale, scale } = this;
-    const radius = radiusWithoutScale * scale;
-
-    context.moveTo(x + radius, y);
-    context.drawCircle(x, y, radius);
-  }
 }
 
-export class CirclesMinimalCollisionsBVH {
-  _hierarchy: CircleMinimal | undefined;
-  _bodies: CircleMinimal[];
-  _dirty_branches: [];
-
-  constructor() {
-    this._hierarchy = undefined;
-    this._bodies = [];
-    this._dirty_branches = [];
-  }
+export function setupCircleMinimalCollisions(): any {
+  const bodies: CircleMinimal[] = [];
+  let hierarchy: CircleMinimal | undefined;
 
   // Inserts a body into the BVH
-  insert(circle: CircleMinimal, updating = false): void {
+  function insert(circle: CircleMinimal, updating = false): void {
     if (!updating) {
-      this._bodies.push(circle);
+      bodies.push(circle);
     }
 
     const { x, y, radius } = circle;
@@ -75,11 +57,11 @@ export class CirclesMinimalCollisionsBVH {
     circle._bvh_max_x = body_max_x;
     circle._bvh_max_y = body_max_y;
 
-    let current = this._hierarchy!;
+    let current = hierarchy!;
     let sort = 0;
 
     if (!current) {
-      this._hierarchy = circle;
+      hierarchy = circle;
 
       return;
     }
@@ -145,7 +127,7 @@ export class CirclesMinimalCollisionsBVH {
         new_parent._bvh_max_y = body_max_y > parent_max_y ? body_max_y : parent_max_y;
 
         if (!grandparent) {
-          this._hierarchy = new_parent;
+          hierarchy = new_parent;
         } else if (grandparent._bvh_left === current) {
           grandparent._bvh_left = new_parent;
         } else {
@@ -157,13 +139,13 @@ export class CirclesMinimalCollisionsBVH {
     }
   }
 
-  remove(circle: CircleMinimal, updating = false): void {
+  function remove(circle: CircleMinimal, updating = false): void {
     if (!updating) {
-      this._bodies.splice(this._bodies.indexOf(circle), 1);
+      bodies.splice(bodies.indexOf(circle), 1);
     }
 
-    if (this._hierarchy === circle) {
-      this._hierarchy = undefined;
+    if (hierarchy === circle) {
+      hierarchy = undefined;
 
       return;
     }
@@ -209,15 +191,14 @@ export class CirclesMinimalCollisionsBVH {
         branch = branch._bvh_parent as CircleMinimal;
       }
     } else {
-      this._hierarchy = sibling;
+      hierarchy = sibling;
     }
 
     branchPool.push(parent);
   }
 
   // Updates the BVH. Moved bodies are removed/inserted.
-  update(): void {
-    const bodies = this._bodies;
+  function update(): void {
     const count = bodies.length;
 
     for (let i = 0; i < count; ++i) {
@@ -230,21 +211,21 @@ export class CirclesMinimalCollisionsBVH {
         x + radius > body._bvh_max_x ||
         y + radius > body._bvh_max_y
       ) {
-        this.remove(body, true);
-        this.insert(body, true);
+        remove(body, true);
+        insert(body, true);
       }
     }
   }
 
   // Returns a list of potential collisions for a body
-  getPotentials(body: CircleMinimal): CircleMinimal[] {
+  function getPotentials(body: CircleMinimal): CircleMinimal[] {
     const shapes: CircleMinimal[] = [];
     const min_x = body._bvh_min_x;
     const min_y = body._bvh_min_y;
     const max_x = body._bvh_max_x;
     const max_y = body._bvh_max_y;
 
-    let current = this._hierarchy;
+    let current = hierarchy;
     let traverse_left = true;
 
     if (!current || !current._bvh_branch) {
@@ -304,7 +285,7 @@ export class CirclesMinimalCollisionsBVH {
     return shapes;
   }
 
-  areCirclesColliding = (a: CircleMinimal, b: CircleMinimal): boolean => {
+  function areCirclesColliding(a: CircleMinimal, b: CircleMinimal): boolean {
     /** Stage 1: step, by step AABB test */
     const { x: xA, y: yA, radius: radiusA, scale: scaleA } = a;
     const radiusAScaled = radiusA * scaleA;
@@ -336,7 +317,7 @@ export class CirclesMinimalCollisionsBVH {
     }
 
     return true;
-  };
-}
+  }
 
-/* eslint-enable max-classes-per-file */
+  return [insert, remove, update, getPotentials, areCirclesColliding];
+}
