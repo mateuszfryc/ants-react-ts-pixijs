@@ -59,7 +59,7 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.Container): any {
     const targetSpeed = maxSpeed;
     const rotationDirection = randomSign();
     const hasFood = 0;
-    const pheromoneStrength = maxPheromonesEmission;
+    const pheromoneStrength = 0;
     const properties = [
       id,
       xv,

@@ -214,6 +214,7 @@ export const setupSimulation = (container: HTMLElement): void => {
         xVelocity,
         yVelocity,
         hasFood,
+        frameStartTime,
       );
 
       if (frontSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
@@ -245,9 +246,9 @@ export const setupSimulation = (container: HTMLElement): void => {
       turnAngle = normalizeRadians(turnAngle);
       // rotate velocity by turn angle
       if (turnAngle !== 0) {
-        // const angleWithDirection = turnAngle * rotationDirectionSign;
-        const c = cos(turnAngle);
-        const s = sin(turnAngle);
+        const angleWithDirection = turnAngle * rotationDirectionSign;
+        const c = cos(angleWithDirection);
+        const s = sin(angleWithDirection);
         xvTarget = c * xvTarget - s * yvTarget;
         yvTarget = s * xvTarget + c * yvTarget;
       }

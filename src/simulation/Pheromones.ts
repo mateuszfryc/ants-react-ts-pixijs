@@ -71,6 +71,7 @@ export const setupAntsPheromonesSensors = (
     xVelocity: number,
     yVelocity: number,
     hasFood: boolean,
+    frameStartTime: number,
   ) {
     const xBase = xVelocity * antsScale;
     const yBase = yVelocity * antsScale;
@@ -103,7 +104,7 @@ export const setupAntsPheromonesSensors = (
         areCirclesColliding(sensorForward, other) &&
         other.tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD)
       )
-        frontSensorInputSum += 1;
+        frontSensorInputSum += frameStartTime - other.emissionTimeStamp;
     }
 
     for (const other of getPotentials(sensorLeft)) {
@@ -111,7 +112,7 @@ export const setupAntsPheromonesSensors = (
         areCirclesColliding(sensorLeft, other) &&
         other.tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD)
       )
-        leftSensorInputSum += 1;
+        leftSensorInputSum += frameStartTime - other.emissionTimeStamp;
     }
 
     for (const other of getPotentials(sensorRight)) {
@@ -119,7 +120,7 @@ export const setupAntsPheromonesSensors = (
         areCirclesColliding(sensorRight, other) &&
         other.tag === (hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD)
       )
-        rightSensorInputSum += 1;
+        rightSensorInputSum += frameStartTime - other.emissionTimeStamp;
     }
 
     return [frontSensorInputSum, leftSensorInputSum, rightSensorInputSum, pheromoneEmissionTimer];

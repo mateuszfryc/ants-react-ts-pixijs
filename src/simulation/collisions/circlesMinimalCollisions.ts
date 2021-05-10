@@ -26,6 +26,7 @@ export class CircleMinimal {
   yMin: number;
   xMax: number;
   yMax: number;
+  emissionTimeStamp: number;
 
   constructor(id = 0, x = 0, y = 0, radius = 1, scale = 1, tag = 0) {
     this.id = id;
@@ -41,6 +42,7 @@ export class CircleMinimal {
     this.yMin = 0;
     this.xMax = 0;
     this.yMax = 0;
+    this.emissionTimeStamp = 0;
   }
 
   draw(context: PIXI.Graphics): void {
