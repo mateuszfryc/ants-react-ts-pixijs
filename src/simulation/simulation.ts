@@ -10,12 +10,7 @@ import {
   halfPI, interpolate, mapRange, mapRangeClamped,
   normalizeRadians, PI, randomInRange } from 'utils/math';
 import { Nest } from './Nest';
-import { Timer } from './Timer';
-// prettier-ignore
-import {
-  antsCount, antsScale, releaseTheAntsOneByOne, antPropsInt8Count,
-  antPropsFloat16Count, antsPropsInt8IDs, antsPropsFloat16IDs, maxPheromonesEmission,
-  antsCollisions, antsCollisionShapes, antsPropsInt8, antsPropsFloat16, antsSpritesMap } from './Ant';
+import { setupAnts } from './Ant';
 // prettier-ignore
 import {
   makeSomeFood, foodImageTexture, foodSprites,
@@ -29,7 +24,7 @@ const { random, min, atan2, cos, sin, abs, sign, sqrt, max } = Math;
 const { Sprite } = PIXI;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  // eslint-disable-next-line prettier/prettier
+  const antsCount = 300;
   const {
     graphicsEngine,
     stage,
@@ -41,18 +36,36 @@ export const setupSimulation = (container: HTMLElement): void => {
   } = setupGraphics(container, antsCount);
   const result = new Float32Array(new ArrayBuffer(12)); // 3 numbers
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
-  antsCollisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
   const { updateFPSDisplay } = setupFPSDisplay();
   const { updateAntsCounter } = setupAntCounter();
-  const { updatePheromonesCounter } = setupPheromonesCounter();
-  // prettier-ignore
-  const { speedId, targetSpeedId, maxSpeedId, rotationDirectionId, hasFoodId, pheromoneStrengthId } = antsPropsInt8IDs;
+  const Ants = setupAnts(antsCount, stage);
+  const {
+    antsScale,
+    antsCollisionShapes,
+    antsCollisions,
+    antsSpritesMap,
+    timers,
+    antsPropsInt8,
+    antsPropsFloat16,
+    antPropsInt8Count,
+    antPropsFloat16Count,
+    antsPropsInt8IDs,
+    antsPropsFloat16IDs,
+    maxPheromonesEmission,
+    feromonesLifetime,
+  } = Ants;
+  const {
+    speedId,
+    targetSpeedId,
+    maxSpeedId,
+    rotationDirectionId,
+    hasFoodId,
+    pheromoneStrengthId,
+  } = antsPropsInt8IDs;
   const { xvId, yvId, xvTargetId, yvTargetId } = antsPropsFloat16IDs;
+  const { updatePheromonesCounter } = setupPheromonesCounter();
   const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
   const foodDistanceToNest = 200;
-  let antsOnScreenCounter = 0;
-
-  const timers = new Map<number, Timer>();
 
   const nest = new Nest(worldWidth * 0.5, worldHeight * 0.5);
   stage.addChild(nest);
@@ -71,41 +84,21 @@ export const setupSimulation = (container: HTMLElement): void => {
     drawAntSensors,
   } = setupAntsPheromonesSensors(antsScale);
 
+  antsCollisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
   /**
    * Variables used for ants update loop.
    * Forward declaration allows to save time otherwise used
    * to declare them on each step of the loop.
    */
   let lastTime = performance.now();
-  let lifeSpan = 0;
-  let frameStartTime = 0;
-  let deltaSeconds = 0;
-  let propInt8Id = 0;
-  let propFloat16Id = 0;
-  let speed = 0;
-  let speedTarget = 0;
-  let maxSpeed = 0;
-  let rotationDirectionSign = 0;
-  let hasFood = 0;
-  let pheromoneStrength = 0;
-  let xVelocity = 0;
-  let yVelocity = 0;
-  let xvTarget = 0;
-  let yvTarget = 0;
-  let speedInterpolationSpeed = 0;
-  let velocityInterpolationSpeed = 0;
-  let collisionsCount = 0;
-  let turnAngle = 0;
-  let length = 0;
-  let skipRandomDirectionChange = false;
-  let shouldSpawnPheromones = false;
-  let isStandingOnPheromone = false;
 
   function simulationUpdate() {
-    frameStartTime = performance.now();
-    deltaSeconds = min((frameStartTime - lastTime) / 1000, 0.5);
-    antsOnScreenCounter = 0;
-    shouldSpawnPheromones = pheromoneEmissionTimer.update(deltaSeconds);
+    const frameStartTime = performance.now();
+    const deltaSeconds = min((frameStartTime - lastTime) / 1000, 0.5);
+    let antsOnScreenCounter = 0;
+    const shouldSpawnPheromones = pheromoneEmissionTimer.update(deltaSeconds);
+    let propFloat16Id = 0;
+    let speed = 0;
 
     antsCollisionShapes.forEach((ant) => {
       const { id } = ant;
@@ -119,28 +112,28 @@ export const setupSimulation = (container: HTMLElement): void => {
 
     antsCollisionShapes.forEach((ant) => {
       let { id } = ant;
-      propInt8Id = id * antPropsInt8Count;
+      const propInt8Id = id * antPropsInt8Count;
       propFloat16Id = id * antPropsFloat16Count;
 
       speed = antsPropsInt8[propInt8Id + speedId];
-      speedTarget = antsPropsInt8[propInt8Id + targetSpeedId];
-      maxSpeed = antsPropsInt8[propInt8Id + maxSpeedId];
-      rotationDirectionSign = antsPropsInt8[propInt8Id + rotationDirectionId];
-      hasFood = antsPropsInt8[propInt8Id + hasFoodId];
-      pheromoneStrength = antsPropsInt8[propInt8Id + pheromoneStrengthId];
+      let speedTarget = antsPropsInt8[propInt8Id + targetSpeedId];
+      let maxSpeed = antsPropsInt8[propInt8Id + maxSpeedId];
+      let rotationDirectionSign = antsPropsInt8[propInt8Id + rotationDirectionId];
+      let hasFood = antsPropsInt8[propInt8Id + hasFoodId];
+      let pheromoneStrength = antsPropsInt8[propInt8Id + pheromoneStrengthId];
 
-      xVelocity = antsPropsFloat16[propFloat16Id + xvId];
-      yVelocity = antsPropsFloat16[propFloat16Id + yvId];
-      xvTarget = antsPropsFloat16[propFloat16Id + xvTargetId];
-      yvTarget = antsPropsFloat16[propFloat16Id + yvTargetId];
+      let xVelocity = antsPropsFloat16[propFloat16Id + xvId];
+      let yVelocity = antsPropsFloat16[propFloat16Id + yvId];
+      let xvTarget = antsPropsFloat16[propFloat16Id + xvTargetId];
+      let yvTarget = antsPropsFloat16[propFloat16Id + yvTargetId];
 
-      speedInterpolationSpeed = 2;
-      velocityInterpolationSpeed = 1;
-      collisionsCount = 0;
-      turnAngle = 0;
+      let speedInterpolationSpeed = 2;
+      let velocityInterpolationSpeed = 1;
+      let collisionsCount = 0;
+      let turnAngle = 0;
 
-      skipRandomDirectionChange = false;
-      isStandingOnPheromone = false;
+      let skipRandomDirectionChange = false;
+      let isStandingOnPheromone = false;
 
       for (const other of antsCollisions.getPotentials(ant as Shape)) {
         if (antsCollisions.areBodiesColliding(ant as Shape, other, result)) {
@@ -283,7 +276,7 @@ export const setupSimulation = (container: HTMLElement): void => {
         yvTarget = s * xvTarget + c * yvTarget;
       }
 
-      length = sqrt(xvTarget * xvTarget + yvTarget * yvTarget);
+      let length = sqrt(xvTarget * xvTarget + yvTarget * yvTarget);
       xvTarget /= length;
       yvTarget /= length;
 
@@ -377,7 +370,7 @@ export const setupSimulation = (container: HTMLElement): void => {
     });
 
     pheromones.forEach(({ emissionTimeStamp, id }: Pheromone): void => {
-      lifeSpan = (frameStartTime - emissionTimeStamp) / 1000;
+      let lifeSpan = (frameStartTime - emissionTimeStamp) / 1000;
       const sprite = pheromonesSpritesMap.get(id)!;
       if (lifeSpan >= pheromonesLifeSpan) {
         const circle = pheromones.get(id);
@@ -385,9 +378,8 @@ export const setupSimulation = (container: HTMLElement): void => {
           removePheromoneShape(circle);
           pheromones.delete(id);
         }
-        if (hasFood) {
-          foodPheromonesSprites.removeChild(sprite);
-        } else nestPheromonesSprites.removeChild(sprite);
+        foodPheromonesSprites.removeChild(sprite);
+        nestPheromonesSprites.removeChild(sprite);
         pheromonesSpritesMap.delete(id);
       } else {
         sprite.alpha = 1 - lifeSpan / pheromonesLifeSpan;
@@ -433,35 +425,7 @@ export const setupSimulation = (container: HTMLElement): void => {
     nest.y + foodDistanceToNest,
   );
 
-  releaseTheAntsOneByOne(
-    ({
-      id,
-      antCollisionShape,
-      antSprite,
-      rotationChangeTimer,
-      propertiesInt8,
-      propertiesFloat16,
-    }): boolean => {
-      antsCollisionShapes.set(id, antCollisionShape);
-      antsCollisions.insert(antCollisionShape);
-      antsSpritesMap.set(id, antSprite);
-      antsSprites.addChild(antSprite);
-      timers.set(id, rotationChangeTimer);
-
-      propertiesInt8.forEach((prop: number, index: number) => {
-        antsPropsInt8[id * antPropsInt8Count + index] = prop;
-      });
-
-      propertiesFloat16.forEach((prop: number, index: number) => {
-        antsPropsFloat16[id * antPropsFloat16Count + index] = prop;
-      });
-
-      return antsCollisionShapes.size < antsCount;
-    },
-    nest.x,
-    nest.y,
-    antsScale,
-  );
+  Ants.throwAllAtOnce(worldWidth, worldHeight);
 
   graphicsEngine.ticker.add(simulationUpdate);
   graphicsEngine.start();
