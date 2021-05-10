@@ -3,13 +3,13 @@ import * as PIXI from 'pixi.js';
 import NestImage from 'assets/nest.png';
 import NestEntranceCoverImage from 'assets/nest-entrance-cover.png';
 import { Circle } from 'simulation/collisions/circle';
-import { TAGS } from 'simulation/collisions/collisions';
+import { Collisions, TAGS } from 'simulation/collisions/collisions';
 import { SpriteWithCollisions } from 'simulation/SpriteWithCollisions';
 import { Shape } from 'simulation/collisions/proxyTypes';
 
 const { NEST, NEST_VISIBLE_AREA } = TAGS;
 
-export class Nest extends SpriteWithCollisions {
+class Nest extends SpriteWithCollisions {
   areaIsVisibleIn: Shape;
   entranceCoverSprite: PIXI.Sprite;
 
@@ -27,4 +27,18 @@ export class Nest extends SpriteWithCollisions {
     entranceCover.zIndex = 3;
     this.entranceCoverSprite = entranceCover;
   }
+}
+
+export function createNest(
+  spawnX: number,
+  spawnY: number,
+  stage: PIXI.Container,
+  collisionSystem: Collisions,
+): Nest {
+  const nest = new Nest(spawnX, spawnY);
+  stage.addChild(nest);
+  stage.addChild(nest.entranceCoverSprite);
+  collisionSystem.insert(nest.body);
+
+  return nest;
 }

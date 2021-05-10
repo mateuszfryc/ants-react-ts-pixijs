@@ -13,7 +13,6 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.Container): any {
   const antsProps: number[][] = [];
   antsProps.length = antsCount;
   const maxPheromonesEmission = 64;
-  const feromonesLifetime = 32000; // miliseconds
   const antsCollisions = new Collisions();
   const antsCollisionShapes = new Map<number, Circle>();
 
@@ -115,7 +114,6 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.Container): any {
     antsProps,
     antsScale,
     antsSpritesMap,
-    feromonesLifetime,
     maxPheromonesEmission,
     releaseOneByOne,
     throwAllAtOnce,

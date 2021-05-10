@@ -9,7 +9,7 @@ import { debugTimer, setupAntCounter, setupFPSDisplay, setupPheromonesCounter } 
 import {
   halfPI, interpolate, mapRange, mapRangeClamped,
   normalizeRadians, PI, randomInRange } from 'utils/math';
-import { Nest } from './Nest';
+import { createNest } from './Nest';
 import { setupAnts } from './Ant';
 // prettier-ignore
 import {
@@ -18,27 +18,25 @@ import {
 // prettier-ignore
 import {
   Pheromone, setupAntsPheromonesSensors, pheromones, sensorsTurnInterpolationSpeed,
-  pheromonesSpritesMap, pheromonesLifeSpan, foodPheromoneTexture, nestPheromoneTexture } from './Pheromones';
+  pheromonesSpritesMap, foodPheromoneTexture, nestPheromoneTexture } from './Pheromones';
 import { Circle } from './collisions/circle';
 
 const { random, min, atan2, cos, sin, abs, sign, sqrt, max } = Math;
 const { Sprite } = PIXI;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  const antsCount = 10000;
+  const antsCount = 300;
   const {
     graphicsEngine,
     stage,
-    antsSprites,
     foodBitesSprites,
     foodPheromonesSprites,
     nestPheromonesSprites,
     _draw,
   } = setupGraphics(container, antsCount);
-  const result = new Float32Array(new ArrayBuffer(12)); // 3 numbers
+
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
-  const { updateFPSDisplay } = setupFPSDisplay();
-  const { updateAntsCounter } = setupAntCounter();
+
   const Ants = setupAnts(antsCount, stage);
   const {
     antsCollisions,
@@ -46,20 +44,11 @@ export const setupSimulation = (container: HTMLElement): void => {
     antsProps,
     antsScale,
     antsSpritesMap,
-    feromonesLifetime,
     maxPheromonesEmission,
     timers,
 
     antPropsIndexes: { iSpeed, iXVelocity, iYVelocity },
   } = Ants;
-  const { updatePheromonesCounter } = setupPheromonesCounter();
-  const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
-  const foodDistanceToNest = 200;
-
-  const nest = new Nest(worldWidth * 0.5, worldHeight * 0.5);
-  stage.addChild(nest);
-  stage.addChild(nest.entranceCoverSprite);
-  antsCollisions.insert(nest.body);
 
   let currentPheromoneId = 0;
   const {
@@ -67,18 +56,21 @@ export const setupSimulation = (container: HTMLElement): void => {
     sensorForward,
     sensorRight,
     updateAntSensors,
+    updatePheromones,
     addPheromoneShape,
-    removePheromoneShape,
     pheromoneEmissionTimer,
     drawAntSensors,
-  } = setupAntsPheromonesSensors(antsScale);
+  } = setupAntsPheromonesSensors(antsScale, foodPheromonesSprites, nestPheromonesSprites);
 
+  Ants.throwAllAtOnce(worldWidth, worldHeight);
   antsCollisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
-  /**
-   * Variables used for ants update loop.
-   * Forward declaration allows to save time otherwise used
-   * to declare them on each step of the loop.
-   */
+  const { updateFPSDisplay } = setupFPSDisplay();
+  const { updateAntsCounter } = setupAntCounter();
+  const { updatePheromonesCounter } = setupPheromonesCounter();
+  const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
+  const foodDistanceToNest = 200;
+  const nest = createNest(worldWidth * 0.5, worldHeight * 0.5, stage, antsCollisions);
+  const collisionTestResult: number[] = [];
   let lastTime = performance.now();
 
   function simulationUpdate() {
@@ -122,10 +114,8 @@ export const setupSimulation = (container: HTMLElement): void => {
       let isStandingOnPheromone = false;
 
       for (const other of antsCollisions.getPotentials(antBody as Shape)) {
-        if (antsCollisions.areBodiesColliding(antBody as Shape, other, result)) {
-          const overlap = result[0];
-          const overlap_x = result[1];
-          const overlap_y = result[2];
+        if (antsCollisions.areBodiesColliding(antBody as Shape, other, collisionTestResult)) {
+          const [overlap, overlap_x, overlap_y] = collisionTestResult;
           const { id: otherId, tag, radius } = other;
 
           /* eslint-disable indent */
@@ -218,30 +208,30 @@ export const setupSimulation = (container: HTMLElement): void => {
 
       const { x, y } = antBody;
 
-      // const [frontSensorInputSum, leftSensorInputSum, rightSensorInputSum] = updateAntSensors(
-      //   x,
-      //   y,
-      //   xVelocity,
-      //   yVelocity,
-      //   hasFood,
-      // );
+      const [frontSensorInputSum, leftSensorInputSum, rightSensorInputSum] = updateAntSensors(
+        x,
+        y,
+        xVelocity,
+        yVelocity,
+        hasFood,
+      );
 
-      // if (frontSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
-      //   xvTarget = sensorForward.x - x;
-      //   yvTarget = sensorForward.y - y;
-      //   velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
-      //   skipRandomDirectionChange = true;
-      // } else if (leftSensorInputSum > rightSensorInputSum) {
-      //   xvTarget = sensorLeft.x - x;
-      //   yvTarget = sensorLeft.y - y;
-      //   velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
-      //   skipRandomDirectionChange = true;
-      // } else if (rightSensorInputSum > leftSensorInputSum) {
-      //   xvTarget = sensorRight.x - x;
-      //   yvTarget = sensorRight.y - y;
-      //   velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
-      //   skipRandomDirectionChange = true;
-      // }
+      if (frontSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
+        xvTarget = sensorForward.x - x;
+        yvTarget = sensorForward.y - y;
+        velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
+        skipRandomDirectionChange = true;
+      } else if (leftSensorInputSum > rightSensorInputSum) {
+        xvTarget = sensorLeft.x - x;
+        yvTarget = sensorLeft.y - y;
+        velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
+        skipRandomDirectionChange = true;
+      } else if (rightSensorInputSum > leftSensorInputSum) {
+        xvTarget = sensorRight.x - x;
+        yvTarget = sensorRight.y - y;
+        velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
+        skipRandomDirectionChange = true;
+      }
       // otherwise keep moving forward
 
       if (!skipRandomDirectionChange) {
@@ -315,30 +305,30 @@ export const setupSimulation = (container: HTMLElement): void => {
         }
       }
 
-      // if (pheromoneStrength > 0 && shouldSpawnPheromones && !isStandingOnPheromone) {
-      //   const newPheromone = new Pheromone(
-      //     currentPheromoneId,
-      //     x,
-      //     y,
-      //     hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
-      //     frameStartTime,
-      //   );
-      //   addPheromoneShape(newPheromone);
-      //   pheromones.set(currentPheromoneId, newPheromone);
+      if (pheromoneStrength > 0 && shouldSpawnPheromones && !isStandingOnPheromone) {
+        const newPheromone = new Pheromone(
+          currentPheromoneId,
+          x,
+          y,
+          hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
+          frameStartTime,
+        );
+        addPheromoneShape(newPheromone);
+        pheromones.set(currentPheromoneId, newPheromone);
 
-      //   const pheromoneSprite = Sprite.from(hasFood ? foodPheromoneTexture : nestPheromoneTexture);
-      //   pheromoneSprite.x = x;
-      //   pheromoneSprite.y = y;
-      //   pheromoneSprite.anchor.set(0.5);
-      //   pheromoneSprite.scale.set(0.2 * newPheromone.radius);
-      //   pheromonesSpritesMap.set(currentPheromoneId, pheromoneSprite);
-      //   if (hasFood) {
-      //     foodPheromonesSprites.addChild(pheromoneSprite);
-      //   } else nestPheromonesSprites.addChild(pheromoneSprite);
+        const pheromoneSprite = Sprite.from(hasFood ? foodPheromoneTexture : nestPheromoneTexture);
+        pheromoneSprite.x = x;
+        pheromoneSprite.y = y;
+        pheromoneSprite.anchor.set(0.5);
+        pheromoneSprite.scale.set(0.2 * newPheromone.radius);
+        pheromonesSpritesMap.set(currentPheromoneId, pheromoneSprite);
+        if (hasFood) {
+          foodPheromonesSprites.addChild(pheromoneSprite);
+        } else nestPheromonesSprites.addChild(pheromoneSprite);
 
-      //   currentPheromoneId++;
-      //   pheromoneStrength--;
-      // }
+        currentPheromoneId++;
+        pheromoneStrength--;
+      }
 
       if (x > 0 && y > 0 && x < worldWidth && y < worldHeight) antsOnScreenCounter++;
 
@@ -357,22 +347,7 @@ export const setupSimulation = (container: HTMLElement): void => {
       ];
     });
 
-    // pheromones.forEach(({ emissionTimeStamp, id }: Pheromone): void => {
-    //   let lifeSpan = (frameStartTime - emissionTimeStamp) / 1000;
-    //   const sprite = pheromonesSpritesMap.get(id)!;
-    //   if (lifeSpan >= pheromonesLifeSpan) {
-    //     const circle = pheromones.get(id);
-    //     if (circle) {
-    //       removePheromoneShape(circle);
-    //       pheromones.delete(id);
-    //     }
-    //     foodPheromonesSprites.removeChild(sprite);
-    //     nestPheromonesSprites.removeChild(sprite);
-    //     pheromonesSpritesMap.delete(id);
-    //   } else {
-    //     sprite.alpha = 1 - lifeSpan / pheromonesLifeSpan;
-    //   }
-    // });
+    updatePheromones(frameStartTime);
 
     // _draw.clear();
     // _draw.lineStyle(1, 0xff0000);
@@ -412,8 +387,6 @@ export const setupSimulation = (container: HTMLElement): void => {
     nest.x + foodDistanceToNest,
     nest.y + foodDistanceToNest,
   );
-
-  Ants.throwAllAtOnce(worldWidth, worldHeight);
 
   graphicsEngine.ticker.add(simulationUpdate);
   graphicsEngine.start();

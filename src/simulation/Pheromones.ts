@@ -39,7 +39,11 @@ const sensorForwardDistance = 3.6;
 const sensorsSideDistance = 0.46;
 const sensorsSideSpread = 0.7;
 
-export const setupAntsPheromonesSensors = (antsScale: number): any => {
+export const setupAntsPheromonesSensors = (
+  antsScale: number,
+  foodPheromonesSprites: PIXI.ParticleContainer,
+  nestPheromonesSprites: PIXI.ParticleContainer,
+): any => {
   radius *= antsScale;
   const pheromoneEmissionTimer = new Timer(0.066 * antsScale);
   /**
@@ -121,11 +125,31 @@ export const setupAntsPheromonesSensors = (antsScale: number): any => {
     return [frontSensorInputSum, leftSensorInputSum, rightSensorInputSum, pheromoneEmissionTimer];
   }
 
+  function updatePheromones(frameStartTime: number) {
+    pheromones.forEach(({ emissionTimeStamp, id }: Pheromone): void => {
+      let lifeSpan = (frameStartTime - emissionTimeStamp) / 1000;
+      const sprite = pheromonesSpritesMap.get(id)!;
+      if (lifeSpan >= pheromonesLifeSpan) {
+        const circle = pheromones.get(id);
+        if (circle) {
+          remove(circle);
+          pheromones.delete(id);
+        }
+        foodPheromonesSprites.removeChild(sprite);
+        nestPheromonesSprites.removeChild(sprite);
+        pheromonesSpritesMap.delete(id);
+      } else {
+        sprite.alpha = 1 - lifeSpan / pheromonesLifeSpan;
+      }
+    });
+  }
+
   return {
     sensorLeft,
     sensorForward,
     sensorRight,
     updateAntSensors,
+    updatePheromones,
     addPheromoneShape: insert,
     removePheromoneShape: remove,
     pheromoneEmissionTimer,
