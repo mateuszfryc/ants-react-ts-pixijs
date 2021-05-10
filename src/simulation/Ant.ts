@@ -6,49 +6,21 @@ import { Collisions, TAGS } from 'simulation/collisions/collisions';
 import { randomInRange, randomSign, randomUnitVector } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 import { doNTimes } from 'utils/do-n-times';
+import { Shape } from './collisions/proxyTypes';
 
 export function setupAnts(antsCount: number, antsSprites: PIXI.Container): any {
   const antsScale = 3;
-  const timers = new Map<number, Timer>();
-  let lastCreatedAntId = 0;
-  /**
-   * * One (1) dimensional array of properties of all the ants.
-   * Accessing single ant prop is done by:
-   *   antsProps[i * e + p]
-   * where:
-   * i = index of the ant
-   * e = number of properites single ant has
-   * p = index of single prop within range of ant props, starts with 0 and goes up to e - 1
-   *
-   * the array will look like this:
-   * antsProps = [x1, y1, speed1, x2, y2, speed2, x3, y3, speed3...xn, yn, speedn]
-   */
-  const Int8ArrayItemSize = 1;
-  const Float32ArrayItemSize = 4;
+  const antsProps: number[][] = [];
+  antsProps.length = antsCount;
+  const maxPheromonesEmission = 64;
+  const feromonesLifetime = 32000; // miliseconds
+  const antsCollisions = new Collisions();
+  const antsCollisionShapes = new Map<number, Circle>();
 
-  const singleAntPropsCount = 9;
-  const antsPropsInt8IDs = {
-    speedId: 0,
-    targetSpeedId: 1,
-    maxSpeedId: 2,
-    rotationDirectionId: 3,
-    hasFoodId: 4,
-    pheromoneStrengthId: 5,
-  };
-  const antPropsInt8Count = Object.keys(antsPropsInt8IDs).length;
-  const antsPropsFloat16IDs = {
-    xvId: 0,
-    yvId: 1,
-    xvTargetId: 2,
-    yvTargetId: 3,
-  };
-  const antPropsFloat16Count = Object.keys(antsPropsFloat16IDs).length;
-  const antsPropsInt8: Int8Array = new Int8Array(
-    new ArrayBuffer(antsCount * Int8ArrayItemSize * antPropsInt8Count),
-  );
-  const antsPropsFloat16: Float32Array = new Float32Array(
-    new ArrayBuffer(antsCount * Float32ArrayItemSize * antPropsFloat16Count),
-  );
+  const antTexture = PIXI.Texture.from(AntImage);
+  const timers = new Map<number, Timer>();
+
+  let lastCreatedAntId = 0;
   const antsSpritesMap = new Map<number, PIXI.Sprite>();
 
   /**
@@ -57,12 +29,6 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.Container): any {
    * will have to visit nest or find food,
    * to start emitting pheromones again.
    */
-  const maxPheromonesEmission = 64;
-  const feromonesLifetime = 32000; // miliseconds
-  const antsCollisions = new Collisions();
-  const antsCollisionShapes = new Map<number, Circle>();
-
-  const antTexture = PIXI.Texture.from(AntImage);
 
   function spawnAnt(id: number, x: number, y: number): any {
     const antCollisionShape = new Circle(
@@ -95,8 +61,12 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.Container): any {
     const rotationDirection = randomSign();
     const hasFood = 0;
     const pheromoneStrength = maxPheromonesEmission;
-    // eslint-disable-next-line prettier/prettier
-    const propertiesInt8 = [
+    const properties = [
+      id,
+      xv,
+      yv,
+      xvTarget,
+      yvTarget,
       speed,
       targetSpeed,
       maxSpeed,
@@ -104,54 +74,26 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.Container): any {
       hasFood,
       pheromoneStrength,
     ];
-    // eslint-disable-next-line prettier/prettier
-    const propertiesFloat16 = [xv, yv, xvTarget, yvTarget];
 
-    return {
-      id,
-      antCollisionShape,
-      antSprite,
-      rotationChangeTimer,
-      propertiesInt8,
-      propertiesFloat16,
-    };
-  }
-
-  function registerAnt({
-    id,
-    antCollisionShape,
-    antSprite,
-    rotationChangeTimer,
-    propertiesInt8,
-    propertiesFloat16,
-  }: any): boolean {
     antsCollisionShapes.set(id, antCollisionShape);
-    antsCollisions.insert(antCollisionShape);
+    antsCollisions.insert(antCollisionShape as Shape);
     antsSpritesMap.set(id, antSprite);
     antsSprites.addChild(antSprite);
     timers.set(id, rotationChangeTimer);
-
-    propertiesInt8.forEach((prop: number, index: number) => {
-      antsPropsInt8[id * antPropsInt8Count + index] = prop;
-    });
-
-    propertiesFloat16.forEach((prop: number, index: number) => {
-      antsPropsFloat16[id * antPropsFloat16Count + index] = prop;
-    });
+    antsProps[id] = properties;
+    lastCreatedAntId++;
 
     return antsCollisionShapes.size < antsCount;
   }
 
   function releaseOneByOne(xSpawn: number, ySpawn: number): void {
     setTimeout(() => {
-      const ant = spawnAnt(
+      const shouldSpawnNextAnt = spawnAnt(
         lastCreatedAntId,
         xSpawn + randomInRange(-10, 10),
         ySpawn + randomInRange(-10, 10),
       );
-      lastCreatedAntId++;
-
-      if (registerAnt(ant)) {
+      if (shouldSpawnNextAnt) {
         releaseOneByOne(xSpawn, ySpawn);
       }
     }, 0);
@@ -159,32 +101,39 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.Container): any {
 
   const throwAllAtOnce = (worldWidth: number, worldHeight: number): void => {
     doNTimes(() => {
-      registerAnt(
-        spawnAnt(
-          lastCreatedAntId,
-          randomInRange(10, worldWidth - 10),
-          randomInRange(10, worldHeight - 10),
-        ),
+      spawnAnt(
+        lastCreatedAntId,
+        randomInRange(10, worldWidth - 10),
+        randomInRange(10, worldHeight - 10),
       );
-      lastCreatedAntId++;
     }, antsCount);
   };
 
   return {
-    antsScale,
-    antsCollisionShapes,
     antsCollisions,
+    antsCollisionShapes,
+    antsProps,
+    antsScale,
     antsSpritesMap,
-    timers,
-    antsPropsInt8,
-    antsPropsFloat16,
+    feromonesLifetime,
+    maxPheromonesEmission,
     releaseOneByOne,
     throwAllAtOnce,
-    antPropsInt8Count,
-    antPropsFloat16Count,
-    antsPropsInt8IDs,
-    antsPropsFloat16IDs,
-    maxPheromonesEmission,
-    feromonesLifetime,
+    timers,
+
+    /** Single ant's properties ids used to index props arrays */
+    antPropsIndexes: {
+      iID: 0,
+      iXVelocity: 1,
+      iYVelocity: 2,
+      iXvTarget: 3,
+      iYvTarget: 4,
+      iSpeed: 5,
+      iTargetSpeed: 6,
+      iMaxSpeed: 7,
+      iRotationDirection: 8,
+      iHasFood: 9,
+      iPheromoneStrength: 10,
+    },
   };
 }

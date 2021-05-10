@@ -19,12 +19,13 @@ import {
 import {
   Pheromone, setupAntsPheromonesSensors, pheromones, sensorsTurnInterpolationSpeed,
   pheromonesSpritesMap, pheromonesLifeSpan, foodPheromoneTexture, nestPheromoneTexture } from './Pheromones';
+import { Circle } from './collisions/circle';
 
 const { random, min, atan2, cos, sin, abs, sign, sqrt, max } = Math;
 const { Sprite } = PIXI;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  const antsCount = 300;
+  const antsCount = 10000;
   const {
     graphicsEngine,
     stage,
@@ -40,29 +41,17 @@ export const setupSimulation = (container: HTMLElement): void => {
   const { updateAntsCounter } = setupAntCounter();
   const Ants = setupAnts(antsCount, stage);
   const {
-    antsScale,
-    antsCollisionShapes,
     antsCollisions,
+    antsCollisionShapes,
+    antsProps,
+    antsScale,
     antsSpritesMap,
-    timers,
-    antsPropsInt8,
-    antsPropsFloat16,
-    antPropsInt8Count,
-    antPropsFloat16Count,
-    antsPropsInt8IDs,
-    antsPropsFloat16IDs,
-    maxPheromonesEmission,
     feromonesLifetime,
+    maxPheromonesEmission,
+    timers,
+
+    antPropsIndexes: { iSpeed, iXVelocity, iYVelocity },
   } = Ants;
-  const {
-    speedId,
-    targetSpeedId,
-    maxSpeedId,
-    rotationDirectionId,
-    hasFoodId,
-    pheromoneStrengthId,
-  } = antsPropsInt8IDs;
-  const { xvId, yvId, xvTargetId, yvTargetId } = antsPropsFloat16IDs;
   const { updatePheromonesCounter } = setupPheromonesCounter();
   const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
   const foodDistanceToNest = 200;
@@ -97,35 +86,32 @@ export const setupSimulation = (container: HTMLElement): void => {
     const deltaSeconds = min((frameStartTime - lastTime) / 1000, 0.5);
     let antsOnScreenCounter = 0;
     const shouldSpawnPheromones = pheromoneEmissionTimer.update(deltaSeconds);
-    let propFloat16Id = 0;
-    let speed = 0;
 
-    antsCollisionShapes.forEach((ant) => {
+    antsCollisionShapes.forEach((ant: Circle) => {
       const { id } = ant;
-      propFloat16Id = id * antPropsFloat16Count;
-      speed = antsPropsInt8[id * antPropsInt8Count + speedId];
-      ant.x += speed * antsPropsFloat16[propFloat16Id + xvId] * deltaSeconds;
-      ant.y += speed * antsPropsFloat16[propFloat16Id + yvId] * deltaSeconds;
+      const props = antsProps[id];
+      const speed = props[iSpeed];
+      ant.x += speed * props[iXVelocity] * deltaSeconds;
+      ant.y += speed * props[iYVelocity] * deltaSeconds;
     });
 
     antsCollisions.update();
 
-    antsCollisionShapes.forEach((ant) => {
-      let { id } = ant;
-      const propInt8Id = id * antPropsInt8Count;
-      propFloat16Id = id * antPropsFloat16Count;
-
-      speed = antsPropsInt8[propInt8Id + speedId];
-      let speedTarget = antsPropsInt8[propInt8Id + targetSpeedId];
-      let maxSpeed = antsPropsInt8[propInt8Id + maxSpeedId];
-      let rotationDirectionSign = antsPropsInt8[propInt8Id + rotationDirectionId];
-      let hasFood = antsPropsInt8[propInt8Id + hasFoodId];
-      let pheromoneStrength = antsPropsInt8[propInt8Id + pheromoneStrengthId];
-
-      let xVelocity = antsPropsFloat16[propFloat16Id + xvId];
-      let yVelocity = antsPropsFloat16[propFloat16Id + yvId];
-      let xvTarget = antsPropsFloat16[propFloat16Id + xvTargetId];
-      let yvTarget = antsPropsFloat16[propFloat16Id + yvTargetId];
+    antsProps.forEach((ant: number[]) => {
+      let [
+        id,
+        xVelocity,
+        yVelocity,
+        xvTarget,
+        yvTarget,
+        speed,
+        speedTarget,
+        maxSpeed,
+        rotationDirectionSign,
+        hasFood,
+        pheromoneStrength,
+      ] = ant;
+      const antBody = antsCollisionShapes.get(id);
 
       let speedInterpolationSpeed = 2;
       let velocityInterpolationSpeed = 1;
@@ -135,8 +121,8 @@ export const setupSimulation = (container: HTMLElement): void => {
       let skipRandomDirectionChange = false;
       let isStandingOnPheromone = false;
 
-      for (const other of antsCollisions.getPotentials(ant as Shape)) {
-        if (antsCollisions.areBodiesColliding(ant as Shape, other, result)) {
+      for (const other of antsCollisions.getPotentials(antBody as Shape)) {
+        if (antsCollisions.areBodiesColliding(antBody as Shape, other, result)) {
           const overlap = result[0];
           const overlap_x = result[1];
           const overlap_y = result[2];
@@ -147,8 +133,8 @@ export const setupSimulation = (container: HTMLElement): void => {
             case ANT:
               collisionsCount++;
               if (!hasFood) {
-                ant.x -= overlap! * overlap_x;
-                ant.y -= overlap! * overlap_y;
+                antBody.x -= overlap! * overlap_x;
+                antBody.y -= overlap! * overlap_y;
                 skipRandomDirectionChange = true;
               }
               break;
@@ -183,8 +169,8 @@ export const setupSimulation = (container: HTMLElement): void => {
 
             default:
               collisionsCount++;
-              ant.x -= overlap! * overlap_x;
-              ant.y -= overlap! * overlap_y;
+              antBody.x -= overlap! * overlap_x;
+              antBody.y -= overlap! * overlap_y;
               if (tag === FOOD) {
                 let [amount, isEmpty] = foodProps.get(otherId)!;
                 if (!hasFood && !isEmpty) {
@@ -230,32 +216,32 @@ export const setupSimulation = (container: HTMLElement): void => {
         }
       }
 
-      const { x, y } = ant;
+      const { x, y } = antBody;
 
-      const [frontSensorInputSum, leftSensorInputSum, rightSensorInputSum] = updateAntSensors(
-        x,
-        y,
-        xVelocity,
-        yVelocity,
-        hasFood,
-      );
+      // const [frontSensorInputSum, leftSensorInputSum, rightSensorInputSum] = updateAntSensors(
+      //   x,
+      //   y,
+      //   xVelocity,
+      //   yVelocity,
+      //   hasFood,
+      // );
 
-      if (frontSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
-        xvTarget = sensorForward.x - x;
-        yvTarget = sensorForward.y - y;
-        velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
-        skipRandomDirectionChange = true;
-      } else if (leftSensorInputSum > rightSensorInputSum) {
-        xvTarget = sensorLeft.x - x;
-        yvTarget = sensorLeft.y - y;
-        velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
-        skipRandomDirectionChange = true;
-      } else if (rightSensorInputSum > leftSensorInputSum) {
-        xvTarget = sensorRight.x - x;
-        yvTarget = sensorRight.y - y;
-        velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
-        skipRandomDirectionChange = true;
-      }
+      // if (frontSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
+      //   xvTarget = sensorForward.x - x;
+      //   yvTarget = sensorForward.y - y;
+      //   velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
+      //   skipRandomDirectionChange = true;
+      // } else if (leftSensorInputSum > rightSensorInputSum) {
+      //   xvTarget = sensorLeft.x - x;
+      //   yvTarget = sensorLeft.y - y;
+      //   velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
+      //   skipRandomDirectionChange = true;
+      // } else if (rightSensorInputSum > leftSensorInputSum) {
+      //   xvTarget = sensorRight.x - x;
+      //   yvTarget = sensorRight.y - y;
+      //   velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
+      //   skipRandomDirectionChange = true;
+      // }
       // otherwise keep moving forward
 
       if (!skipRandomDirectionChange) {
@@ -309,8 +295,8 @@ export const setupSimulation = (container: HTMLElement): void => {
       xVelocity /= length;
       yVelocity /= length;
 
-      ant.xv = xVelocity;
-      ant.yv = yVelocity;
+      antBody.xv = xVelocity;
+      antBody.yv = yVelocity;
 
       speed = interpolate(speed, speedTarget, deltaSeconds, speedInterpolationSpeed);
 
@@ -329,62 +315,64 @@ export const setupSimulation = (container: HTMLElement): void => {
         }
       }
 
-      if (pheromoneStrength > 0 && shouldSpawnPheromones && !isStandingOnPheromone) {
-        const newPheromone = new Pheromone(
-          currentPheromoneId,
-          x,
-          y,
-          hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
-          frameStartTime,
-        );
-        addPheromoneShape(newPheromone);
-        pheromones.set(currentPheromoneId, newPheromone);
+      // if (pheromoneStrength > 0 && shouldSpawnPheromones && !isStandingOnPheromone) {
+      //   const newPheromone = new Pheromone(
+      //     currentPheromoneId,
+      //     x,
+      //     y,
+      //     hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
+      //     frameStartTime,
+      //   );
+      //   addPheromoneShape(newPheromone);
+      //   pheromones.set(currentPheromoneId, newPheromone);
 
-        const pheromoneSprite = Sprite.from(hasFood ? foodPheromoneTexture : nestPheromoneTexture);
-        pheromoneSprite.x = x;
-        pheromoneSprite.y = y;
-        pheromoneSprite.anchor.set(0.5);
-        pheromoneSprite.scale.set(0.2 * newPheromone.radius);
-        pheromonesSpritesMap.set(currentPheromoneId, pheromoneSprite);
-        if (hasFood) {
-          foodPheromonesSprites.addChild(pheromoneSprite);
-        } else nestPheromonesSprites.addChild(pheromoneSprite);
+      //   const pheromoneSprite = Sprite.from(hasFood ? foodPheromoneTexture : nestPheromoneTexture);
+      //   pheromoneSprite.x = x;
+      //   pheromoneSprite.y = y;
+      //   pheromoneSprite.anchor.set(0.5);
+      //   pheromoneSprite.scale.set(0.2 * newPheromone.radius);
+      //   pheromonesSpritesMap.set(currentPheromoneId, pheromoneSprite);
+      //   if (hasFood) {
+      //     foodPheromonesSprites.addChild(pheromoneSprite);
+      //   } else nestPheromonesSprites.addChild(pheromoneSprite);
 
-        currentPheromoneId++;
-        pheromoneStrength--;
-      }
+      //   currentPheromoneId++;
+      //   pheromoneStrength--;
+      // }
 
       if (x > 0 && y > 0 && x < worldWidth && y < worldHeight) antsOnScreenCounter++;
 
-      antsPropsInt8[propInt8Id + speedId] = speed * mapRange(abs(turnAngle), 0, PI, 1, 0.3);
-      antsPropsInt8[propInt8Id + targetSpeedId] = speedTarget;
-      antsPropsInt8[propInt8Id + maxSpeedId] = maxSpeed;
-      antsPropsInt8[propInt8Id + rotationDirectionId] = rotationDirectionSign;
-      antsPropsInt8[propInt8Id + hasFoodId] = hasFood;
-      antsPropsInt8[propInt8Id + pheromoneStrengthId] = pheromoneStrength;
-
-      antsPropsFloat16[propFloat16Id + xvTargetId] = xvTarget;
-      antsPropsFloat16[propFloat16Id + yvTargetId] = yvTarget;
-      antsPropsFloat16[propFloat16Id + xvId] = xVelocity;
-      antsPropsFloat16[propFloat16Id + yvId] = yVelocity;
+      antsProps[id] = [
+        id,
+        xVelocity,
+        yVelocity,
+        xvTarget,
+        yvTarget,
+        speed * mapRange(abs(turnAngle), 0, PI, 1, 0.3),
+        speedTarget,
+        maxSpeed,
+        rotationDirectionSign,
+        hasFood,
+        pheromoneStrength,
+      ];
     });
 
-    pheromones.forEach(({ emissionTimeStamp, id }: Pheromone): void => {
-      let lifeSpan = (frameStartTime - emissionTimeStamp) / 1000;
-      const sprite = pheromonesSpritesMap.get(id)!;
-      if (lifeSpan >= pheromonesLifeSpan) {
-        const circle = pheromones.get(id);
-        if (circle) {
-          removePheromoneShape(circle);
-          pheromones.delete(id);
-        }
-        foodPheromonesSprites.removeChild(sprite);
-        nestPheromonesSprites.removeChild(sprite);
-        pheromonesSpritesMap.delete(id);
-      } else {
-        sprite.alpha = 1 - lifeSpan / pheromonesLifeSpan;
-      }
-    });
+    // pheromones.forEach(({ emissionTimeStamp, id }: Pheromone): void => {
+    //   let lifeSpan = (frameStartTime - emissionTimeStamp) / 1000;
+    //   const sprite = pheromonesSpritesMap.get(id)!;
+    //   if (lifeSpan >= pheromonesLifeSpan) {
+    //     const circle = pheromones.get(id);
+    //     if (circle) {
+    //       removePheromoneShape(circle);
+    //       pheromones.delete(id);
+    //     }
+    //     foodPheromonesSprites.removeChild(sprite);
+    //     nestPheromonesSprites.removeChild(sprite);
+    //     pheromonesSpritesMap.delete(id);
+    //   } else {
+    //     sprite.alpha = 1 - lifeSpan / pheromonesLifeSpan;
+    //   }
+    // });
 
     // _draw.clear();
     // _draw.lineStyle(1, 0xff0000);
