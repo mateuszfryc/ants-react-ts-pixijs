@@ -28,8 +28,8 @@ export const setupGraphics = <T extends HTMLElement>(
   const foodBitesSprites = new PIXI.ParticleContainer(antsCount, particlesOptions);
 
   antsSprites.zIndex = 3;
-  nestPheromonesSprites.zIndex = 2;
-  foodPheromonesSprites.zIndex = 2;
+  nestPheromonesSprites.zIndex = 1;
+  foodPheromonesSprites.zIndex = 1;
   foodBitesSprites.zIndex = 4;
 
   app.stage.addChild(antsSprites, nestPheromonesSprites, foodPheromonesSprites, foodBitesSprites);

@@ -24,8 +24,9 @@ class Nest extends SpriteWithCollisions {
     entranceCover.y = y;
     entranceCover.scale.set(scale * 0.6);
     entranceCover.anchor.set(0.5);
-    entranceCover.zIndex = 3;
+    entranceCover.zIndex = 5;
     this.entranceCoverSprite = entranceCover;
+    this.zIndex = 2;
   }
 }
 

@@ -29,6 +29,7 @@ export const setupSimulation = (container: HTMLElement): void => {
   const {
     graphicsEngine,
     stage,
+    antsSprites,
     foodBitesSprites,
     foodPheromonesSprites,
     nestPheromonesSprites,
@@ -37,7 +38,7 @@ export const setupSimulation = (container: HTMLElement): void => {
 
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
 
-  const Ants = setupAnts(antsCount, stage);
+  const Ants = setupAnts(antsCount, antsSprites);
   const {
     antsCollisions,
     antsCollisionShapes,
@@ -62,8 +63,6 @@ export const setupSimulation = (container: HTMLElement): void => {
     drawAntSensors,
   } = setupAntsPheromonesSensors(antsScale, foodPheromonesSprites, nestPheromonesSprites);
 
-  Ants.throwAllAtOnce(worldWidth, worldHeight);
-  antsCollisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
   const { updateFPSDisplay } = setupFPSDisplay();
   const { updateAntsCounter } = setupAntCounter();
   const { updatePheromonesCounter } = setupPheromonesCounter();
@@ -72,6 +71,9 @@ export const setupSimulation = (container: HTMLElement): void => {
   const nest = createNest(worldWidth * 0.5, worldHeight * 0.5, stage, antsCollisions);
   const collisionTestResult: number[] = [];
   let lastTime = performance.now();
+
+  Ants.releaseOneByOne(nest.x, nest.y);
+  antsCollisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
 
   function simulationUpdate() {
     const frameStartTime = performance.now();
@@ -123,8 +125,10 @@ export const setupSimulation = (container: HTMLElement): void => {
             case ANT:
               collisionsCount++;
               if (!hasFood) {
-                antBody.x -= overlap! * overlap_x;
-                antBody.y -= overlap! * overlap_y;
+                antBody.x -= overlap * 0.5 * overlap_x;
+                antBody.y -= overlap * 0.5 * overlap_y;
+                other.x -= overlap * 0.5 * overlap_x;
+                other.y -= overlap * 0.5 * overlap_y;
                 skipRandomDirectionChange = true;
               }
               break;
@@ -139,11 +143,7 @@ export const setupSimulation = (container: HTMLElement): void => {
                 }
                 skipRandomDirectionChange = true;
                 velocityInterpolationSpeed = 20;
-                turnAngle =
-                  randomInRange(0.5, 1) *
-                    sign(overlap_y > 0 ? 1 : -1) *
-                    atan2(-overlap_x, -overlap_y) +
-                  atan2(xvTarget, yvTarget);
+                turnAngle += (overlap_y > 0 ? 1 : -1) * atan2(-overlap_x, -overlap_y);
               } else {
                 pheromoneStrength = maxPheromonesEmission;
               }
@@ -159,8 +159,8 @@ export const setupSimulation = (container: HTMLElement): void => {
 
             default:
               collisionsCount++;
-              antBody.x -= overlap! * overlap_x;
-              antBody.y -= overlap! * overlap_y;
+              antBody.x -= overlap * overlap_x;
+              antBody.y -= overlap * overlap_y;
               if (tag === FOOD) {
                 let [amount, isEmpty] = foodProps.get(otherId)!;
                 if (!hasFood && !isEmpty) {
@@ -195,11 +195,8 @@ export const setupSimulation = (container: HTMLElement): void => {
               }
               skipRandomDirectionChange = true;
               velocityInterpolationSpeed = 20;
-              turnAngle =
-                randomInRange(0.5, 1) *
-                  sign(overlap_y > 0 ? 1 : -1) *
-                  atan2(-overlap_x, -overlap_y) +
-                atan2(xvTarget, yvTarget);
+              turnAngle += (overlap_y > 0 ? 1 : -1) * atan2(-overlap_x, -overlap_y);
+
               break;
           }
           /* eslint-enable indent */
@@ -239,16 +236,15 @@ export const setupSimulation = (container: HTMLElement): void => {
         const rotationChangeTImer = timers.get(id);
         if (rotationChangeTImer!.update(deltaSeconds)) {
           rotationDirectionSign *= -1;
-          turnAngle = random() * halfPI * rotationDirectionSign;
+          turnAngle += random() * halfPI * rotationDirectionSign;
         }
       }
 
-      turnAngle = normalizeRadians(turnAngle);
       // rotate velocity by turn angle
       if (turnAngle !== 0) {
-        const angleWithDirection = turnAngle * rotationDirectionSign;
-        const c = cos(angleWithDirection);
-        const s = sin(angleWithDirection);
+        turnAngle = normalizeRadians(atan2(xVelocity, yVelocity) + turnAngle);
+        const c = cos(turnAngle);
+        const s = sin(turnAngle);
         xvTarget = c * xvTarget - s * yvTarget;
         yvTarget = s * xvTarget + c * yvTarget;
       }

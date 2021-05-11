@@ -8,7 +8,7 @@ import { Timer } from 'simulation/Timer';
 import { doNTimes } from 'utils/do-n-times';
 import { Shape } from './collisions/proxyTypes';
 
-export function setupAnts(antsCount: number, antsSprites: PIXI.Container): any {
+export function setupAnts(antsCount: number, antsSprites: PIXI.ParticleContainer): any {
   const antsScale = 3;
   const antsProps: number[][] = [];
   antsProps.length = antsCount;

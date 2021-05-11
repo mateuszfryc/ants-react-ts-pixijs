@@ -8,7 +8,7 @@ import { TAGS } from './collisions/collisions';
 
 const { ANT_SENSOR, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
 
-export const sensorsTurnInterpolationSpeed = 16;
+export const sensorsTurnInterpolationSpeed = 8;
 export const pheromones = new Map<number, Pheromone>();
 export const pheromonesSpritesMap = new Map<number, PIXI.Sprite>();
 export const nestPheromoneTexture = PIXI.Texture.from(NestScentImage);
