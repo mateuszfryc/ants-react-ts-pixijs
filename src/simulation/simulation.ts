@@ -15,17 +15,14 @@ import { setupAnts } from './Ant';
 import {
   makeSomeFood, foodImageTexture, foodSprites,
   foodBitesSpritesMap, foodCollisionShapes, foodProps } from './Food';
-// prettier-ignore
-import {
-  Pheromone, setupAntsPheromonesSensors, pheromones, sensorsTurnInterpolationSpeed,
-  pheromonesSpritesMap, foodPheromoneTexture, nestPheromoneTexture } from './Pheromones';
+import { setupAntsPheromones } from './Pheromones';
 import { Circle } from './collisions/circle';
 
-const { random, min, atan2, cos, sin, abs, sign, sqrt, max } = Math;
+const { random, min, atan2, cos, sin, abs, sign, sqrt } = Math;
 const { Sprite } = PIXI;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  const antsCount = 300;
+  const antsCount = 200;
   const {
     graphicsEngine,
     stage,
@@ -51,17 +48,19 @@ export const setupSimulation = (container: HTMLElement): void => {
     antPropsIndexes: { iSpeed, iXVelocity, iYVelocity },
   } = Ants;
 
-  let currentPheromoneId = 0;
   const {
-    sensorLeft,
+    addPheromone,
+    bodies,
+    drawSensors,
+    getPheromonesCount,
+    pheromoneEmissionTimer,
     sensorForward,
+    sensorLeft,
     sensorRight,
+    sensorsTurnInterpolationSpeed,
     updateAntSensors,
     updatePheromones,
-    addPheromoneShape,
-    pheromoneEmissionTimer,
-    drawAntSensors,
-  } = setupAntsPheromonesSensors(antsScale, foodPheromonesSprites, nestPheromonesSprites);
+  } = setupAntsPheromones(30000, antsScale, foodPheromonesSprites, nestPheromonesSprites);
 
   const { updateFPSDisplay } = setupFPSDisplay();
   const { updateAntsCounter } = setupAntCounter();
@@ -96,8 +95,8 @@ export const setupSimulation = (container: HTMLElement): void => {
         id,
         xVelocity,
         yVelocity,
-        xvTarget,
-        yvTarget,
+        velocityTargetX,
+        velocityTargetY,
         speed,
         speedTarget,
         maxSpeed,
@@ -143,7 +142,11 @@ export const setupSimulation = (container: HTMLElement): void => {
                 }
                 skipRandomDirectionChange = true;
                 velocityInterpolationSpeed = 20;
-                turnAngle += (overlap_y > 0 ? 1 : -1) * atan2(-overlap_x, -overlap_y);
+                turnAngle =
+                  randomInRange(0.5, 1) *
+                    sign(overlap_y > 0 ? 1 : -1) *
+                    atan2(-overlap_x, -overlap_y) +
+                  atan2(velocityTargetX, velocityTargetY);
               } else {
                 pheromoneStrength = maxPheromonesEmission;
               }
@@ -195,7 +198,11 @@ export const setupSimulation = (container: HTMLElement): void => {
               }
               skipRandomDirectionChange = true;
               velocityInterpolationSpeed = 20;
-              turnAngle += (overlap_y > 0 ? 1 : -1) * atan2(-overlap_x, -overlap_y);
+              turnAngle =
+                randomInRange(0.5, 1) *
+                  sign(overlap_y > 0 ? 1 : -1) *
+                  atan2(-overlap_x, -overlap_y) +
+                atan2(velocityTargetX, velocityTargetY);
 
               break;
           }
@@ -205,28 +212,11 @@ export const setupSimulation = (container: HTMLElement): void => {
 
       const { x, y } = antBody;
 
-      const [frontSensorInputSum, leftSensorInputSum, rightSensorInputSum] = updateAntSensors(
-        x,
-        y,
-        xVelocity,
-        yVelocity,
-        hasFood,
-        frameStartTime,
-      );
+      const sensorsResult = updateAntSensors(x, y, xVelocity, yVelocity, hasFood, frameStartTime);
+      const [haveFoundPheromone] = sensorsResult;
 
-      if (frontSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
-        xvTarget = sensorForward.x - x;
-        yvTarget = sensorForward.y - y;
-        velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
-        skipRandomDirectionChange = true;
-      } else if (leftSensorInputSum > rightSensorInputSum) {
-        xvTarget = sensorLeft.x - x;
-        yvTarget = sensorLeft.y - y;
-        velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
-        skipRandomDirectionChange = true;
-      } else if (rightSensorInputSum > leftSensorInputSum) {
-        xvTarget = sensorRight.x - x;
-        yvTarget = sensorRight.y - y;
+      if (haveFoundPheromone) {
+        [, velocityTargetX, velocityTargetY] = sensorsResult;
         velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
         skipRandomDirectionChange = true;
       }
@@ -236,22 +226,23 @@ export const setupSimulation = (container: HTMLElement): void => {
         const rotationChangeTImer = timers.get(id);
         if (rotationChangeTImer!.update(deltaSeconds)) {
           rotationDirectionSign *= -1;
-          turnAngle += random() * halfPI * rotationDirectionSign;
+          turnAngle = random() * halfPI * rotationDirectionSign;
         }
       }
 
+      turnAngle = normalizeRadians(turnAngle);
       // rotate velocity by turn angle
       if (turnAngle !== 0) {
-        turnAngle = normalizeRadians(atan2(xVelocity, yVelocity) + turnAngle);
-        const c = cos(turnAngle);
-        const s = sin(turnAngle);
-        xvTarget = c * xvTarget - s * yvTarget;
-        yvTarget = s * xvTarget + c * yvTarget;
+        const angleWithDirection = turnAngle * rotationDirectionSign;
+        const c = cos(angleWithDirection);
+        const s = sin(angleWithDirection);
+        velocityTargetX = c * velocityTargetX - s * velocityTargetY;
+        velocityTargetY = s * velocityTargetX + c * velocityTargetY;
       }
 
-      let length = sqrt(xvTarget * xvTarget + yvTarget * yvTarget);
-      xvTarget /= length;
-      yvTarget /= length;
+      let length = sqrt(velocityTargetX * velocityTargetX + velocityTargetY * velocityTargetY);
+      velocityTargetX /= length;
+      velocityTargetY /= length;
 
       length = sqrt(xVelocity * xVelocity + yVelocity * yVelocity);
       xVelocity /= length;
@@ -270,12 +261,22 @@ export const setupSimulation = (container: HTMLElement): void => {
         speedTarget = maxSpeed * 1.2;
       }
 
-      if (xvTarget !== xVelocity) {
-        xVelocity = interpolate(xVelocity, xvTarget, deltaSeconds, velocityInterpolationSpeed);
+      if (velocityTargetX !== xVelocity) {
+        xVelocity = interpolate(
+          xVelocity,
+          velocityTargetX,
+          deltaSeconds,
+          velocityInterpolationSpeed,
+        );
       }
 
-      if (yvTarget !== yVelocity) {
-        yVelocity = interpolate(yVelocity, yvTarget, deltaSeconds, velocityInterpolationSpeed);
+      if (velocityTargetY !== yVelocity) {
+        yVelocity = interpolate(
+          yVelocity,
+          velocityTargetY,
+          deltaSeconds,
+          velocityInterpolationSpeed,
+        );
       }
 
       length = sqrt(xVelocity * xVelocity + yVelocity * yVelocity);
@@ -303,28 +304,7 @@ export const setupSimulation = (container: HTMLElement): void => {
       }
 
       if (pheromoneStrength > 0 && shouldSpawnPheromones && !isStandingOnPheromone) {
-        const newPheromone = new Pheromone(
-          currentPheromoneId,
-          x,
-          y,
-          hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST,
-          frameStartTime,
-        );
-        addPheromoneShape(newPheromone);
-        pheromones.set(currentPheromoneId, newPheromone);
-
-        const pheromoneSprite = Sprite.from(hasFood ? foodPheromoneTexture : nestPheromoneTexture);
-        pheromoneSprite.x = x;
-        pheromoneSprite.y = y;
-        pheromoneSprite.anchor.set(0.5);
-        pheromoneSprite.scale.set(0.2 * newPheromone.radius);
-        pheromonesSpritesMap.set(currentPheromoneId, pheromoneSprite);
-        if (hasFood) {
-          foodPheromonesSprites.addChild(pheromoneSprite);
-        } else nestPheromonesSprites.addChild(pheromoneSprite);
-
-        currentPheromoneId++;
-        pheromoneStrength--;
+        addPheromone(x, y, hasFood, frameStartTime);
       }
 
       if (x > 0 && y > 0 && x < worldWidth && y < worldHeight) antsOnScreenCounter++;
@@ -333,8 +313,8 @@ export const setupSimulation = (container: HTMLElement): void => {
         id,
         xVelocity,
         yVelocity,
-        xvTarget,
-        yvTarget,
+        velocityTargetX,
+        velocityTargetY,
         speed * mapRange(abs(turnAngle), 0, PI, 1, 0.3),
         speedTarget,
         maxSpeed,
@@ -346,8 +326,9 @@ export const setupSimulation = (container: HTMLElement): void => {
 
     updatePheromones(frameStartTime);
 
-    // _draw.clear();
-    // _draw.lineStyle(1, 0xff0000);
+    _draw.clear();
+    _draw.lineStyle(1, 0xff0000);
+    drawSensors(_draw);
     // _draw.lineStyle(1, 0x005500);
     // pheremonesCollisionShapes.forEach((pheromone) => {
     //   pheromone.draw(_draw);
@@ -367,7 +348,7 @@ export const setupSimulation = (container: HTMLElement): void => {
       updateFPSDisplay(deltaSeconds);
       const { size } = antsCollisionShapes;
       updateAntsCounter(size, size - antsOnScreenCounter);
-      updatePheromonesCounter(pheromones.size);
+      updatePheromonesCounter(getPheromonesCount());
     }
 
     lastTime = frameStartTime;
