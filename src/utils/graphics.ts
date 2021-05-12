@@ -8,8 +8,6 @@ app.stop();
 type PixiSetupResultType = {
   graphicsEngine: PIXI.Application;
   antsSprites: PIXI.ParticleContainer;
-  nestPheromonesSprites: PIXI.ParticleContainer;
-  foodPheromonesSprites: PIXI.ParticleContainer;
   foodBitesSprites: PIXI.ParticleContainer;
   stage: PIXI.Container;
   _draw: PIXI.Graphics;
@@ -23,16 +21,12 @@ export const setupGraphics = <T extends HTMLElement>(
 
   const particlesOptions = { scale: true, position: true, rotation: true };
   const antsSprites = new PIXI.ParticleContainer(antsCount, particlesOptions);
-  const nestPheromonesSprites = new PIXI.ParticleContainer(100000, particlesOptions);
-  const foodPheromonesSprites = new PIXI.ParticleContainer(100000, particlesOptions);
   const foodBitesSprites = new PIXI.ParticleContainer(antsCount, particlesOptions);
 
   antsSprites.zIndex = 3;
-  nestPheromonesSprites.zIndex = 1;
-  foodPheromonesSprites.zIndex = 1;
   foodBitesSprites.zIndex = 4;
 
-  app.stage.addChild(antsSprites, nestPheromonesSprites, foodPheromonesSprites, foodBitesSprites);
+  app.stage.addChild(antsSprites, foodBitesSprites);
   app.stage.sortableChildren = true;
 
   const _draw = new PIXI.Graphics();
@@ -45,8 +39,6 @@ export const setupGraphics = <T extends HTMLElement>(
     graphicsEngine: app,
     stage: app.stage,
     antsSprites,
-    nestPheromonesSprites,
-    foodPheromonesSprites,
     foodBitesSprites,
     _draw,
   };

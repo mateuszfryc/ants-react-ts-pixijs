@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 
-import NestScentImage from 'assets/nest-scent.png';
-import FoodScentImage from 'assets/food-scent.png';
+import PheromoneImage from 'assets/pheromone.png';
+import { doNTimes } from 'utils/do-n-times';
 import { Timer } from './Timer';
 import { TAGS } from './collisions/collisions';
 import { setupCollisions } from './pheromonesCollisions';
@@ -9,34 +9,49 @@ import { setupCollisions } from './pheromonesCollisions';
 const { ANT_SENSOR, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
 const { max } = Math;
 
-let pheromoneRadius = 0.66;
-
 export function setupAntsPheromones(
   maxPheromonesCount: number,
   antsScale: number,
-  foodPheromonesSprites: PIXI.ParticleContainer,
-  nestPheromonesSprites: PIXI.ParticleContainer,
+  stage: PIXI.Container,
 ): any {
   const {
+    brachIndexes: { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex },
+    pheromoneBodyIndexes: { xIndex, yIndex, radiusIndex, tagIndex, spawnTimeIndex },
     arePheromonesOverlapping,
     bodies,
-    brachIndexes: { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex },
     branches,
     getPotentials,
     insert,
-    pheromoneBodyIndexes: { xIndex, yIndex, radiusIndex, tagIndex, spawnTimeIndex },
     remove,
   } = setupCollisions(maxPheromonesCount);
+
   const { Sprite } = PIXI;
+  const pheromonesSprites = new PIXI.ParticleContainer(maxPheromonesCount, {
+    position: true,
+    rotation: false,
+    tint: true,
+  });
+  pheromonesSprites.zIndex = 1;
+  stage.addChild(pheromonesSprites);
+  const pheromoneRadius = 0.66 * antsScale;
   /** Time before pheromone will decay (in seconds) */
+  const pheromonesSpritesMap: PIXI.Sprite[] = [];
+  const pheromoneImageTexture = PIXI.Texture.from(PheromoneImage);
+  /** Create all the sprites in advance. */
+  doNTimes((index: number): void => {
+    const pheromoneSprite = Sprite.from(pheromoneImageTexture);
+    pheromoneSprite.x = -10;
+    pheromoneSprite.y = -10;
+    pheromoneSprite.anchor.set(0.5);
+    pheromoneSprite.scale.set(0.2 * pheromoneRadius);
+    pheromonesSpritesMap[index] = pheromoneSprite;
+    pheromonesSprites.addChild(pheromoneSprite);
+  }, maxPheromonesCount);
+
   const pheromonesMaxLifeSpan = 32;
-  const pheromonesSpritesMap = new Map<number, PIXI.Sprite>();
-  const nestPheromoneTexture = PIXI.Texture.from(NestScentImage);
-  const foodPheromoneTexture = PIXI.Texture.from(FoodScentImage);
   const sensorForwardDistance = 3.6;
   const sensorsSideDistance = 0.46;
   const sensorsSideSpread = 0.7;
-  pheromoneRadius *= antsScale;
   const pheromoneEmissionTimer = new Timer(0.066 * antsScale);
   /**
    * Below are three collision shapes that will be used
@@ -146,6 +161,7 @@ export function setupAntsPheromones(
 
   let activePheromones: number[] = [];
   let lastPheromonePickedIndex = 3; // acomodate for sensors that took 0, 1 and 2
+
   function addPheromone(x: number, y: number, hasFood: boolean, spawnTime: number) {
     const pheromone = bodies[lastPheromonePickedIndex];
     pheromone[xIndex] = x;
@@ -156,15 +172,10 @@ export function setupAntsPheromones(
     activePheromones.push(id);
     insert(pheromone);
 
-    const pheromoneSprite = Sprite.from(hasFood ? foodPheromoneTexture : nestPheromoneTexture);
+    const pheromoneSprite = pheromonesSpritesMap[id];
     pheromoneSprite.x = x;
     pheromoneSprite.y = y;
-    pheromoneSprite.anchor.set(0.5);
-    pheromoneSprite.scale.set(0.2 * pheromoneRadius);
-    pheromonesSpritesMap.set(id, pheromoneSprite);
-    if (hasFood) {
-      foodPheromonesSprites.addChild(pheromoneSprite);
-    } else nestPheromonesSprites.addChild(pheromoneSprite);
+    pheromoneSprite.tint = hasFood ? 0x00cc22 : 0x1144aa;
 
     lastPheromonePickedIndex++;
     if (lastPheromonePickedIndex === maxPheromonesCount) lastPheromonePickedIndex = 3;
@@ -176,16 +187,15 @@ export function setupAntsPheromones(
     for (index; index < length; index++) {
       const pheromone = bodies[index];
       let lifeSpan = (frameStartTime - pheromone[spawnTimeIndex]) / 1000;
-      const sprite = pheromonesSpritesMap.get(index)!;
+      const sprite = pheromonesSpritesMap[index];
       if (lifeSpan < pheromonesMaxLifeSpan && sprite) {
         sprite.alpha = 1 - lifeSpan / pheromonesMaxLifeSpan;
       } else {
         pheromone[xIndex] = index * -3;
         pheromone[yIndex] = index * -3;
-        pheromonesSpritesMap.delete(index);
         if (sprite) {
-          if (pheromone[tagIndex] === PHEROMONE_FOOD) foodPheromonesSprites.removeChild(sprite);
-          else nestPheromonesSprites.removeChild(sprite);
+          sprite.x = -10;
+          sprite.y = -10;
         }
         activePheromones = activePheromones.splice(index, 1);
         index--;

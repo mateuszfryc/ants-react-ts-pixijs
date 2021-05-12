@@ -23,15 +23,10 @@ const { Sprite } = PIXI;
 
 export const setupSimulation = (container: HTMLElement): void => {
   const antsCount = 200;
-  const {
-    graphicsEngine,
-    stage,
-    antsSprites,
-    foodBitesSprites,
-    foodPheromonesSprites,
-    nestPheromonesSprites,
-    _draw,
-  } = setupGraphics(container, antsCount);
+  const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = setupGraphics(
+    container,
+    antsCount,
+  );
 
   const { offsetWidth: worldWidth, offsetHeight: worldHeight } = container;
 
@@ -50,17 +45,13 @@ export const setupSimulation = (container: HTMLElement): void => {
 
   const {
     addPheromone,
-    bodies,
     drawSensors,
     getPheromonesCount,
     pheromoneEmissionTimer,
-    sensorForward,
-    sensorLeft,
-    sensorRight,
     sensorsTurnInterpolationSpeed,
     updateAntSensors,
     updatePheromones,
-  } = setupAntsPheromones(30000, antsScale, foodPheromonesSprites, nestPheromonesSprites);
+  } = setupAntsPheromones(30000, antsScale, stage);
 
   const { updateFPSDisplay } = setupFPSDisplay();
   const { updateAntsCounter } = setupAntCounter();
@@ -326,9 +317,9 @@ export const setupSimulation = (container: HTMLElement): void => {
 
     updatePheromones(frameStartTime);
 
-    _draw.clear();
-    _draw.lineStyle(1, 0xff0000);
-    drawSensors(_draw);
+    // _draw.clear();
+    // _draw.lineStyle(1, 0xff0000);
+    // drawSensors(_draw);
     // _draw.lineStyle(1, 0x005500);
     // pheremonesCollisionShapes.forEach((pheromone) => {
     //   pheromone.draw(_draw);
