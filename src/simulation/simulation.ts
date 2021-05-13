@@ -51,7 +51,7 @@ export const setupSimulation = (container: HTMLElement): void => {
     sensorsTurnInterpolationSpeed,
     updateAntSensors,
     updatePheromones,
-  } = setupAntsPheromones(40000, antsScale, stage);
+  } = setupAntsPheromones(30000, antsScale, stage);
 
   const { updateFPSDisplay } = setupFPSDisplay();
   const { updateAntsCounter } = setupAntCounter();
@@ -296,6 +296,7 @@ export const setupSimulation = (container: HTMLElement): void => {
 
       if (pheromoneStrength > 0 && shouldSpawnPheromones && !isStandingOnPheromone) {
         addPheromone(x, y, hasFood, frameStartTime);
+        pheromoneStrength--;
       }
 
       if (x > 0 && y > 0 && x < worldWidth && y < worldHeight) antsOnScreenCounter++;

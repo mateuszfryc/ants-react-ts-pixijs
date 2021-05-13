@@ -25,14 +25,14 @@ export function setupAntsPheromones(
 
   const { Sprite } = PIXI;
   const pheromonesSprites = new PIXI.ParticleContainer(maxPheromonesCount, {
-    tint: true,
-    scale: true,
-    position: true,
     alpha: true,
+    position: true,
+    scale: true,
+    tint: true,
 
-    vertices: false,
     rotation: false,
     uvs: false,
+    vertices: false,
   });
   pheromonesSprites.zIndex = 1;
   stage.addChild(pheromonesSprites);
@@ -177,33 +177,32 @@ export function setupAntsPheromones(
     const pheromoneSprite = pheromonesSpritesMap[id];
     pheromoneSprite.x = x;
     pheromoneSprite.y = y;
-    pheromoneSprite.tint = hasFood ? 0x00cc22 : 0x1144aa;
+    pheromoneSprite.alpha = 1;
+    pheromoneSprite.tint = hasFood ? 0x00cc22 : 0x0088ff;
 
     lastPheromonePickedIndex++;
-    if (lastPheromonePickedIndex === maxPheromonesCount) lastPheromonePickedIndex = 3;
+    if (lastPheromonePickedIndex >= maxPheromonesCount) lastPheromonePickedIndex = 3;
   }
 
   function updatePheromones(frameStartTime: number) {
-    let index = 0;
-    let { length } = activePheromones;
-    for (index; index < length; index++) {
-      const pheromone = bodies[index];
+    const toBeRemoved: number[] = [];
+    activePheromones.forEach((activeId: number): void => {
+      const pheromone = bodies[activeId];
       let lifeSpan = (frameStartTime - pheromone[spawnTimeIndex]) / 1000;
-      const sprite = pheromonesSpritesMap[index];
-      if (lifeSpan < pheromonesMaxLifeSpan && sprite) {
+      const sprite = pheromonesSpritesMap[activeId];
+      if (lifeSpan < pheromonesMaxLifeSpan) {
         sprite.alpha = 1 - lifeSpan / pheromonesMaxLifeSpan;
       } else {
-        pheromone[xIndex] = index * -3;
-        pheromone[yIndex] = index * -3;
+        pheromone[xIndex] = activeId * -3;
+        pheromone[yIndex] = activeId * -3;
         if (sprite) {
           sprite.x = -10;
           sprite.y = -10;
         }
-        activePheromones = activePheromones.splice(index, 1);
-        index--;
-        length--;
+        toBeRemoved.push(activeId);
       }
-    }
+    });
+    activePheromones = activePheromones.filter((active: number) => !toBeRemoved.includes(active));
   }
 
   function drawSensors(context: PIXI.Graphics): void {
