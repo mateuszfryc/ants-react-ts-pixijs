@@ -6,14 +6,13 @@ import { Timer } from './Timer';
 import { TAGS } from './collisions/collisions';
 import { setupCollisions } from './pheromonesCollisions';
 
-const { ANT_SENSOR, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
-const { max } = Math;
-
 export function setupAntsPheromones(
   maxPheromonesCount: number,
   antsScale: number,
   stage: PIXI.Container,
 ): any {
+  const { ANT_SENSOR, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
+  const { max } = Math;
   const {
     brachIndexes: { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex },
     pheromoneBodyIndexes: { xIndex, yIndex, radiusIndex, tagIndex, spawnTimeIndex },
@@ -21,15 +20,19 @@ export function setupAntsPheromones(
     bodies,
     branches,
     getPotentials,
-    insert,
-    remove,
+    update,
   } = setupCollisions(maxPheromonesCount);
 
   const { Sprite } = PIXI;
   const pheromonesSprites = new PIXI.ParticleContainer(maxPheromonesCount, {
-    position: true,
-    rotation: false,
     tint: true,
+    scale: true,
+    position: true,
+    alpha: true,
+
+    vertices: false,
+    rotation: false,
+    uvs: false,
   });
   pheromonesSprites.zIndex = 1;
   stage.addChild(pheromonesSprites);
@@ -48,7 +51,7 @@ export function setupAntsPheromones(
     pheromonesSprites.addChild(pheromoneSprite);
   }, maxPheromonesCount);
 
-  const pheromonesMaxLifeSpan = 32;
+  const pheromonesMaxLifeSpan = 16;
   const sensorForwardDistance = 3.6;
   const sensorsSideDistance = 0.46;
   const sensorsSideSpread = 0.7;
@@ -114,8 +117,7 @@ export function setupAntsPheromones(
         xB + radiusB > branch[AABB_rightIndex] ||
         yB + radiusB > branch[AABB_bottomIndex]
       ) {
-        remove(body);
-        insert(body);
+        update(body);
       }
     });
 
@@ -170,7 +172,7 @@ export function setupAntsPheromones(
     pheromone[tagIndex] = hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST;
     const [id] = pheromone;
     activePheromones.push(id);
-    insert(pheromone);
+    update(pheromone);
 
     const pheromoneSprite = pheromonesSpritesMap[id];
     pheromoneSprite.x = x;

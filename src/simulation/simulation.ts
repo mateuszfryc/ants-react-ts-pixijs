@@ -22,7 +22,7 @@ const { random, min, atan2, cos, sin, abs, sign, sqrt } = Math;
 const { Sprite } = PIXI;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  const antsCount = 200;
+  const antsCount = 300;
   const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = setupGraphics(
     container,
     antsCount,
@@ -51,7 +51,7 @@ export const setupSimulation = (container: HTMLElement): void => {
     sensorsTurnInterpolationSpeed,
     updateAntSensors,
     updatePheromones,
-  } = setupAntsPheromones(30000, antsScale, stage);
+  } = setupAntsPheromones(40000, antsScale, stage);
 
   const { updateFPSDisplay } = setupFPSDisplay();
   const { updateAntsCounter } = setupAntCounter();
@@ -300,19 +300,17 @@ export const setupSimulation = (container: HTMLElement): void => {
 
       if (x > 0 && y > 0 && x < worldWidth && y < worldHeight) antsOnScreenCounter++;
 
-      antsProps[id] = [
-        id,
-        xVelocity,
-        yVelocity,
-        velocityTargetX,
-        velocityTargetY,
-        speed * mapRange(abs(turnAngle), 0, PI, 1, 0.3),
-        speedTarget,
-        maxSpeed,
-        rotationDirectionSign,
-        hasFood,
-        pheromoneStrength,
-      ];
+      ant[0] = id;
+      ant[1] = xVelocity;
+      ant[2] = yVelocity;
+      ant[3] = velocityTargetX;
+      ant[4] = velocityTargetY;
+      ant[5] = speed * mapRange(abs(turnAngle), 0, PI, 1, 0.3);
+      ant[6] = speedTarget;
+      ant[7] = maxSpeed;
+      ant[8] = rotationDirectionSign;
+      ant[9] = hasFood;
+      ant[10] = pheromoneStrength;
     });
 
     updatePheromones(frameStartTime);

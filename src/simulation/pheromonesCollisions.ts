@@ -23,13 +23,12 @@ const pheromoneBodyIndexes = {
 type setupCollisionsType = {
   arePheromonesOverlapping: (a: number[], b: number[]) => boolean;
   bodies: number[][];
+  brachIndexes: typeof brachIndexes;
   branches: number[][];
   getPotentials: (body: number[]) => number[][];
-  insert: (body: number[]) => void;
-  remove: (body: number[]) => void;
   idIndex: 0;
-  brachIndexes: typeof brachIndexes;
   pheromoneBodyIndexes: typeof pheromoneBodyIndexes;
+  update: (body: number[]) => void;
 };
 
 export function setupCollisions(bodiesMaxCount: number): setupCollisionsType {
@@ -43,18 +42,6 @@ export function setupCollisions(bodiesMaxCount: number): setupCollisionsType {
   let rootBranch: number[] = [];
   const idIndex = 0;
 
-  // Branch/Leaf
-  /* ---------------------*/
-  /* 0: id                */
-  /* 1: is leaft          */
-  /* 2: AABB_left limit   */
-  /* 3: AABB_top limit    */
-  /* 4: AABB_right limit  */
-  /* 5: AABB_bottom limit */
-  /* 6: parent id         */
-  /* 7: right leaf id     */
-  /* 8: left leaf id      */
-
   // Branch properties indexes
   const {
     isLeafIndex,
@@ -67,27 +54,7 @@ export function setupCollisions(bodiesMaxCount: number): setupCollisionsType {
     leftIdIndex,
   } = brachIndexes;
 
-  // Body::Circle
-  /* ------------- */
-  /* 0: id         */
-  /* 1: x          */
-  /* 2: y          */
-  /* 3: radius     */
-  /* 4: scale      */
-  /* 5: tag        */
-  /* 6: spawnTime  */
-
-  // Circle properties indexes
-  const {
-    xIndex,
-    yIndex,
-    radiusIndex,
-    scaleIndex,
-    tagIndex,
-    spawnTimeIndex,
-  } = pheromoneBodyIndexes;
-
-  // Inserts a body into the BVH
+  /** Inserts a body into the BVH */
   function insert(body: number[]): void {
     const [id, x, y, radius] = body;
     const xMin = x - radius;
@@ -262,6 +229,166 @@ export function setupCollisions(bodiesMaxCount: number): setupCollisionsType {
     avilableNodeBranches.push(parentId);
   }
 
+  /**
+   * Performs remove and insert operations
+   * but with minor changes/optimisations.
+   */
+  function update(body: number[]) {
+    const [id, x, y, radius] = body;
+    const branch = branches[id];
+    let parentId = branch[parentIdIndex];
+    let grandparent: number[] = [];
+
+    /** 1. Remove body from hierarchy */
+    /** Don't remove root body/branch */
+    if (rootBranch.length > 0 && rootBranch[idIndex] === id) {
+      rootBranch = [];
+    } else {
+      const parent = branches[parentId];
+      grandparent = branches[parent[parentIdIndex]] ?? [];
+      const parentLeftId = parent[leftIdIndex];
+      const parentLeft = branches[parentLeftId] ?? [];
+      const sibling = parentLeftId === id ? branches[parent[rightIdIndex]] : parentLeft;
+
+      sibling[parentIdIndex] = grandparent[idIndex];
+
+      if (grandparent.length > 0) {
+        if (grandparent[leftIdIndex] === parentId) {
+          grandparent[leftIdIndex] = sibling[idIndex];
+        } else {
+          grandparent[rightIdIndex] = sibling[idIndex];
+        }
+
+        let tempBranch = grandparent;
+
+        while (tempBranch && tempBranch[leftIdIndex] > -1 && grandparent[rightIdIndex] > -1) {
+          const left = branches[tempBranch[leftIdIndex]];
+          /** Get left AABB */
+          const xMinLeft = left[AABB_leftIndex];
+          const yMinLeft = left[AABB_topIndex];
+          const xMaxLeft = left[AABB_rightIndex];
+          const yMaxLeft = left[AABB_bottomIndex];
+
+          /** Get right AABB */
+          const right = branches[tempBranch[rightIdIndex]];
+          const xMinRight = right[AABB_leftIndex];
+          const yMinRight = right[AABB_topIndex];
+          const xMaxRight = right[AABB_rightIndex];
+          const yMaxRight = right[AABB_bottomIndex];
+
+          tempBranch[AABB_leftIndex] = min(xMinLeft, xMinRight);
+          tempBranch[AABB_topIndex] = min(yMinLeft, yMinRight);
+          tempBranch[AABB_rightIndex] = max(xMaxLeft, xMaxRight);
+          tempBranch[AABB_bottomIndex] = max(yMaxLeft, yMaxRight);
+
+          tempBranch = branches[tempBranch[parentIdIndex]];
+        }
+      } else {
+        rootBranch = sibling;
+      }
+    }
+
+    /** 2. Insert body back into hierarchy */
+
+    const xMin = x - radius;
+    const yMin = y - radius;
+    const xMax = x + radius;
+    const yMax = y + radius;
+    const newBranch = [id, 1, xMin, yMin, xMax, yMax, -1, -1, -1];
+    branches[id] = newBranch;
+
+    if (rootBranch.length === 0) {
+      rootBranch = newBranch;
+
+      return;
+    }
+
+    let current = rootBranch;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      /** is of BranchType */
+      if (current[isLeafIndex] === 0) {
+        const left = branches[current[leftIdIndex]];
+        /** Get left AABB */
+        const xMinLeft = left[AABB_leftIndex];
+        const yMinLeft = left[AABB_topIndex];
+        const xMaxLeft = left[AABB_rightIndex];
+        const yMaxLeft = left[AABB_bottomIndex];
+
+        /** Simulate new left AABB by extending it with newCircle AABB */
+        const left_new_min_x = min(xMin, xMinLeft);
+        const left_new_min_y = min(yMin, yMinLeft);
+        const left_new_max_x = max(xMax, xMaxLeft);
+        const left_new_max_y = max(yMax, yMaxLeft);
+
+        const left_volume = (xMaxLeft - xMinLeft) * (yMaxLeft - yMinLeft);
+        const left_new_volume =
+          (left_new_max_x - left_new_min_x) * (left_new_max_y - left_new_min_y);
+        const left_difference = left_new_volume - left_volume;
+
+        /** Get right AABB */
+        const right = branches[current[rightIdIndex]];
+        const xMinRight = right[AABB_leftIndex];
+        const yMinRight = right[AABB_topIndex];
+        const xMaxRight = right[AABB_rightIndex];
+        const yMaxRight = right[AABB_bottomIndex];
+
+        /** Simulate new right AABB by extending it with newCircle AABB */
+        const right_new_min_x = min(xMin, xMinRight);
+        const right_new_min_y = min(yMin, yMinRight);
+        const right_new_max_x = max(xMax, xMaxRight);
+        const right_new_max_y = max(yMax, yMaxRight);
+
+        const right_volume = (xMaxRight - xMinRight) * (yMaxRight - yMinRight);
+        const right_new_volume =
+          (right_new_max_x - right_new_min_x) * (right_new_max_y - right_new_min_y);
+        const right_difference = right_new_volume - right_volume;
+
+        current[AABB_leftIndex] = min(left_new_min_x, right_new_min_x);
+        current[AABB_topIndex] = min(left_new_min_y, right_new_min_y);
+        current[AABB_rightIndex] = max(left_new_max_x, right_new_max_x);
+        current[AABB_bottomIndex] = max(left_new_max_y, right_new_max_y);
+
+        current = left_difference <= right_difference ? left : right;
+      }
+      // Leaf
+      else {
+        const newParentId = parentId;
+        parentId = current[parentIdIndex];
+        grandparent = branches[parentId] ?? [];
+        const parent_min_x = current[AABB_leftIndex];
+        const parent_min_y = current[AABB_topIndex];
+        const parent_max_x = current[AABB_rightIndex];
+        const parent_max_y = current[AABB_bottomIndex];
+        const newParent = [
+          newParentId,
+          0,
+          min(xMin, parent_min_x),
+          min(yMin, parent_min_y),
+          max(xMax, parent_max_x),
+          max(yMax, parent_max_y),
+          parentId > -1 ? grandparent[idIndex] : -1,
+          newBranch[idIndex],
+          current[idIndex],
+        ];
+        branches[newParentId] = newParent;
+        current[parentIdIndex] = newParentId;
+        newBranch[parentIdIndex] = newParentId;
+
+        if (grandparent.length === 0) {
+          rootBranch = newParent;
+        } else if (grandparent[leftIdIndex] === current[idIndex]) {
+          grandparent[leftIdIndex] = newParentId;
+        } else {
+          grandparent[rightIdIndex] = newParentId;
+        }
+
+        break;
+      }
+    }
+  }
+
   // Returns a list of potential collisions for a body
   function getPotentials(body: number[]): number[][] {
     const potentials: number[][] = [];
@@ -394,8 +521,7 @@ export function setupCollisions(bodiesMaxCount: number): setupCollisionsType {
     branches,
     getPotentials,
     idIndex,
-    insert,
     pheromoneBodyIndexes,
-    remove,
+    update,
   };
 }
