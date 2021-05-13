@@ -7,12 +7,17 @@ import { TAGS } from './collisions/collisions';
 import { setupCollisions } from './pheromonesCollisions';
 
 export function setupAntsPheromones(
-  maxPheromonesCount: number,
+  antsCount: number,
   antsScale: number,
   stage: PIXI.Container,
 ): any {
+  const { max, round } = Math;
+  const timeBetweenPheromonesSpawn = 0.066 * antsScale;
+  const pheromoneEmissionTimer = new Timer(timeBetweenPheromonesSpawn);
+  const pheromonesMaxLifeSpan = 16;
+  const maxPheromonesCount =
+    antsCount * round(1 / timeBetweenPheromonesSpawn) * pheromonesMaxLifeSpan;
   const { ANT_SENSOR, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
-  const { max } = Math;
   const {
     brachIndexes: { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex },
     pheromoneBodyIndexes: { xIndex, yIndex, radiusIndex, tagIndex, spawnTimeIndex },
@@ -51,11 +56,9 @@ export function setupAntsPheromones(
     pheromonesSprites.addChild(pheromoneSprite);
   }, maxPheromonesCount);
 
-  const pheromonesMaxLifeSpan = 16;
   const sensorForwardDistance = 3.6;
   const sensorsSideDistance = 0.46;
   const sensorsSideSpread = 0.7;
-  const pheromoneEmissionTimer = new Timer(0.066 * antsScale);
   /**
    * Below are three collision shapes that will be used
    * to sample area before each ant. Left, center and right
