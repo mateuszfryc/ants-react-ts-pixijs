@@ -19,16 +19,16 @@ export const TAGS = {
 };
 
 export class Collisions {
-  _bvh: BVH;
+  bvh: BVH;
 
   constructor() {
-    this._bvh = new BVH();
+    this.bvh = new BVH();
   }
 
   addCircle(x = 0, y = 0, radius = 1, tag = TAGS.ANT, scale = 1, padding = 0, id = 0): Circle {
     const body = new Circle(x, y, radius, tag, scale, padding, id) as Shape;
 
-    this._bvh.insert(body);
+    this.bvh.insert(body);
 
     return body;
   }
@@ -45,7 +45,7 @@ export class Collisions {
   ): Polygon {
     const body = new Polygon(x, y, points, tag, angle, scale_x, scale_y, padding) as Shape;
 
-    this._bvh.insert(body);
+    this.bvh.insert(body);
 
     return body;
   }
@@ -53,7 +53,7 @@ export class Collisions {
   // Inserts bodies into the collision system
   insert(...bodies: Shape[]): Collisions {
     for (const body of bodies) {
-      this._bvh.insert(body, false);
+      this.bvh.insert(body, false);
     }
 
     return this;
@@ -63,7 +63,7 @@ export class Collisions {
   remove(...bodies: Shape[]): Collisions {
     for (const body of bodies) {
       body.markedForRemoval = true;
-      this._bvh.remove(body, false);
+      this.bvh.remove(body, false);
     }
 
     return this;
@@ -71,19 +71,23 @@ export class Collisions {
 
   // Updates the collision system. This should be called before any collisions are tested.
   update(): Collisions {
-    this._bvh.update();
+    this.bvh.update();
 
     return this;
   }
 
   // Draws the bodies within the system to a CanvasRenderingContext2D's current path
   draw(context: PIXI.Graphics): void {
-    this._bvh.draw(context);
+    this.bvh.draw(context);
+  }
+
+  drawBVH(context: PIXI.Graphics): void {
+    this.bvh.drawBVH(context);
   }
 
   // Returns a list of potential collisions
   getPotentials(shape: Shape): Shape[] {
-    return this._bvh.potentials(shape);
+    return this.bvh.potentials(shape);
   }
 
   addSingleWorldBound(points: number[][], collisionPadding = 0): Polygon {

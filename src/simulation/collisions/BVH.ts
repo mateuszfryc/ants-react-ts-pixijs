@@ -335,4 +335,53 @@ export class BVH {
       bodies[i].draw(context);
     }
   }
+
+  drawBVH(context: PIXI.Graphics): void {
+    let current = this.root;
+    let traverse_left = true;
+
+    while (current) {
+      if (traverse_left) {
+        traverse_left = false;
+
+        let left = current._bvh_branch ? current._bvh_left : undefined;
+
+        while (left) {
+          current = left;
+          left = current._bvh_branch ? current._bvh_left : undefined;
+        }
+      }
+
+      const branch = current._bvh_branch;
+      const min_x = current._bvh_min_x;
+      const min_y = current._bvh_min_y;
+      const max_x = current._bvh_max_x;
+      const max_y = current._bvh_max_y;
+      const right = branch ? current._bvh_right : undefined;
+
+      context.moveTo(min_x, min_y);
+      context.lineTo(max_x, min_y);
+      context.lineTo(max_x, max_y);
+      context.lineTo(min_x, max_y);
+      context.lineTo(min_x, min_y);
+
+      if (right) {
+        current = right;
+        traverse_left = true;
+      } else {
+        let parent = current._bvh_parent;
+
+        if (parent) {
+          while (parent && parent._bvh_right === current) {
+            current = parent;
+            parent = current._bvh_parent;
+          }
+
+          current = parent;
+        } else {
+          break;
+        }
+      }
+    }
+  }
 }

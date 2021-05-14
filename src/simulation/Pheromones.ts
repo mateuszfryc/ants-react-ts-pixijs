@@ -11,7 +11,7 @@ export function setupAntsPheromones(
   antsScale: number,
   stage: PIXI.Container,
 ): any {
-  const { max, round } = Math;
+  const { max, round, sqrt } = Math;
   const timeBetweenPheromonesSpawn = 0.066 * antsScale;
   const pheromoneEmissionTimer = new Timer(timeBetweenPheromonesSpawn);
   const pheromonesMaxLifeSpan = 16;
@@ -41,7 +41,7 @@ export function setupAntsPheromones(
   });
   pheromonesSprites.zIndex = 1;
   stage.addChild(pheromonesSprites);
-  const pheromoneRadius = 0.66 * antsScale;
+  const pheromoneRadius = 0.7 * antsScale;
   /** Time before pheromone will decay (in seconds) */
   const pheromonesSpritesMap: PIXI.Sprite[] = [];
   const pheromoneImageTexture = PIXI.Texture.from(PheromoneImage);
@@ -73,7 +73,7 @@ export function setupAntsPheromones(
   const sensors: number[][] = [0, 1, 2].map((id: number): number[] => {
     const sensor: number[] = bodies[id];
     sensor[tagIndex] = ANT_SENSOR;
-    sensor[radiusIndex] = 1.5 * antsScale;
+    sensor[radiusIndex] = pheromoneRadius * 0.6 * antsScale;
 
     return sensor;
   });
@@ -83,32 +83,32 @@ export function setupAntsPheromones(
   function updateAntSensors(
     x: number,
     y: number,
-    xVelocity: number,
-    yVelocity: number,
+    directionX: number,
+    directionY: number,
     hasFood: boolean,
     frameStartTime: number,
   ) {
-    const xBase = xVelocity * antsScale;
-    const yBase = yVelocity * antsScale;
+    const xBase = directionX * antsScale;
+    const yBase = directionY * antsScale;
     let tag = hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD;
     sensorForward[xIndex] = x + xBase * sensorForwardDistance;
     sensorForward[yIndex] = y + yBase * sensorForwardDistance;
     sensorLeft[xIndex] =
       x +
       xBase * (sensorForwardDistance * sensorsSideDistance) -
-      yVelocity * (sensorForwardDistance * sensorsSideSpread) * antsScale;
+      directionY * (sensorForwardDistance * sensorsSideSpread) * antsScale;
     sensorLeft[yIndex] =
       y +
       yBase * (sensorForwardDistance * sensorsSideDistance) +
-      xVelocity * (sensorForwardDistance * sensorsSideSpread) * antsScale;
+      directionX * (sensorForwardDistance * sensorsSideSpread) * antsScale;
     sensorRight[xIndex] =
       x +
       xBase * (sensorForwardDistance * sensorsSideDistance) +
-      yVelocity * (sensorForwardDistance * sensorsSideSpread) * antsScale;
+      directionY * (sensorForwardDistance * sensorsSideSpread) * antsScale;
     sensorRight[yIndex] =
       y +
       yBase * (sensorForwardDistance * sensorsSideDistance) -
-      xVelocity * (sensorForwardDistance * sensorsSideSpread) * antsScale;
+      directionX * (sensorForwardDistance * sensorsSideSpread) * antsScale;
 
     sensors.forEach((body: number[]) => {
       const [id, xB, yB, radiusB] = body;
@@ -144,24 +144,26 @@ export function setupAntsPheromones(
     }
 
     let haveFoundPheromone = false;
-    let velocityTargetX = 0;
-    let velocityTargetY = 0;
+    let directionTargetX = 0;
+    let directionTargetY = 0;
 
     if (frontSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
-      velocityTargetX = sensorForward[xIndex] - x;
-      velocityTargetY = sensorForward[yIndex] - y;
+      directionTargetX = sensorForward[xIndex] - x;
+      directionTargetY = sensorForward[yIndex] - y;
       haveFoundPheromone = true;
     } else if (leftSensorInputSum > rightSensorInputSum) {
-      velocityTargetX = sensorLeft[xIndex] - x;
-      velocityTargetY = sensorLeft[yIndex] - y;
+      directionTargetX = sensorLeft[xIndex] - x;
+      directionTargetY = sensorLeft[yIndex] - y;
       haveFoundPheromone = true;
     } else if (rightSensorInputSum > leftSensorInputSum) {
-      velocityTargetX = sensorRight[xIndex] - x;
-      velocityTargetY = sensorRight[yIndex] - y;
+      directionTargetX = sensorRight[xIndex] - x;
+      directionTargetY = sensorRight[yIndex] - y;
       haveFoundPheromone = true;
     }
 
-    return [haveFoundPheromone, velocityTargetX, velocityTargetY];
+    const length = sqrt(directionTargetX * directionTargetX + directionTargetY * directionTargetY);
+
+    return [haveFoundPheromone, directionTargetX / length, directionTargetY / length];
   }
 
   let activePheromones: number[] = [];

@@ -3,15 +3,22 @@ import * as PIXI from 'pixi.js';
 import AntImage from 'assets/ant-red.png';
 import { Circle } from 'simulation/collisions/circle';
 import { Collisions, TAGS } from 'simulation/collisions/collisions';
-import { randomInRange, randomSign, randomUnitVector } from 'utils/math';
+import { halfPI, randomInRange, randomSign, randomUnitVector } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 import { doNTimes } from 'utils/do-n-times';
+import { ObjectOfNumbers } from 'UI/types/baseTypes';
 import { Shape } from './collisions/proxyTypes';
 
 export function setupAnts(antsCount: number, antsSprites: PIXI.ParticleContainer): any {
   const antsScale = 3;
   const antsProps: number[][] = [];
   antsProps.length = antsCount;
+  /**
+   * Desribes how many single pheromones
+   * can be emitted before ant
+   * will have to visit nest or find food,
+   * to start emitting pheromones again.
+   */
   const maxPheromonesEmission = 64;
   const antsCollisions = new Collisions();
   const antsCollisionShapes = new Map<number, Circle>();
@@ -22,12 +29,21 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.ParticleContainer
   let lastCreatedAntId = 0;
   const antsSpritesMap = new Map<number, PIXI.Sprite>();
 
-  /**
-   * Desribes how many single pheromones
-   * can be emitted before ant
-   * will have to visit nest or find food,
-   * to start emitting pheromones again.
-   */
+  const antPropsIndexes: ObjectOfNumbers = [
+    'id',
+    'directionX',
+    'directionY',
+    'turnAngle',
+    'speed',
+    'speedTarget',
+    'maxSpeed',
+    'hasFood',
+    'pheromoneStrength',
+  ].reduce((acc, val, index) => {
+    acc[`${val}Index`] = index;
+
+    return acc;
+  }, {});
 
   function spawnAnt(id: number, x: number, y: number): any {
     const antCollisionShape = new Circle(
@@ -47,29 +63,22 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.ParticleContainer
     const rotationChangeTimer = new Timer(undefined, undefined, 0.2, 1);
 
     // x and y random and normalized velocity
-    let xv = randomInRange(-1, 1);
-    let yv = randomInRange(-1, 1);
-    const lenght = Math.sqrt(xv * xv + yv * yv);
-    xv /= lenght;
-    yv /= lenght;
-    const xvTarget = xv;
-    const yvTarget = yv;
+    const [directionX, directionY] = randomUnitVector();
     const maxSpeed = randomInRange(55, 60);
     const speed = maxSpeed * 0.5;
     const targetSpeed = maxSpeed;
-    const rotationDirection = randomSign();
+    const turnAngle = 0;
+    const turnAngleSign = randomSign();
     const hasFood = 0;
     const pheromoneStrength = 0;
     const properties = [
       id,
-      xv,
-      yv,
-      xvTarget,
-      yvTarget,
+      directionX,
+      directionY,
+      turnAngle,
       speed,
       targetSpeed,
       maxSpeed,
-      rotationDirection,
       hasFood,
       pheromoneStrength,
     ];
@@ -109,29 +118,16 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.ParticleContainer
   };
 
   return {
+    antPropsIndexes,
     antsCollisions,
     antsCollisionShapes,
     antsProps,
     antsScale,
     antsSpritesMap,
     maxPheromonesEmission,
+    randomDirectionMaxAngle: halfPI,
     releaseOneByOne,
     throwAllAtOnce,
     timers,
-
-    /** Single ant's properties ids used to index props arrays */
-    antPropsIndexes: {
-      iID: 0,
-      iXVelocity: 1,
-      iYVelocity: 2,
-      iXvTarget: 3,
-      iYvTarget: 4,
-      iSpeed: 5,
-      iTargetSpeed: 6,
-      iMaxSpeed: 7,
-      iRotationDirection: 8,
-      iHasFood: 9,
-      iPheromoneStrength: 10,
-    },
   };
 }

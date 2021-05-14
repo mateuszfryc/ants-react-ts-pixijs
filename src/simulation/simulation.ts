@@ -8,7 +8,7 @@ import { debugTimer, setupAntCounter, setupFPSDisplay, setupPheromonesCounter } 
 // prettier-ignore
 import {
   halfPI, interpolate, mapRange, mapRangeClamped,
-  normalizeRadians, PI, randomInRange } from 'utils/math';
+  normalizeRadians, PI, randomInRange, randomSign, twoPI } from 'utils/math';
 import { createNest } from './Nest';
 import { setupAnts } from './Ant';
 // prettier-ignore
@@ -22,7 +22,7 @@ const { random, min, atan2, cos, sin, abs, sign, sqrt } = Math;
 const { Sprite } = PIXI;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  const antsCount = 400;
+  const antsCount = 50;
   const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = setupGraphics(
     container,
     antsCount,
@@ -38,9 +38,19 @@ export const setupSimulation = (container: HTMLElement): void => {
     antsScale,
     antsSpritesMap,
     maxPheromonesEmission,
+    randomDirectionMaxAngle,
     timers,
 
-    antPropsIndexes: { iSpeed, iXVelocity, iYVelocity },
+    antPropsIndexes: {
+      idIndex,
+      directionXIndex,
+      directionYIndex,
+      turnAngleIndex,
+      speedIndex,
+      speedTargetIndex,
+      hasFoodIndex,
+      pheromoneStrengthIndex,
+    },
   } = Ants;
 
   const {
@@ -74,9 +84,9 @@ export const setupSimulation = (container: HTMLElement): void => {
     antsCollisionShapes.forEach((ant: Circle) => {
       const { id } = ant;
       const props = antsProps[id];
-      const speed = props[iSpeed];
-      ant.x += speed * props[iXVelocity] * deltaSeconds;
-      ant.y += speed * props[iYVelocity] * deltaSeconds;
+      const speed = props[speedIndex];
+      ant.x += speed * props[directionXIndex] * deltaSeconds;
+      ant.y += speed * props[directionYIndex] * deltaSeconds;
     });
 
     antsCollisions.update();
@@ -84,30 +94,31 @@ export const setupSimulation = (container: HTMLElement): void => {
     antsProps.forEach((ant: number[]) => {
       let [
         id,
-        xVelocity,
-        yVelocity,
-        velocityTargetX,
-        velocityTargetY,
+        directionX,
+        directionY,
+        turnAngle,
         speed,
         speedTarget,
         maxSpeed,
-        rotationDirectionSign,
         hasFood,
         pheromoneStrength,
       ] = ant;
       const antBody = antsCollisionShapes.get(id);
-
+      let directionTargetX = directionX;
+      let directionTargetY = directionY;
       let speedInterpolationSpeed = 2;
-      let velocityInterpolationSpeed = 1;
+      let directionInterpRatio = 1;
       let collisionsCount = 0;
-      let turnAngle = 0;
-
-      let skipRandomDirectionChange = false;
       let isStandingOnPheromone = false;
+
+      const rotationChangeTImer = timers.get(id);
+      if (rotationChangeTImer!.update(deltaSeconds)) {
+        turnAngle = randomInRange(0, randomDirectionMaxAngle);
+      }
 
       for (const other of antsCollisions.getPotentials(antBody as Shape)) {
         if (antsCollisions.areBodiesColliding(antBody as Shape, other, collisionTestResult)) {
-          const [overlap, overlap_x, overlap_y] = collisionTestResult;
+          let [overlap, overlapX, overlapY] = collisionTestResult;
           const { id: otherId, tag, radius } = other;
 
           /* eslint-disable indent */
@@ -115,11 +126,12 @@ export const setupSimulation = (container: HTMLElement): void => {
             case ANT:
               collisionsCount++;
               if (!hasFood) {
-                antBody.x -= overlap * 0.5 * overlap_x;
-                antBody.y -= overlap * 0.5 * overlap_y;
-                other.x -= overlap * 0.5 * overlap_x;
-                other.y -= overlap * 0.5 * overlap_y;
-                skipRandomDirectionChange = true;
+                overlap *= 0.5;
+                antBody.x -= overlap * overlapX;
+                antBody.y -= overlap * overlapY;
+                other.x -= overlap * overlapX;
+                other.y -= overlap * overlapY;
+                turnAngle = 0;
               }
               break;
 
@@ -131,10 +143,10 @@ export const setupSimulation = (container: HTMLElement): void => {
                   foodBitesSprites.removeChild(foodChunkToBeRemoved);
                   foodBitesSpritesMap.delete(id);
                 }
-                skipRandomDirectionChange = true;
-                velocityInterpolationSpeed = 20;
-                velocityTargetX *= -1;
-                velocityTargetY *= -1;
+                turnAngle = 0;
+                // directionInterpRatio = 20;
+                directionTargetX = -directionX;
+                directionTargetY = -directionY;
               } else {
                 pheromoneStrength = maxPheromonesEmission;
               }
@@ -142,12 +154,10 @@ export const setupSimulation = (container: HTMLElement): void => {
 
             case NEST_VISIBLE_AREA:
               if (hasFood) {
-                const nestX = nest.x - antBody.x;
-                const nestY = nest.y - antBody.y;
-                velocityTargetX = nestX;
-                velocityTargetY = nestY;
-                skipRandomDirectionChange = true;
-                velocityInterpolationSpeed = 10;
+                directionTargetX = nest.x - antBody.x;
+                directionTargetY = nest.y - antBody.y;
+                turnAngle = 0;
+                // directionInterpRatio = 10;
               }
               break;
 
@@ -159,46 +169,57 @@ export const setupSimulation = (container: HTMLElement): void => {
               isStandingOnPheromone = true;
               break;
 
+            case FOOD:
+              collisionsCount++;
+              antBody.x -= overlap * overlapX;
+              antBody.y -= overlap * overlapY;
+              // directionInterpRatio = 20;
+              directionTargetX = -directionX;
+              directionTargetY = -directionY;
+              turnAngle = 0;
+              speed = 0;
+              let [amount, isEmpty] = foodProps.get(otherId)!;
+              if (!hasFood && !isEmpty) {
+                const foodSprite = foodSprites.get(otherId);
+                if (foodSprite) {
+                  const {
+                    scale,
+                    scale: { x },
+                  } = foodSprite;
+                  const newSize = x - mapRangeClamped(1, 0, amount, 0, x);
+                  scale.set(newSize);
+                  other.radius = (newSize * radius) / x;
+                }
+                hasFood = 1;
+                const foodChunkSprite = Sprite.from(foodImageTexture);
+                foodChunkSprite.scale.set(0.2);
+                foodChunkSprite.anchor.set(0.5, -0.8);
+                foodChunkSprite.zIndex = 3;
+                foodBitesSprites.addChild(foodChunkSprite);
+                foodBitesSpritesMap.set(id, foodChunkSprite);
+                amount--;
+                isEmpty = amount <= 0 ? 1 : 0;
+                if (isEmpty) {
+                  stage.removeChild(foodSprite!);
+                  foodProps.delete(otherId);
+                  foodSprites.delete(otherId);
+                  foodCollisionShapes.delete(otherId);
+                }
+                foodProps.set(otherId, [amount, isEmpty]);
+                pheromoneStrength = maxPheromonesEmission;
+              }
+              break;
+
             default:
               collisionsCount++;
-              antBody.x -= overlap * overlap_x;
-              antBody.y -= overlap * overlap_y;
-              if (tag === FOOD) {
-                let [amount, isEmpty] = foodProps.get(otherId)!;
-                if (!hasFood && !isEmpty) {
-                  const foodSprite = foodSprites.get(otherId);
-                  if (foodSprite) {
-                    const {
-                      scale,
-                      scale: { x },
-                    } = foodSprite;
-                    const newSize = x - mapRangeClamped(1, 0, amount, 0, x);
-                    scale.set(newSize);
-                    other.radius = (newSize * radius) / x;
-                  }
-                  hasFood = 1;
-                  const foodChunkSprite = Sprite.from(foodImageTexture);
-                  foodChunkSprite.scale.set(0.2);
-                  foodChunkSprite.anchor.set(0.5, -0.8);
-                  foodChunkSprite.zIndex = 3;
-                  foodBitesSprites.addChild(foodChunkSprite);
-                  foodBitesSpritesMap.set(id, foodChunkSprite);
-                  amount--;
-                  isEmpty = amount <= 0 ? 1 : 0;
-                  if (isEmpty) {
-                    stage.removeChild(foodSprite!);
-                    foodProps.delete(otherId);
-                    foodSprites.delete(otherId);
-                    foodCollisionShapes.delete(otherId);
-                  }
-                  foodProps.set(otherId, [amount, isEmpty]);
-                  pheromoneStrength = maxPheromonesEmission;
-                }
-              }
-              skipRandomDirectionChange = true;
-              velocityInterpolationSpeed = 20;
-              velocityTargetX *= -1;
-              velocityTargetY *= -1;
+              antBody.x -= overlap * overlapX;
+              antBody.y -= overlap * overlapY;
+              speed = 0;
+              turnAngle = 0;
+              /** By default move along reflection vector */
+              directionTargetX = directionX - 2 * (directionX * -overlapX) * -overlapX;
+              directionTargetY = directionY - 2 * (directionY * -overlapY) * -overlapY;
+              // directionInterpRatio = 20;
 
               break;
           }
@@ -208,86 +229,57 @@ export const setupSimulation = (container: HTMLElement): void => {
 
       const { x, y } = antBody;
 
-      const sensorsResult = updateAntSensors(x, y, xVelocity, yVelocity, hasFood, frameStartTime);
+      const sensorsResult = updateAntSensors(x, y, directionX, directionY, hasFood, frameStartTime);
       const [haveFoundPheromone] = sensorsResult;
 
       if (haveFoundPheromone) {
-        [, velocityTargetX, velocityTargetY] = sensorsResult;
-        velocityInterpolationSpeed = sensorsTurnInterpolationSpeed;
-        skipRandomDirectionChange = true;
-      }
-      // otherwise keep moving forward
-
-      if (!skipRandomDirectionChange) {
-        const rotationChangeTImer = timers.get(id);
-        if (rotationChangeTImer!.update(deltaSeconds)) {
-          rotationDirectionSign *= -1;
-          turnAngle = random() * halfPI * rotationDirectionSign;
-        }
+        [, directionTargetX, directionTargetY] = sensorsResult;
+        turnAngle = 0;
       }
 
-      turnAngle = normalizeRadians(turnAngle);
-      // rotate velocity by turn angle
-      if (turnAngle !== 0) {
-        const angleWithDirection = turnAngle * rotationDirectionSign;
-        const c = cos(angleWithDirection);
-        const s = sin(angleWithDirection);
-        velocityTargetX = c * velocityTargetX - s * velocityTargetY;
-        velocityTargetY = s * velocityTargetX + c * velocityTargetY;
+      // if (collisionsCount > 1 && !hasFood) {
+      //   /**
+      //    * * Any situation with more than one collision means run the hell out of here!
+      //    * Otherwise ants will start creating tight groups like hippies at woodstock and eventually
+      //    * break the collision detection, i.e. start pushing each other through
+      //    * shapes bounds.
+      //    * ! TO DO: fix this shit...
+      //    */
+      //   directionInterpRatio = 1;
+      //   speedInterpolationSpeed = 5;
+      //   speedTarget = maxSpeed * 1.2;
+      // }
+
+      if (turnAngle > 0) {
+        const partOfAngle = deltaSeconds * 6;
+        const angle = atan2(directionTargetY, directionTargetX) + partOfAngle * randomSign();
+        directionTargetX = cos(angle);
+        directionTargetY = sin(angle);
+        turnAngle -= partOfAngle;
       }
 
-      let length = sqrt(velocityTargetX * velocityTargetX + velocityTargetY * velocityTargetY);
-      velocityTargetX /= length;
-      velocityTargetY /= length;
-
-      length = sqrt(xVelocity * xVelocity + yVelocity * yVelocity);
-      xVelocity /= length;
-      yVelocity /= length;
-
-      if (collisionsCount > 1 && !hasFood) {
-        /**
-         * * Any situation with more than one collision means run the hell out of here!
-         * Otherwise ants will start creating tight groups like hippies at woodstock and eventually
-         * break the collision detection, i.e. start pushing each other through
-         * shapes bounds.
-         * ! TO DO: fix this shit...
-         */
-        velocityInterpolationSpeed = 20;
-        speedInterpolationSpeed = 5;
-        speedTarget = maxSpeed * 1.2;
+      /**
+       * In this setup the PI radian angle points up,
+       * the 0 (zero) pints down, halfPI points right
+       * and -halfPI points left.
+       */
+      if (directionTargetX !== directionX || directionY !== directionTargetY) {
+        directionX = directionTargetX;
+        directionY = directionTargetY;
+        const length = sqrt(directionX * directionX + directionY * directionY);
+        directionX /= length;
+        directionY /= length;
       }
 
-      if (velocityTargetX !== xVelocity) {
-        xVelocity = interpolate(
-          xVelocity,
-          velocityTargetX,
-          deltaSeconds,
-          velocityInterpolationSpeed,
-        );
-      }
-
-      if (velocityTargetY !== yVelocity) {
-        yVelocity = interpolate(
-          yVelocity,
-          velocityTargetY,
-          deltaSeconds,
-          velocityInterpolationSpeed,
-        );
-      }
-
-      length = sqrt(xVelocity * xVelocity + yVelocity * yVelocity);
-      xVelocity /= length;
-      yVelocity /= length;
-
-      antBody.xv = xVelocity;
-      antBody.yv = yVelocity;
+      antBody.xv = directionX;
+      antBody.yv = directionY;
 
       speed = interpolate(speed, speedTarget, deltaSeconds, speedInterpolationSpeed);
 
       const antSprite = antsSpritesMap.get(id)!;
       antSprite.x = x;
       antSprite.y = y;
-      antSprite.rotation = -atan2(xVelocity, yVelocity);
+      antSprite.rotation = -atan2(directionX, directionY);
 
       /** Drag the food sprite along */
       if (hasFood) {
@@ -306,23 +298,20 @@ export const setupSimulation = (container: HTMLElement): void => {
 
       if (x > 0 && y > 0 && x < worldWidth && y < worldHeight) antsOnScreenCounter++;
 
-      ant[0] = id;
-      ant[1] = xVelocity;
-      ant[2] = yVelocity;
-      ant[3] = velocityTargetX;
-      ant[4] = velocityTargetY;
-      ant[5] = speed * mapRange(abs(turnAngle), 0, PI, 1, 0.3);
-      ant[6] = speedTarget;
-      ant[7] = maxSpeed;
-      ant[8] = rotationDirectionSign;
-      ant[9] = hasFood;
-      ant[10] = pheromoneStrength;
+      ant[idIndex] = id;
+      ant[directionXIndex] = directionX;
+      ant[directionYIndex] = directionY;
+      ant[turnAngleIndex] = turnAngle;
+      ant[speedIndex] = speed * mapRange(abs(turnAngle), 0, twoPI, 1, 0.5);
+      ant[speedTargetIndex] = speedTarget;
+      ant[hasFoodIndex] = hasFood;
+      ant[pheromoneStrengthIndex] = pheromoneStrength;
     });
 
     updatePheromones(frameStartTime);
 
-    // _draw.clear();
-    // _draw.lineStyle(1, 0xff0000);
+    _draw.clear();
+    _draw.lineStyle(1, 0xff0000);
     // drawSensors(_draw);
     // _draw.lineStyle(1, 0x005500);
     // pheremonesCollisionShapes.forEach((pheromone) => {
@@ -336,7 +325,10 @@ export const setupSimulation = (container: HTMLElement): void => {
     // foodCollisionShapes.forEach((bite) => {
     //   bite.draw(draw);
     // });
-    // drawAntSensors(_draw);
+    drawSensors(_draw);
+    // _draw.lineStyle(1, 0x660000);
+    // antsCollisions.drawBVH(_draw);
+    // _draw.lineStyle(1, 0x888888);
     // antsCollisions.draw(_draw);
 
     if (debugTimer.update(deltaSeconds)) {

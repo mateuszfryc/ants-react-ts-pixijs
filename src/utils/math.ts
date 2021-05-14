@@ -14,8 +14,8 @@ export const mapRange = (
   x: number,
   inMin: number,
   inMax: number,
-  outMin: number,
-  outMax: number,
+  outMin = 0,
+  outMax = 1,
 ): number => {
   return ((x - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
 };
