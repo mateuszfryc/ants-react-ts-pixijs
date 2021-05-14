@@ -1,14 +1,14 @@
 import { doNTimes } from 'utils/do-n-times';
 
 export class CirclesBVHMinimalCollisions {
-  avilableNodeBranches: number[] = [];
-  bodiesMaxCount: number;
-  bodies: number[][] = [];
-  branches: number[][] = [];
+  readonly bodiesMaxCount: number;
+  readonly avilableNodeBranches: number[] = [];
+  readonly bodies: number[][] = [];
+  readonly branches: number[][] = [];
   lastNodeBranchIndex = 0;
   rootBranch: number[] = [];
 
-  brachIndexes = {
+  readonly brachIndexes = {
     idIndex: 0,
     isLeafIndex: 1,
     AABB_leftIndex: 2,
@@ -20,7 +20,7 @@ export class CirclesBVHMinimalCollisions {
     leftIdIndex: 8,
   };
 
-  pheromoneBodyIndexes = {
+  readonly pheromoneBodyIndexes = {
     idIndex: 0,
     xIndex: 1,
     yIndex: 2,
@@ -50,7 +50,7 @@ export class CirclesBVHMinimalCollisions {
   }
 
   /** Inserts a body into the BVH */
-  insert(body: number[]): void {
+  private insert(body: number[]): void {
     const [id, x, y, radius] = body;
     const xMin = x - radius;
     const yMin = y - radius;
@@ -168,7 +168,7 @@ export class CirclesBVHMinimalCollisions {
     }
   }
 
-  remove(body: number[]): void {
+  private remove(body: number[]): void {
     const [id] = body;
     const branch = this.branches[id];
     const {
@@ -245,13 +245,13 @@ export class CirclesBVHMinimalCollisions {
     this.avilableNodeBranches.push(parentId);
   }
 
-  update(body: number[]): void {
+  public update(body: number[]): void {
     this.remove(body);
     this.insert(body);
   }
 
   /** Returns a list of potential collisions for a body */
-  getPotentials(body: number[]): number[][] {
+  public getPotentials(body: number[]): number[][] {
     const potentials: number[][] = [];
     const {
       idIndex,
@@ -329,7 +329,7 @@ export class CirclesBVHMinimalCollisions {
     return potentials;
   }
 
-  areCirclesOverlapping(a: number[], b: number[]): boolean {
+  public areCirclesOverlapping(a: number[], b: number[]): boolean {
     /** Stage 1: AABB test step by step */
     const [, xA, yA, radiusA] = a;
     const a_min_x = xA - radiusA;
