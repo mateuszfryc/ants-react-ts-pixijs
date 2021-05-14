@@ -5,11 +5,7 @@ import { Shape } from 'simulation/collisions/proxyTypes';
 import { setupGraphics } from 'utils/graphics';
 // prettier-ignore
 import { debugTimer, setupAntCounter, setupFPSDisplay, setupPheromonesCounter } from 'simulation/debug';
-// prettier-ignore
-import {
-  closeToZero,
-  halfPI, interpolate, mapRange, mapRangeClamped,
-  normalizeRadians, PI, randomInRange, randomSign, twoPI } from 'utils/math';
+import { interpolate, mapRangeClamped, randomInRange, randomSign } from 'utils/math';
 import { createNest } from './Nest';
 import { setupAnts } from './Ant';
 // prettier-ignore
@@ -19,11 +15,11 @@ import {
 import { setupAntsPheromones } from './Pheromones';
 import { Circle } from './collisions/circle';
 
-const { random, min, atan2, cos, sin, abs, sign, sqrt } = Math;
+const { min, atan2, cos, sin, abs, sqrt } = Math;
 const { Sprite } = PIXI;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  const antsCount = 100;
+  const antsCount = 500;
   const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = setupGraphics(
     container,
     antsCount,
@@ -58,10 +54,8 @@ export const setupSimulation = (container: HTMLElement): void => {
 
   const {
     addPheromone,
-    drawSensors,
     getPheromonesCount,
     pheromoneEmissionTimer,
-    sensorsTurnInterpolationSpeed,
     updateAntSensors,
     updatePheromones,
   } = setupAntsPheromones(antsCount, antsScale, stage);
