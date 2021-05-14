@@ -2,6 +2,7 @@ import { doNTimes } from 'utils/do-n-times';
 
 export class CirclesBVHMinimalCollisions {
   readonly bodiesMaxCount: number;
+  readonly branchesMaxCount: number;
   readonly avilableNodeBranches: number[] = [];
   readonly bodies: number[][] = [];
   readonly branches: number[][] = [];
@@ -30,8 +31,9 @@ export class CirclesBVHMinimalCollisions {
 
   constructor(bodiesMaxCount: number) {
     this.bodiesMaxCount = bodiesMaxCount;
+    this.branchesMaxCount = bodiesMaxCount * 2 - 1;
     this.bodies.length = bodiesMaxCount;
-    this.branches.length = 2 * bodiesMaxCount - 1;
+    this.branches.length = this.branchesMaxCount;
     this.lastNodeBranchIndex = bodiesMaxCount;
 
     /** Pre-initialise all circles. */
@@ -138,8 +140,9 @@ export class CirclesBVHMinimalCollisions {
         const parent_min_y = current[AABB_topIndex];
         const parent_max_x = current[AABB_rightIndex];
         const parent_max_y = current[AABB_bottomIndex];
-        const newParentId = this.avilableNodeBranches.pop() ?? this.lastNodeBranchIndex;
-        this.lastNodeBranchIndex++;
+        const newParentId = this.avilableNodeBranches.pop() ?? this.lastNodeBranchIndex++;
+        if (this.lastNodeBranchIndex >= this.branchesMaxCount)
+          this.lastNodeBranchIndex = this.bodiesMaxCount;
         const newParent = [
           newParentId,
           0,
