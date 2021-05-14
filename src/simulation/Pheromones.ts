@@ -4,7 +4,7 @@ import PheromoneImage from 'assets/pheromone.png';
 import { doNTimes } from 'utils/do-n-times';
 import { Timer } from './Timer';
 import { TAGS } from './collisions/collisions';
-import { setupCollisions } from './circlesBVHMinimalCollisions';
+import { CirclesBVHMinimalCollisions } from './circlesBVHMinimalCollisions';
 
 export function setupAntsPheromones(
   antsCount: number,
@@ -18,15 +18,13 @@ export function setupAntsPheromones(
   const maxPheromonesCount =
     antsCount * round(1 / timeBetweenPheromonesSpawn) * pheromonesMaxLifeSpan;
   const { ANT_SENSOR, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
+  const pheromonesCollisions = new CirclesBVHMinimalCollisions(maxPheromonesCount);
   const {
     brachIndexes: { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex },
     pheromoneBodyIndexes: { xIndex, yIndex, radiusIndex, tagIndex },
-    areCirclesOverlapping,
     bodies,
     branches,
-    getPotentials,
-    update,
-  } = setupCollisions(maxPheromonesCount);
+  } = pheromonesCollisions;
 
   /**
    * This additional property of the minimal collisions
@@ -126,7 +124,7 @@ export function setupAntsPheromones(
         xB + radiusB > branch[AABB_rightIndex] ||
         yB + radiusB > branch[AABB_bottomIndex]
       ) {
-        update(body);
+        pheromonesCollisions.update(body);
       }
     });
 
@@ -134,18 +132,21 @@ export function setupAntsPheromones(
     let leftSensorInputSum = 0;
     let rightSensorInputSum = 0;
 
-    for (const other of getPotentials(sensorForward)) {
-      if (areCirclesOverlapping(sensorForward, other) && other[tagIndex] === tag)
+    for (const other of pheromonesCollisions.getPotentials(sensorForward)) {
+      if (
+        pheromonesCollisions.areCirclesOverlapping(sensorForward, other) &&
+        other[tagIndex] === tag
+      )
         frontSensorInputSum += frameStartTime - other[spawnTimeIndex];
     }
 
-    for (const other of getPotentials(sensorLeft)) {
-      if (areCirclesOverlapping(sensorLeft, other) && other[tagIndex] === tag)
+    for (const other of pheromonesCollisions.getPotentials(sensorLeft)) {
+      if (pheromonesCollisions.areCirclesOverlapping(sensorLeft, other) && other[tagIndex] === tag)
         leftSensorInputSum += frameStartTime - other[spawnTimeIndex];
     }
 
-    for (const other of getPotentials(sensorRight)) {
-      if (areCirclesOverlapping(sensorRight, other) && other[tagIndex] === tag)
+    for (const other of pheromonesCollisions.getPotentials(sensorRight)) {
+      if (pheromonesCollisions.areCirclesOverlapping(sensorRight, other) && other[tagIndex] === tag)
         rightSensorInputSum += frameStartTime - other[spawnTimeIndex];
     }
 
@@ -177,7 +178,7 @@ export function setupAntsPheromones(
     pheromone[tagIndex] = hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST;
     const [id] = pheromone;
     activePheromones.push(id);
-    update(pheromone);
+    pheromonesCollisions.update(pheromone);
 
     const pheromoneSprite = pheromonesSpritesMap[id];
     pheromoneSprite.x = x;

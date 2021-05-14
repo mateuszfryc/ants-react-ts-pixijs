@@ -49,7 +49,6 @@ export const setupSimulation = (container: HTMLElement): void => {
       directionYIndex,
       randomDirectionXIndex,
       randomDirectionYIndex,
-      turnAngleIndex,
       speedIndex,
       speedTargetIndex,
       hasFoodIndex,
