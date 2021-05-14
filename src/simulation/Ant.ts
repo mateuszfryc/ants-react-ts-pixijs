@@ -33,7 +33,8 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.ParticleContainer
     'id',
     'directionX',
     'directionY',
-    'turnAngle',
+    'randomDirectionX',
+    'randomDirectionY',
     'speed',
     'speedTarget',
     'maxSpeed',
@@ -64,18 +65,19 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.ParticleContainer
 
     // x and y random and normalized velocity
     const [directionX, directionY] = randomUnitVector();
-    const maxSpeed = randomInRange(55, 60);
+    const randomDirectionX = 0;
+    const randomDirectionY = 0;
+    const maxSpeed = randomInRange(55, 65);
     const speed = maxSpeed * 0.5;
     const targetSpeed = maxSpeed;
-    const turnAngle = 0;
-    const turnAngleSign = randomSign();
     const hasFood = 0;
     const pheromoneStrength = 0;
     const properties = [
       id,
       directionX,
       directionY,
-      turnAngle,
+      randomDirectionX,
+      randomDirectionY,
       speed,
       targetSpeed,
       maxSpeed,
@@ -125,7 +127,8 @@ export function setupAnts(antsCount: number, antsSprites: PIXI.ParticleContainer
     antsScale,
     antsSpritesMap,
     maxPheromonesEmission,
-    randomDirectionMaxAngle: halfPI,
+    randomDirectionMaxAngle: 1,
+    directionChangeMultiplier: 0.16,
     releaseOneByOne,
     throwAllAtOnce,
     timers,

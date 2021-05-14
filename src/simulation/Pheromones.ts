@@ -56,7 +56,7 @@ export function setupAntsPheromones(
     pheromonesSprites.addChild(pheromoneSprite);
   }, maxPheromonesCount);
 
-  const sensorForwardDistance = 3.6;
+  const sensorForwardDistance = 3.8;
   const sensorsSideDistance = 0.46;
   const sensorsSideSpread = 0.7;
   /**
@@ -73,7 +73,7 @@ export function setupAntsPheromones(
   const sensors: number[][] = [0, 1, 2].map((id: number): number[] => {
     const sensor: number[] = bodies[id];
     sensor[tagIndex] = ANT_SENSOR;
-    sensor[radiusIndex] = pheromoneRadius * 0.6 * antsScale;
+    sensor[radiusIndex] = pheromoneRadius * 0.75 * antsScale;
 
     return sensor;
   });
@@ -143,27 +143,21 @@ export function setupAntsPheromones(
         rightSensorInputSum += frameStartTime - other[spawnTimeIndex];
     }
 
-    let haveFoundPheromone = false;
     let directionTargetX = 0;
     let directionTargetY = 0;
 
     if (frontSensorInputSum > max(leftSensorInputSum, rightSensorInputSum)) {
       directionTargetX = sensorForward[xIndex] - x;
       directionTargetY = sensorForward[yIndex] - y;
-      haveFoundPheromone = true;
     } else if (leftSensorInputSum > rightSensorInputSum) {
       directionTargetX = sensorLeft[xIndex] - x;
       directionTargetY = sensorLeft[yIndex] - y;
-      haveFoundPheromone = true;
     } else if (rightSensorInputSum > leftSensorInputSum) {
       directionTargetX = sensorRight[xIndex] - x;
       directionTargetY = sensorRight[yIndex] - y;
-      haveFoundPheromone = true;
     }
 
-    const length = sqrt(directionTargetX * directionTargetX + directionTargetY * directionTargetY);
-
-    return [haveFoundPheromone, directionTargetX / length, directionTargetY / length];
+    return [directionTargetX, directionTargetY];
   }
 
   let activePheromones: number[] = [];

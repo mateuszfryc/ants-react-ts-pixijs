@@ -1,7 +1,7 @@
 export const { PI } = Math;
 export const halfPI = PI * 0.5;
 export const twoPI = 2 * Math.PI;
-const { atan2, min, max, random, abs, round, cos, sin } = Math;
+const { atan2, min, max, random, abs, round, cos, sin, sqrt } = Math;
 
 export const clamp = (value: number, minimum = 0, maximum = 1): number => {
   if (value > maximum) return maximum;
@@ -9,6 +9,9 @@ export const clamp = (value: number, minimum = 0, maximum = 1): number => {
 
   return value;
 };
+
+export const closeToZero = (n: number, tolerance = 0.0001): boolean =>
+  n < tolerance && n > -tolerance;
 
 export const mapRange = (
   x: number,
@@ -54,7 +57,7 @@ export const getDistanceFromPointAtoB = (
   const xDiff = bx - ax;
   const yDiff = by - ay;
 
-  return Math.sqrt(xDiff * xDiff + yDiff * yDiff);
+  return sqrt(xDiff * xDiff + yDiff * yDiff);
 };
 
 export const normalizeRadians = (radians: number): number => {

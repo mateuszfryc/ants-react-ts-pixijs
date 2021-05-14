@@ -7,6 +7,7 @@ import { setupGraphics } from 'utils/graphics';
 import { debugTimer, setupAntCounter, setupFPSDisplay, setupPheromonesCounter } from 'simulation/debug';
 // prettier-ignore
 import {
+  closeToZero,
   halfPI, interpolate, mapRange, mapRangeClamped,
   normalizeRadians, PI, randomInRange, randomSign, twoPI } from 'utils/math';
 import { createNest } from './Nest';
@@ -37,6 +38,7 @@ export const setupSimulation = (container: HTMLElement): void => {
     antsProps,
     antsScale,
     antsSpritesMap,
+    directionChangeMultiplier,
     maxPheromonesEmission,
     randomDirectionMaxAngle,
     timers,
@@ -45,6 +47,8 @@ export const setupSimulation = (container: HTMLElement): void => {
       idIndex,
       directionXIndex,
       directionYIndex,
+      randomDirectionXIndex,
+      randomDirectionYIndex,
       turnAngleIndex,
       speedIndex,
       speedTargetIndex,
@@ -96,7 +100,8 @@ export const setupSimulation = (container: HTMLElement): void => {
         id,
         directionX,
         directionY,
-        turnAngle,
+        randomDirectionX,
+        randomDirectionY,
         speed,
         speedTarget,
         maxSpeed,
@@ -106,15 +111,9 @@ export const setupSimulation = (container: HTMLElement): void => {
       const antBody = antsCollisionShapes.get(id);
       let directionTargetX = directionX;
       let directionTargetY = directionY;
-      let speedInterpolationSpeed = 2;
-      let directionInterpRatio = 1;
-      let collisionsCount = 0;
+      let speedInterpolationSpeed = 1;
       let isStandingOnPheromone = false;
-
-      const rotationChangeTImer = timers.get(id);
-      if (rotationChangeTImer!.update(deltaSeconds)) {
-        turnAngle = randomInRange(0, randomDirectionMaxAngle);
-      }
+      let makeRandomTurn = true;
 
       for (const other of antsCollisions.getPotentials(antBody as Shape)) {
         if (antsCollisions.areBodiesColliding(antBody as Shape, other, collisionTestResult)) {
@@ -124,14 +123,13 @@ export const setupSimulation = (container: HTMLElement): void => {
           /* eslint-disable indent */
           switch (tag) {
             case ANT:
-              collisionsCount++;
               if (!hasFood) {
                 overlap *= 0.5;
                 antBody.x -= overlap * overlapX;
                 antBody.y -= overlap * overlapY;
                 other.x -= overlap * overlapX;
                 other.y -= overlap * overlapY;
-                turnAngle = 0;
+                makeRandomTurn = false;
               }
               break;
 
@@ -143,8 +141,8 @@ export const setupSimulation = (container: HTMLElement): void => {
                   foodBitesSprites.removeChild(foodChunkToBeRemoved);
                   foodBitesSpritesMap.delete(id);
                 }
-                turnAngle = 0;
-                // directionInterpRatio = 20;
+                makeRandomTurn = false;
+                speed = 0;
                 directionTargetX = -directionX;
                 directionTargetY = -directionY;
               } else {
@@ -156,8 +154,7 @@ export const setupSimulation = (container: HTMLElement): void => {
               if (hasFood) {
                 directionTargetX = nest.x - antBody.x;
                 directionTargetY = nest.y - antBody.y;
-                turnAngle = 0;
-                // directionInterpRatio = 10;
+                makeRandomTurn = false;
               }
               break;
 
@@ -170,16 +167,14 @@ export const setupSimulation = (container: HTMLElement): void => {
               break;
 
             case FOOD:
-              collisionsCount++;
               antBody.x -= overlap * overlapX;
               antBody.y -= overlap * overlapY;
-              // directionInterpRatio = 20;
-              directionTargetX = -directionX;
-              directionTargetY = -directionY;
-              turnAngle = 0;
-              speed = 0;
               let [amount, isEmpty] = foodProps.get(otherId)!;
               if (!hasFood && !isEmpty) {
+                directionTargetX = -directionX;
+                directionTargetY = -directionY;
+                makeRandomTurn = false;
+                speed = 0;
                 const foodSprite = foodSprites.get(otherId);
                 if (foodSprite) {
                   const {
@@ -211,15 +206,13 @@ export const setupSimulation = (container: HTMLElement): void => {
               break;
 
             default:
-              collisionsCount++;
               antBody.x -= overlap * overlapX;
               antBody.y -= overlap * overlapY;
               speed = 0;
-              turnAngle = 0;
+              makeRandomTurn = false;
               /** By default move along reflection vector */
               directionTargetX = directionX - 2 * (directionX * -overlapX) * -overlapX;
               directionTargetY = directionY - 2 * (directionY * -overlapY) * -overlapY;
-              // directionInterpRatio = 20;
 
               break;
           }
@@ -229,37 +222,49 @@ export const setupSimulation = (container: HTMLElement): void => {
 
       const { x, y } = antBody;
 
-      const sensorsResult = updateAntSensors(x, y, directionX, directionY, hasFood, frameStartTime);
-      const [haveFoundPheromone] = sensorsResult;
-
-      if (haveFoundPheromone) {
-        [, directionTargetX, directionTargetY] = sensorsResult;
-        turnAngle = 0;
+      const rotationChangeTImer = timers.get(id);
+      if (rotationChangeTImer!.update(deltaSeconds)) {
+        const angle =
+          atan2(directionY, directionX) + randomInRange(0, randomDirectionMaxAngle) * randomSign();
+        randomDirectionX = cos(angle);
+        randomDirectionY = sin(angle);
       }
 
-      // if (collisionsCount > 1 && !hasFood) {
-      //   /**
-      //    * * Any situation with more than one collision means run the hell out of here!
-      //    * Otherwise ants will start creating tight groups like hippies at woodstock and eventually
-      //    * break the collision detection, i.e. start pushing each other through
-      //    * shapes bounds.
-      //    * ! TO DO: fix this shit...
-      //    */
-      //   directionInterpRatio = 1;
-      //   speedInterpolationSpeed = 5;
-      //   speedTarget = maxSpeed * 1.2;
-      // }
+      if (makeRandomTurn) {
+        const xABS = abs(randomDirectionX);
+        if (xABS > 0) {
+          const partOfComponent = randomDirectionX * directionChangeMultiplier * (1 / xABS);
+          directionTargetX += partOfComponent;
+          randomDirectionX -= partOfComponent;
+        }
 
-      if (turnAngle > 0) {
-        const partOfAngle = deltaSeconds * 6;
-        const angle = atan2(directionTargetY, directionTargetX) + partOfAngle * randomSign();
-        directionTargetX = cos(angle);
-        directionTargetY = sin(angle);
-        turnAngle -= partOfAngle;
+        const yABS = abs(randomDirectionY);
+        if (yABS > 0) {
+          const partOfComponent = randomDirectionY * directionChangeMultiplier * (1 / yABS);
+          directionTargetY += partOfComponent;
+          randomDirectionY -= partOfComponent;
+        }
       }
+
+      const [pheromoneSteerForceX, pheromoneSteerForceY] = updateAntSensors(
+        x,
+        y,
+        directionX,
+        directionY,
+        hasFood,
+        frameStartTime,
+      );
 
       /**
-       * In this setup the PI radian angle points up,
+       * 0.1 helps here to make movement towards
+       * pheromones more fluent. The higher this number
+       * the more sudden turns towards pheromones are.
+       */
+      directionTargetX += pheromoneSteerForceX * 0.1;
+      directionTargetY += pheromoneSteerForceY * 0.1;
+
+      /**
+       * In this setup radian angle = PI points up,
        * the 0 (zero) pints down, halfPI points right
        * and -halfPI points left.
        */
@@ -279,7 +284,8 @@ export const setupSimulation = (container: HTMLElement): void => {
       const antSprite = antsSpritesMap.get(id)!;
       antSprite.x = x;
       antSprite.y = y;
-      antSprite.rotation = -atan2(directionX, directionY);
+      const turnAngle = atan2(directionX, directionY);
+      antSprite.rotation = -turnAngle;
 
       /** Drag the food sprite along */
       if (hasFood) {
@@ -301,8 +307,9 @@ export const setupSimulation = (container: HTMLElement): void => {
       ant[idIndex] = id;
       ant[directionXIndex] = directionX;
       ant[directionYIndex] = directionY;
-      ant[turnAngleIndex] = turnAngle;
-      ant[speedIndex] = speed * mapRange(abs(turnAngle), 0, twoPI, 1, 0.5);
+      ant[randomDirectionXIndex] = randomDirectionX;
+      ant[randomDirectionYIndex] = randomDirectionY;
+      ant[speedIndex] = speed;
       ant[speedTargetIndex] = speedTarget;
       ant[hasFoodIndex] = hasFood;
       ant[pheromoneStrengthIndex] = pheromoneStrength;
@@ -310,8 +317,8 @@ export const setupSimulation = (container: HTMLElement): void => {
 
     updatePheromones(frameStartTime);
 
-    _draw.clear();
-    _draw.lineStyle(1, 0xff0000);
+    // _draw.clear();
+    // _draw.lineStyle(1, 0xff0000);
     // drawSensors(_draw);
     // _draw.lineStyle(1, 0x005500);
     // pheremonesCollisionShapes.forEach((pheromone) => {
@@ -325,7 +332,7 @@ export const setupSimulation = (container: HTMLElement): void => {
     // foodCollisionShapes.forEach((bite) => {
     //   bite.draw(draw);
     // });
-    drawSensors(_draw);
+    // drawSensors(_draw);
     // _draw.lineStyle(1, 0x660000);
     // antsCollisions.drawBVH(_draw);
     // _draw.lineStyle(1, 0x888888);
