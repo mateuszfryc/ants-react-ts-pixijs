@@ -23,7 +23,7 @@ const { random, min, atan2, cos, sin, abs, sign, sqrt } = Math;
 const { Sprite } = PIXI;
 
 export const setupSimulation = (container: HTMLElement): void => {
-  const antsCount = 50;
+  const antsCount = 500;
   const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = setupGraphics(
     container,
     antsCount,

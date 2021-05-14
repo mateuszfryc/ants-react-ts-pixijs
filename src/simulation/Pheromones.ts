@@ -4,14 +4,14 @@ import PheromoneImage from 'assets/pheromone.png';
 import { doNTimes } from 'utils/do-n-times';
 import { Timer } from './Timer';
 import { TAGS } from './collisions/collisions';
-import { setupCollisions } from './pheromonesCollisions';
+import { setupCollisions } from './circlesBVHMinimalCollisions';
 
 export function setupAntsPheromones(
   antsCount: number,
   antsScale: number,
   stage: PIXI.Container,
 ): any {
-  const { max, round, sqrt } = Math;
+  const { max, round } = Math;
   const timeBetweenPheromonesSpawn = 0.066 * antsScale;
   const pheromoneEmissionTimer = new Timer(timeBetweenPheromonesSpawn);
   const pheromonesMaxLifeSpan = 16;
@@ -20,13 +20,19 @@ export function setupAntsPheromones(
   const { ANT_SENSOR, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
   const {
     brachIndexes: { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex },
-    pheromoneBodyIndexes: { xIndex, yIndex, radiusIndex, tagIndex, spawnTimeIndex },
-    arePheromonesOverlapping,
+    pheromoneBodyIndexes: { xIndex, yIndex, radiusIndex, tagIndex },
+    areCirclesOverlapping,
     bodies,
     branches,
     getPotentials,
     update,
   } = setupCollisions(maxPheromonesCount);
+
+  /**
+   * This additional property of the minimal collisions
+   * is added on top of other circles properties.
+   */
+  const spawnTimeIndex = 5;
 
   const { Sprite } = PIXI;
   const pheromonesSprites = new PIXI.ParticleContainer(maxPheromonesCount, {
@@ -129,17 +135,17 @@ export function setupAntsPheromones(
     let rightSensorInputSum = 0;
 
     for (const other of getPotentials(sensorForward)) {
-      if (arePheromonesOverlapping(sensorForward, other) && other[tagIndex] === tag)
+      if (areCirclesOverlapping(sensorForward, other) && other[tagIndex] === tag)
         frontSensorInputSum += frameStartTime - other[spawnTimeIndex];
     }
 
     for (const other of getPotentials(sensorLeft)) {
-      if (arePheromonesOverlapping(sensorLeft, other) && other[tagIndex] === tag)
+      if (areCirclesOverlapping(sensorLeft, other) && other[tagIndex] === tag)
         leftSensorInputSum += frameStartTime - other[spawnTimeIndex];
     }
 
     for (const other of getPotentials(sensorRight)) {
-      if (arePheromonesOverlapping(sensorRight, other) && other[tagIndex] === tag)
+      if (areCirclesOverlapping(sensorRight, other) && other[tagIndex] === tag)
         rightSensorInputSum += frameStartTime - other[spawnTimeIndex];
     }
 

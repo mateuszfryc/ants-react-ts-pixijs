@@ -3,7 +3,7 @@ import * as PIXI from 'pixi.js';
 import AntImage from 'assets/ant-red.png';
 import { Circle } from 'simulation/collisions/circle';
 import { Collisions, TAGS } from 'simulation/collisions/collisions';
-import { halfPI, randomInRange, randomSign, randomUnitVector } from 'utils/math';
+import { randomInRange, randomUnitVector } from 'utils/math';
 import { Timer } from 'simulation/Timer';
 import { doNTimes } from 'utils/do-n-times';
 import { ObjectOfNumbers } from 'UI/types/baseTypes';

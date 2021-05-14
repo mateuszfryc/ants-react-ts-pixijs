@@ -15,13 +15,11 @@ const pheromoneBodyIndexes = {
   xIndex: 1,
   yIndex: 2,
   radiusIndex: 3,
-  scaleIndex: 4,
-  tagIndex: 5,
-  spawnTimeIndex: 6,
+  tagIndex: 4,
 };
 
 type setupCollisionsType = {
-  arePheromonesOverlapping: (a: number[], b: number[]) => boolean;
+  areCirclesOverlapping: (a: number[], b: number[]) => boolean;
   bodies: number[][];
   brachIndexes: typeof brachIndexes;
   branches: number[][];
@@ -457,21 +455,19 @@ export function setupCollisions(bodiesMaxCount: number): setupCollisionsType {
     return potentials;
   }
 
-  function arePheromonesOverlapping(a: number[], b: number[]): boolean {
+  function areCirclesOverlapping(a: number[], b: number[]): boolean {
     /** Stage 1: AABB test step by step */
-    const [, xA, yA, radiusA, scaleA] = a;
-    const radiusAScaled = radiusA * scaleA;
-    const a_min_x = xA - radiusAScaled;
-    const a_min_y = yA - radiusAScaled;
-    const a_max_x = xA + radiusAScaled;
-    const a_max_y = yA + radiusAScaled;
+    const [, xA, yA, radiusA] = a;
+    const a_min_x = xA - radiusA;
+    const a_min_y = yA - radiusA;
+    const a_max_x = xA + radiusA;
+    const a_max_y = yA + radiusA;
 
-    const [, xB, yB, radiusB, scaleB] = b;
-    const radiusBScaled = radiusB * scaleB;
-    const b_min_x = xB - radiusBScaled;
-    const b_min_y = yB - radiusBScaled;
-    const b_max_x = xB + radiusBScaled;
-    const b_max_y = yB + radiusBScaled;
+    const [, xB, yB, radiusB] = b;
+    const b_min_x = xB - radiusB;
+    const b_min_y = yB - radiusB;
+    const b_max_x = xB + radiusB;
+    const b_max_y = yB + radiusB;
 
     if (a_min_x > b_max_x) return false;
     if (a_min_y > b_max_y) return false;
@@ -481,7 +477,7 @@ export function setupCollisions(bodiesMaxCount: number): setupCollisionsType {
     /** Stage 2: circle vs circle collision/overlap detection */
     const difference_x = xB - xA;
     const difference_y = yB - yA;
-    const radius_sum = radiusAScaled + radiusBScaled;
+    const radius_sum = radiusA + radiusB;
     const length_squared = difference_x * difference_x + difference_y * difference_y;
 
     if (abs(length_squared) > radius_sum * radius_sum) {
@@ -491,31 +487,22 @@ export function setupCollisions(bodiesMaxCount: number): setupCollisionsType {
     return true;
   }
 
-  /**
-   * Pre-initialise all pheromones.
-   * It's done only once and later on
-   * pheromones will be drawn from
-   * their pool and set different position.
-   * Unused pheromones will be thrown
-   * out of the edge of the screen.
-   */
+  /** Pre-initialise all circles. */
   doNTimes((index: number): void => {
     // prettier-ignore
     const circle = [
-      index,      /* 0: id        */
-      -2 * index, /* 1: x         */
-      -2 * index, /* 2: y         */
-      1,          /* 3: radius    */
-      1,          /* 4: scale     */
-      0,          /* 5: tag       */
-      0,          /* 6: spawnTime */
+      index,      /* 0: id     */
+      -2 * index, /* 1: x      */
+      -2 * index, /* 2: y      */
+      1,          /* 3: radius */
+      0,          /* 4: tag    */
     ];
     bodies[index] = circle;
     insert(circle);
   }, bodiesMaxCount);
 
   return {
-    arePheromonesOverlapping,
+    areCirclesOverlapping,
     bodies,
     brachIndexes,
     branches,
