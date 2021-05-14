@@ -56,7 +56,7 @@ export const setupSimulation = (container: HTMLElement): void => {
   const { updateFPSDisplay } = setupFPSDisplay();
   const { updateAntsCounter } = setupAntCounter();
   const { updatePheromonesCounter } = setupPheromonesCounter();
-  const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
+  const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, NEST_VISIBLE_AREA } = TAGS;
   const foodDistanceToNest = 200;
   const nest = createNest(worldWidth * 0.5, worldHeight * 0.5, stage, antsCollisions);
   const collisionTestResult: number[] = [];
@@ -133,13 +133,21 @@ export const setupSimulation = (container: HTMLElement): void => {
                 }
                 skipRandomDirectionChange = true;
                 velocityInterpolationSpeed = 20;
-                turnAngle =
-                  randomInRange(0.5, 1) *
-                    sign(overlap_y > 0 ? 1 : -1) *
-                    atan2(-overlap_x, -overlap_y) +
-                  atan2(velocityTargetX, velocityTargetY);
+                velocityTargetX *= -1;
+                velocityTargetY *= -1;
               } else {
                 pheromoneStrength = maxPheromonesEmission;
+              }
+              break;
+
+            case NEST_VISIBLE_AREA:
+              if (hasFood) {
+                const nestX = nest.x - antBody.x;
+                const nestY = nest.y - antBody.y;
+                velocityTargetX = nestX;
+                velocityTargetY = nestY;
+                skipRandomDirectionChange = true;
+                velocityInterpolationSpeed = 10;
               }
               break;
 
@@ -189,11 +197,8 @@ export const setupSimulation = (container: HTMLElement): void => {
               }
               skipRandomDirectionChange = true;
               velocityInterpolationSpeed = 20;
-              turnAngle =
-                randomInRange(0.5, 1) *
-                  sign(overlap_y > 0 ? 1 : -1) *
-                  atan2(-overlap_x, -overlap_y) +
-                atan2(velocityTargetX, velocityTargetY);
+              velocityTargetX *= -1;
+              velocityTargetY *= -1;
 
               break;
           }

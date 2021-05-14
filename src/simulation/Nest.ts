@@ -40,6 +40,7 @@ export function createNest(
   stage.addChild(nest);
   stage.addChild(nest.entranceCoverSprite);
   collisionSystem.insert(nest.body);
+  collisionSystem.insert(nest.areaIsVisibleIn);
 
   return nest;
 }
