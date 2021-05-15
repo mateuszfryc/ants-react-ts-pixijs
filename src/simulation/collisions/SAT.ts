@@ -29,7 +29,7 @@ export const separatingAxis = (
   b_coords: number[] | Float64Array,
   x: number,
   y: number,
-  result: Float32Array,
+  result: number[],
 ): boolean => {
   const a_count = a_coords.length;
   const b_count = b_coords.length;
@@ -112,7 +112,7 @@ export const separatingAxis = (
 };
 
 // Determines if two polygons are colliding
-export const polygonPolygon = (a: Shape, b: Shape, result: Float32Array): boolean => {
+export const polygonPolygon = (a: Shape, b: Shape, result: number[]): boolean => {
   const a_count = a._coords.length;
   const b_count = b._coords.length;
 
@@ -154,7 +154,7 @@ export const polygonPolygon = (a: Shape, b: Shape, result: Float32Array): boolea
 export const polygonCircle = (
   polygon: Shape,
   circle: Shape,
-  result: Float32Array,
+  result: number[],
   reverse = false,
 ): boolean => {
   const a_coords = polygon._coords;
@@ -253,7 +253,7 @@ export const polygonCircle = (
 };
 
 // Determines if two circles are colliding
-export const circleCircle = (a: Shape, b: Shape, result: Float32Array): boolean => {
+export const circleCircle = (a: Shape, b: Shape, result: number[]): boolean => {
   const a_radius = a.radius * a.scale;
   const b_radius = b.radius * b.scale;
   const difference_x = b.x - a.x;

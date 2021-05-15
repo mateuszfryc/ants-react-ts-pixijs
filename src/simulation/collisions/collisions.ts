@@ -126,7 +126,7 @@ export class Collisions {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  areBodiesColliding(a: Shape, b: Shape, result: Float32Array): boolean {
+  areBodiesColliding(a: Shape, b: Shape, result: number[]): boolean {
     const a_polygon = a._polygon;
     const b_polygon = b._polygon;
 
