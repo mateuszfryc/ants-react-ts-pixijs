@@ -10,11 +10,11 @@ let lastCreatedFoodId = 0;
 
 export const foodImageTexture = PIXI.Texture.from(FoodImage);
 
-export function spawnFood(id: number, x: number, y: number, size = 10): any {
+export function spawnFood(id: number, x: number, y: number, radius = 20): any {
   const foodCollisionShape = new Circle(
     x,
     y,
-    size, // radius
+    radius, // radius
     TAGS.FOOD,
     0.7, // scale
     0, // padding
@@ -24,10 +24,10 @@ export function spawnFood(id: number, x: number, y: number, size = 10): any {
   const foodSprite = PIXI.Sprite.from(FoodImage);
   foodSprite.x = x;
   foodSprite.y = y;
-  foodSprite.scale.set(size * 0.09);
+  foodSprite.scale.set(radius * 0.022);
   foodSprite.anchor.set(0.5);
 
-  const amount = size * 50;
+  const amount = radius * 50;
   const isEmpty = false;
 
   const properties = [amount, isEmpty];
@@ -41,7 +41,7 @@ export function makeSomeFood(
   ySpawn: number,
   foodAmount = 10,
   range = 100,
-  size = 10,
+  radius = 20,
 ): void {
   doNTimes((): void => {
     const x = xSpawn + (random() * range - range * 0.5);
@@ -51,7 +51,7 @@ export function makeSomeFood(
       lastCreatedFoodId,
       x,
       y,
-      size,
+      radius,
     );
     lastCreatedFoodId++;
 

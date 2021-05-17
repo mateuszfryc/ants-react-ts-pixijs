@@ -45,7 +45,17 @@ export function setupSimulation(container: HTMLElement): void {
     nest.y + foodDistanceToNest,
   );
 
+  let isTabFocused = true;
+  window.addEventListener('blur', () => {
+    isTabFocused = false;
+  });
+  window.addEventListener('focus', () => {
+    lastTime = performance.now();
+    isTabFocused = true;
+  });
+
   function simulationUpdate() {
+    if (!isTabFocused) return;
     const frameStartTime = performance.now();
     const deltaSeconds = Math.min((frameStartTime - lastTime) / 1000, 0.5);
     let antsOnScreenCounter = 0;

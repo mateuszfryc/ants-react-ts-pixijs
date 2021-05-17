@@ -216,8 +216,8 @@ export function CreateAntsColony(
 
             case NEST_VISIBLE_AREA:
               if (hasFood) {
-                directionTargetX = nest.x - antBody.x;
-                directionTargetY = nest.y - antBody.y;
+                directionTargetX = other.x - antBody.x;
+                directionTargetY = other.y - antBody.y;
                 makeRandomTurn = false;
               }
               break;
@@ -231,42 +231,53 @@ export function CreateAntsColony(
               break;
 
             case FOOD:
-              antBody.x -= overlap * overlapX;
-              antBody.y -= overlap * overlapY;
-              let [amount, isEmpty] = foodProps.get(otherId)!;
-              if (!hasFood && !isEmpty) {
-                directionTargetX = -directionX;
-                directionTargetY = -directionY;
-                makeRandomTurn = false;
-                speed = 0;
-                const foodSprite = foodSprites.get(otherId);
-                if (foodSprite) {
-                  const {
-                    scale,
-                    scale: { x },
-                  } = foodSprite;
-                  const newSize = x - MATH.mapRangeClamped(1, 0, amount, 0, x);
-                  scale.set(newSize);
-                  other.radius = (newSize * radius) / x;
+              const halfRadius = other.radius * 0.5;
+              if (overlap < halfRadius) {
+                if (!hasFood) {
+                  directionTargetX = overlapX;
+                  directionTargetY = overlapY;
+                  makeRandomTurn = false;
                 }
-                hasFood = 1;
-                const foodChunkSprite = Sprite.from(foodImageTexture);
-                foodChunkSprite.scale.set(0.2);
-                foodChunkSprite.anchor.set(0.5, -0.8);
-                foodChunkSprite.zIndex = 3;
-                foodBitesSprites.addChild(foodChunkSprite);
-                foodBitesSpritesMap.set(id, foodChunkSprite);
-                amount--;
-                isEmpty = amount <= 0 ? 1 : 0;
-                if (isEmpty) {
-                  stage.removeChild(foodSprite!);
-                  foodProps.delete(otherId);
-                  foodSprites.delete(otherId);
-                  foodCollisionShapes.delete(otherId);
+              } else {
+                overlap -= halfRadius;
+                antBody.x -= overlap * overlapX;
+                antBody.y -= overlap * overlapY;
+                let [amount, isEmpty] = foodProps.get(otherId)!;
+                if (!hasFood && !isEmpty) {
+                  directionTargetX = -directionX;
+                  directionTargetY = -directionY;
+                  makeRandomTurn = false;
+                  speed = 0;
+                  const foodSprite = foodSprites.get(otherId);
+                  if (foodSprite) {
+                    const {
+                      scale,
+                      scale: { x },
+                    } = foodSprite;
+                    const newSize = x - MATH.mapRangeClamped(1, 0, amount, 0, x);
+                    scale.set(newSize);
+                    other.radius = (newSize * radius) / x;
+                  }
+                  hasFood = 1;
+                  const foodChunkSprite = Sprite.from(foodImageTexture);
+                  foodChunkSprite.scale.set(0.2);
+                  foodChunkSprite.anchor.set(0.5, -0.8);
+                  foodChunkSprite.zIndex = 3;
+                  foodBitesSprites.addChild(foodChunkSprite);
+                  foodBitesSpritesMap.set(id, foodChunkSprite);
+                  amount--;
+                  isEmpty = amount <= 0 ? 1 : 0;
+                  if (isEmpty) {
+                    stage.removeChild(foodSprite!);
+                    foodProps.delete(otherId);
+                    foodSprites.delete(otherId);
+                    foodCollisionShapes.delete(otherId);
+                  }
+                  foodProps.set(otherId, [amount, isEmpty]);
+                  pheromoneStrength = maxPheromonesEmission;
                 }
-                foodProps.set(otherId, [amount, isEmpty]);
-                pheromoneStrength = maxPheromonesEmission;
               }
+
               break;
 
             default:
