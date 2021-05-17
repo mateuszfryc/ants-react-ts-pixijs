@@ -8,7 +8,7 @@ import {
 import { CreateAntsColony } from './AntsColony';
 import { makeSomeFood, foodSprites, foodCollisionShapes, foodProps } from './Food';
 
-export const setupSimulation = (container: HTMLElement): void => {
+export function setupSimulation(container: HTMLElement): void {
   const antsCount = 1000;
   const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = setupGraphics(
     container,
@@ -85,4 +85,4 @@ export const setupSimulation = (container: HTMLElement): void => {
 
   graphicsEngine.ticker.add(simulationUpdate);
   graphicsEngine.start();
-};
+}
