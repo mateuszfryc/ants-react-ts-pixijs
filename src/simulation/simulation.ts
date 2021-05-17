@@ -33,6 +33,17 @@ export const setupSimulation = (container: HTMLElement): void => {
   let lastTime = performance.now();
   // AntsColony.releaseOneByOne(nest.x, nest.y);
   AntsColony.throwAllAtOnce();
+  makeSomeFood(
+    ({ id, foodCollisionShape, foodSprite, properties }): void => {
+      foodCollisionShapes.set(id, foodCollisionShape);
+      antsCollisions.insert(foodCollisionShape);
+      foodSprites.set(id, foodSprite);
+      stage.addChild(foodSprite);
+      foodProps.set(id, properties);
+    },
+    nest.x + foodDistanceToNest,
+    nest.y + foodDistanceToNest,
+  );
 
   function simulationUpdate() {
     const frameStartTime = performance.now();
@@ -71,18 +82,6 @@ export const setupSimulation = (container: HTMLElement): void => {
 
     lastTime = frameStartTime;
   }
-
-  makeSomeFood(
-    ({ id, foodCollisionShape, foodSprite, properties }): void => {
-      foodCollisionShapes.set(id, foodCollisionShape);
-      antsCollisions.insert(foodCollisionShape);
-      foodSprites.set(id, foodSprite);
-      stage.addChild(foodSprite);
-      foodProps.set(id, properties);
-    },
-    nest.x + foodDistanceToNest,
-    nest.y + foodDistanceToNest,
-  );
 
   graphicsEngine.ticker.add(simulationUpdate);
   graphicsEngine.start();
