@@ -395,8 +395,6 @@ export function CreateAntsColony(
   }
 
   return {
-    update,
-    nest,
     antsCollisions,
     antsCollisionShapes,
     antsProps,
@@ -404,8 +402,10 @@ export function CreateAntsColony(
     antsSpritesMap,
     getPheromonesCount,
     maxPheromonesEmission,
+    nest,
     releaseOneByOne,
     throwAllAtOnce,
     timers,
+    update,
   };
 }

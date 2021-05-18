@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import styled, { css } from 'styled-components';
+import { observer } from 'mobx-react';
 
 import { Navigation } from 'UI/components/Navigation';
 import { SEO } from 'UI/components/SEO';
 import { updateRendererSize } from 'utils/graphics';
-import { runSimulation } from 'simulation/Simulation';
+import storeContext from 'stores/globalStore';
 import { StatusBar } from '../StatusBar';
 
 export const AppContainer = styled.div(
@@ -24,25 +25,27 @@ export const Content = styled.div(
   `,
 );
 
-export const App: React.FC = () => {
-  const simInitLock = useRef(false);
+export const App: React.FC = observer(() => {
+  const store = useContext(storeContext);
+  const simulationInitalLock = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!simInitLock.current) {
+    if (!simulationInitalLock.current) {
       const { current } = contentRef;
       if (current) {
-        runSimulation(current);
         updateRendererSize(current);
+        store.setSimulationContainer(current);
+        store.createSimulation();
 
         window.addEventListener('resize', () => {
           updateRendererSize(current!);
         });
 
-        simInitLock.current = true;
+        simulationInitalLock.current = true;
       }
     }
-  }, []);
+  }, [store]);
 
   return (
     <AppContainer>
@@ -52,4 +55,4 @@ export const App: React.FC = () => {
       <StatusBar />
     </AppContainer>
   );
-};
+});

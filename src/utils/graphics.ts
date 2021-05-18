@@ -5,7 +5,7 @@ const app = new PIXI.Application({
 });
 app.stop();
 
-type PixiSetupResultType = {
+export type PixiSetupResultType = {
   graphicsEngine: PIXI.Application;
   antsSprites: PIXI.ParticleContainer;
   foodBitesSprites: PIXI.ParticleContainer;

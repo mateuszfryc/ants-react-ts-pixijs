@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { MouseEvent } from 'react';
 import styled, { css } from 'styled-components';
 
 export const ButtonStyled = styled.button(
@@ -18,6 +18,7 @@ export const ButtonStyled = styled.button(
 
 type ButtonPropsType = {
   type?: 'button' | 'submit' | 'reset';
+  onClick?: (event?: MouseEvent<HTMLButtonElement>) => void;
 };
 
 export const Button: React.FC<ButtonPropsType> = ({ type = 'button', ...props }) => {
