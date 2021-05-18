@@ -4,7 +4,7 @@ import styled, { css } from 'styled-components';
 import { Navigation } from 'UI/components/Navigation';
 import { SEO } from 'UI/components/SEO';
 import { updateRendererSize } from 'utils/graphics';
-import { setupSimulation } from 'simulation/simulation';
+import { runSimulation } from 'simulation/Simulation';
 import { StatusBar } from '../StatusBar';
 
 export const AppContainer = styled.div(
@@ -32,7 +32,7 @@ export const App: React.FC = () => {
     if (!simInitLock.current) {
       const { current } = contentRef;
       if (current) {
-        setupSimulation(current);
+        runSimulation(current);
         updateRendererSize(current);
 
         window.addEventListener('resize', () => {

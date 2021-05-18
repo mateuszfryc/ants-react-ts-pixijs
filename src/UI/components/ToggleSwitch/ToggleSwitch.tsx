@@ -13,10 +13,10 @@ export const Label = styled.label(
 );
 
 export const Name = styled(Flex)(
-  ({ theme: { colors, padding } }) => css`
-    font-size: 0.95rem;
+  ({ theme: { colors, fonts, spacings } }) => css`
+    ${fonts.size.paragraph}
     margin-left: 2rem;
-    padding: ${padding.small};
+    padding: ${spacings.S} ${spacings.M};
 
     &::before {
       background-color: ${colors.shadeLight};

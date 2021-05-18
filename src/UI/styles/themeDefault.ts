@@ -12,23 +12,28 @@ export const colorsLibrary: ObjectOfStrings = {
   hightlight: setColor(colors.blueLight),
 };
 
-const fontSizes: ObjectOfNumbers = {
-  sectionTitle: 4,
-  title: 2.4,
-  paragraph: 1.8,
-};
-
-const setFontSize = (size: string): string => {
-  const regularSize: number = fontSizes[size];
-
+const setFontSize = (size: number): string => {
   return `
-        font-size: ${regularSize}rem;
-        line-height: ${regularSize * 1.15}rem;
+        font-size: ${size}rem;
+        line-height: ${size * 1.25}rem;
     `;
 };
 
-const padding = {
-  small: '0.5rem 0.8rem',
+const spacings = {
+  XS: '0.2rem',
+  S: '0.5rem',
+  M: '0.8rem',
+  L: '1.4rem',
+};
+
+const fonts = {
+  size: {
+    S: setFontSize(0.8),
+    paragraph: setFontSize(0.95),
+    lead: setFontSize(1.1),
+    title: setFontSize(2.4),
+    sectionTitle: setFontSize(4),
+  },
 };
 
 export const navigationClosedWidth = 40;
@@ -38,15 +43,14 @@ export const paragraph = `
   color: ${colorsLibrary.shadeUltraLight};
   font-size: 0.9rem;
   line-height: 1.3rem;
-  padding: ${padding.small};
+  padding: ${spacings.M} ${spacings.L};
 `;
 
 export const theme = {
   colors: colorsLibrary,
-  fontSizes,
+  fonts,
   navigationClosedWidth,
   navigationWidth,
-  padding,
+  spacings,
   paragraph,
-  setFontSize,
 };

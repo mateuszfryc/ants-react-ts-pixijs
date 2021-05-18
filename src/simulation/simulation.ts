@@ -8,8 +8,8 @@ import {
 import { CreateAntsColony } from './AntsColony';
 import { makeSomeFood, foodSprites, foodCollisionShapes, foodProps } from './Food';
 
-export function setupSimulation(container: HTMLElement): void {
-  const antsCount = 1000;
+export function runSimulation(container: HTMLElement): void {
+  const antsCount = 100;
   const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = setupGraphics(
     container,
     antsCount,
@@ -54,7 +54,7 @@ export function setupSimulation(container: HTMLElement): void {
     isTabFocused = true;
   });
 
-  function simulationUpdate() {
+  function simulationUpdate(): void {
     if (!isTabFocused) return;
     const frameStartTime = performance.now();
     const deltaSeconds = Math.min((frameStartTime - lastTime) / 1000, 0.5);

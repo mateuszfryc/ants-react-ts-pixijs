@@ -8,12 +8,12 @@ import { colorsLibrary, navigationWidth } from 'UI/styles/themeDefault';
 import { Flex } from 'UI/components/Flex';
 import { NavItem } from './NavItem';
 import { NavItemWithContent } from './NavItemWithContent';
-import { Settings } from './Settings';
+import { Simulation } from './Simulation';
 
 const OpenMenuButton = styled(Flex)(
-  ({ theme: { padding } }) => css`
+  ({ theme: { spacings } }) => css`
     height: 40px;
-    padding: ${padding.small};
+    padding: ${spacings.S} ${spacings.M};
     position: fixed;
     right: 0;
     top: 0;
@@ -51,59 +51,28 @@ export const Navigation: React.FC = () => {
           <NavItem style={{ fontWeight: 'bold', justifyContent: 'space-between' }}>
             <Flex>
               <MenuIcon color={colorsLibrary.secondary} style={{ marginRight: '0.5rem' }} />
-              Menu
+              Ants Simulation
             </Flex>
             <Flex as='button' type='button' onClick={() => setIsOpen(false)}>
               <CloseIcon color={colorsLibrary.secondary} />
             </Flex>
           </NavItem>
 
-          <Settings />
+          <Simulation />
 
-          <NavItemWithContent title='Users'>
+          <NavItemWithContent title='Graphics'>
             <Paragraph>
               Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
               incididunt ut labore et dolore magna aliqua.
             </Paragraph>
           </NavItemWithContent>
 
-          <NavItemWithContent title='Profile'>
+          <NavItemWithContent title='Debug Draw'>
             <Paragraph>
               Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
               incididunt ut labore et dolore magna aliqua.
             </Paragraph>
           </NavItemWithContent>
-
-          <NavItem>
-            <Paragraph>
-              You can place Menu items however you&apos;d like, mixing buttons that will open
-              submenus containers with plane text.
-            </Paragraph>
-          </NavItem>
-
-          <NavItemWithContent title='Contact'>
-            <Paragraph>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-              incididunt ut labore et dolore magna aliqua.
-            </Paragraph>
-          </NavItemWithContent>
-
-          <NavItem isColumn>
-            <Paragraph>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-              incididunt ut labore et dolore magna aliqua. Lorem ipsum dolor sit amet, consectetur
-              adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-              incididunt ut labore et dolore magna aliqua.
-            </Paragraph>
-            <Paragraph>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-              incididunt ut labore et dolore magna aliqua. Lorem ipsum dolor sit amet, consectetur
-              adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-              incididunt ut labore et dolore magna aliqua.
-            </Paragraph>
-          </NavItem>
         </ScrollVertical>
       </NavigationOpen>
     </>
