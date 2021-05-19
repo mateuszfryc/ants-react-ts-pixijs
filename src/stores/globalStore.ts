@@ -1,6 +1,6 @@
 import { createContext } from 'react';
 import { makeObservable, observable, action } from 'mobx';
-import { Simulation } from 'simulation/simulation';
+import { Simulation } from 'simulation/Simulation';
 import { SimulationSettingsType } from 'simulation/types';
 
 export class GlobalStore {
