@@ -22,6 +22,7 @@ export class GlobalStore {
   }
 
   createSimulation(antsCount?: number): void {
+    if (this.currentSimulation) this.currentSimulation.prepeareToBeRemoved();
     if (this.simulationContainer && (this.simulationSettings.antsCount || antsCount)) {
       this.currentSimulation = new Simulation(
         this.simulationContainer,

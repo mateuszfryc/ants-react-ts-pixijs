@@ -109,4 +109,13 @@ export class Simulation {
     graphicsEngine.ticker.add(simulationUpdate);
     graphicsEngine.start();
   }
+
+  prepeareToBeRemoved(): void {
+    this.graphics.stage.children.length = 0;
+    this.graphics.foodBitesSprites.children.length = 0;
+    this.graphics.antsSprites.children.length = 0;
+    this.graphics._draw.clear();
+    this.graphics.graphicsEngine.ticker.stop();
+    // this.graphics.graphicsEngine.ticker.destroy();
+  }
 }
