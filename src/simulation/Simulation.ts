@@ -25,9 +25,9 @@ export class Simulation {
     this.run();
   }
 
-  run(): void {
+  private run(): void {
     const { antsCount } = this;
-    const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = this.graphics;
+    const { graphicsEngine, stage, antsSprites, foodBitesSprites } = this.graphics;
     const { width: worldWidth, height: worldHeight } = this.worldBounds;
 
     const AntsColony = CreateAntsColony(
@@ -110,12 +110,12 @@ export class Simulation {
     graphicsEngine.start();
   }
 
-  prepeareToBeRemoved(): void {
-    this.graphics.stage.children.length = 0;
-    this.graphics.foodBitesSprites.children.length = 0;
-    this.graphics.antsSprites.children.length = 0;
-    this.graphics._draw.clear();
-    this.graphics.graphicsEngine.ticker.stop();
-    // this.graphics.graphicsEngine.ticker.destroy();
+  public prepeareToBeRemoved(): void {
+    const { graphics: g } = this;
+    g.stage.children.length = 0;
+    g.foodBitesSprites.children.length = 0;
+    g.antsSprites.children.length = 0;
+    g._draw.clear();
+    g.graphicsEngine.ticker.stop();
   }
 }
