@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+import { Container, DisplayObject, ParticleContainer, Sprite, Texture } from 'pixi.js';
 
 import AntImage from 'assets/ant-red.png';
 import { Circle } from 'simulation/collisions/circle';
@@ -15,17 +15,16 @@ import {
   foodProps,
 } from './Food';
 import { createNest } from './Nest';
-import { setupAntsPheromones } from './Pheromones';
+import { Pheromones } from './Pheromones';
 
 export function CreateAntsColony(
   antsCount: number,
-  stage: PIXI.Container,
-  antsSprites: PIXI.ParticleContainer,
-  foodBitesSprites: PIXI.ParticleContainer,
+  stage: Container,
+  antsSprites: ParticleContainer,
+  foodBitesSprites: ParticleContainer,
   worldWidth: number,
   worldHeight: number,
 ): any {
-  const { Sprite } = PIXI;
   const { min, atan2, cos, sin, abs, sqrt } = Math;
   const antsScale = 3;
   const antsProps: number[][] = [];
@@ -42,11 +41,11 @@ export function CreateAntsColony(
   const randomDirectionMaxAngle = 1;
   const directionChangeMultiplier = 0.16;
 
-  const antTexture = PIXI.Texture.from(AntImage);
+  const antTexture = Texture.from(AntImage);
   const timers = new Map<number, Timer>();
 
   let lastCreatedAntId = 0;
-  const antsSpritesMap = new Map<number, PIXI.Sprite>();
+  const antsSpritesMap = new Map<number, Sprite>();
 
   const idIndex = 0;
   const directionXIndex = 1;
@@ -70,7 +69,7 @@ export function CreateAntsColony(
       id,
     );
 
-    const antSprite = PIXI.Sprite.from(antTexture);
+    const antSprite = Sprite.from(antTexture);
     antSprite.scale.set(antsScale * 0.095);
     antSprite.anchor.set(0.5);
     antSprite.zIndex = 1;
@@ -132,14 +131,10 @@ export function CreateAntsColony(
     }, antsCount);
   };
 
-  const {
-    addPheromone,
-    getPheromonesCount,
-    pheromoneEmissionTimer,
-    updateAntSensors,
-    updatePheromones,
-  } = setupAntsPheromones(antsCount, antsScale, stage);
+  const pheromones = new Pheromones(antsCount, antsScale, 0.066 * antsScale);
+  stage.addChild((pheromones.sprites as unknown) as DisplayObject);
 
+  const pheromonesSteeringSensitivity = 0.1;
   const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, NEST_VISIBLE_AREA } = TAGS;
   const collisionTestResult: number[] = [];
   const nest = createNest(worldWidth * 0.5, worldHeight * 0.5, stage, antsCollisions);
@@ -147,7 +142,7 @@ export function CreateAntsColony(
 
   function update(deltaSeconds: number, frameStartTime: number): void {
     let antsOnScreenCounter = 0;
-    const shouldSpawnPheromones = pheromoneEmissionTimer.update(deltaSeconds);
+    const shouldSpawnPheromones = pheromones.pheromoneEmissionTimer.update(deltaSeconds);
 
     antsCollisionShapes.forEach((ant: Circle) => {
       const { id } = ant;
@@ -322,22 +317,24 @@ export function CreateAntsColony(
         }
       }
 
-      const [pheromoneSteerForceX, pheromoneSteerForceY] = updateAntSensors(
+      const [pheromoneSteerForceX, pheromoneSteerForceY] = pheromones.getDirectionFromSensors(
         x,
         y,
         directionX,
         directionY,
-        hasFood,
+        antsScale,
+        hasFood > 0,
         frameStartTime,
       );
 
       /**
-       * 0.1 helps here to make movement towards
+       * pheromonesSteeringSensitivity
+       * helps here to make movement towards
        * pheromones more fluent. The higher this number
        * the more sudden turns towards pheromones are.
        */
-      directionTargetX += pheromoneSteerForceX * 0.1;
-      directionTargetY += pheromoneSteerForceY * 0.1;
+      directionTargetX += pheromoneSteerForceX * pheromonesSteeringSensitivity;
+      directionTargetY += pheromoneSteerForceY * pheromonesSteeringSensitivity;
 
       /**
        * In this setup radian angle = PI points up,
@@ -374,7 +371,7 @@ export function CreateAntsColony(
       }
 
       if (pheromoneStrength > 0 && shouldSpawnPheromones && !isStandingOnPheromone) {
-        addPheromone(x, y, hasFood, frameStartTime);
+        pheromones.addPheromone(x, y, hasFood > 0, frameStartTime);
         pheromoneStrength--;
       }
 
@@ -391,7 +388,7 @@ export function CreateAntsColony(
       ant[pheromoneStrengthIndex] = pheromoneStrength;
     });
 
-    updatePheromones(frameStartTime);
+    pheromones.updatePheromones(frameStartTime);
   }
 
   return {
@@ -400,7 +397,7 @@ export function CreateAntsColony(
     antsProps,
     antsScale,
     antsSpritesMap,
-    getPheromonesCount,
+    getPheromonesCount: () => pheromones.getPheromonesCount(),
     maxPheromonesEmission,
     nest,
     releaseOneByOne,
