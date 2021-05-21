@@ -14,7 +14,6 @@ import {
   foodProps,
   foodImageTexture,
 } from './Food';
-import { createNest } from './Nest';
 import { Pheromones } from './Pheromones';
 
 export function CreateAntsColony(
@@ -142,7 +141,6 @@ export function CreateAntsColony(
   const pheromonesSteeringSensitivity = 0.1;
   const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, NEST_VISIBLE_AREA } = TAGS;
   const collisionTestResult: number[] = [];
-  const nest = createNest(worldWidth * 0.5, worldHeight * 0.5, stage, antsCollisions);
   antsCollisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
 
   function update(deltaSeconds: number, frameStartTime: number): void {
@@ -401,7 +399,6 @@ export function CreateAntsColony(
     antsSpritesMap,
     getPheromonesCount: () => pheromones.getPheromonesCount(),
     maxPheromonesEmission,
-    nest,
     pheromones,
     releaseOneByOne,
     throwAllAtOnce,

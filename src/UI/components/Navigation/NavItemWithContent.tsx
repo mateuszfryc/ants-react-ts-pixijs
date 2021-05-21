@@ -3,7 +3,6 @@ import styled, { css, useTheme } from 'styled-components';
 
 import { ArrowIcon } from 'UI/icons';
 import { ScrollVertical } from 'UI/components/ScrollVertical';
-import { navigationWidth } from 'UI/styles/themeDefault';
 import { animateValue } from 'UI/utils/animateValue';
 import { NavItem } from './NavItem';
 import { Paragraph } from '../Paragraph';
@@ -58,7 +57,7 @@ type MenuItemType = {
 };
 
 export const NavItemWithContent: React.FC<MenuItemType> = ({ children, title }) => {
-  const { colors } = useTheme();
+  const { colors, navigationWidth } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [leftOffset, setLeftOffset] = useState(navigationWidth);
   const openItem = (): void => {
@@ -104,7 +103,7 @@ export const NavItemWithContent: React.FC<MenuItemType> = ({ children, title }) 
               >
                 {title}
               </NavItem>
-              <div>{children}</div>
+              <div style={{ width: `${navigationWidth}px` }}>{children}</div>
             </div>
           </ScrollVertical>
         </ContentWrapper>

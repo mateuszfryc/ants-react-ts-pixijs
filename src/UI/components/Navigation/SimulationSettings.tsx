@@ -1,5 +1,6 @@
-import React, { useContext } from 'react';
-import { useTheme } from 'styled-components';
+import React, { ChangeEvent, useContext } from 'react';
+import styled, { css, useTheme } from 'styled-components';
+import { action } from 'mobx';
 import { observer } from 'mobx-react';
 
 import { InputField } from 'UI/components/InputField';
@@ -8,27 +9,75 @@ import { Button } from '../Button';
 import { Paragraph } from '../Paragraph';
 import { NavItem } from './NavItem';
 import { NavItemWithContent } from './NavItemWithContent';
+import { Flex } from '../Flex';
+
+const Option = styled(Flex)(
+  ({ theme: { spacings } }) => css`
+    display: grid;
+    grid-template-columns: 50% 50%;
+    margin-bottom: ${spacings.M};
+  `,
+);
 
 export const SimulationSettings: React.FC = observer(() => {
-  const store = useContext(storeContext);
   const { spacings } = useTheme();
+  const store = useContext(storeContext);
+  const { simulationSettings } = store;
 
   return (
     <NavItemWithContent title='Simulation'>
       <Paragraph style={{ padding: spacings.M }}>
         The following settings require to restart simulation after each change.
       </Paragraph>
-      <NavItem>
-        <InputField
-          label='Number of ants'
-          inLineLabel
-          type='number'
-          name='ants-count-field'
-          onChange={(value: string) => {
-            store.setAntsCount(Number.parseInt(value, 10));
-          }}
-        />
-      </NavItem>
+      <Paragraph as='div'>
+        <Option>
+          <span>Ants total count</span>
+          <InputField
+            name='ants-count-field'
+            type='number'
+            value={`${simulationSettings.antsCount}`}
+            onChange={action((event: ChangeEvent<HTMLInputElement>) => {
+              store.setAntsCount(Number.parseInt(event.target.value, 10));
+            })}
+          />
+        </Option>
+        <Option>
+          <span>Nest position</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '15px 1fr 25px 1fr' }}>
+            <span>x</span>
+            <div>
+              <InputField
+                style={{ width: '100%' }}
+                type='number'
+                value={`${simulationSettings.nestPositon.x}`}
+                name='next-position-x'
+                onChange={action((event: ChangeEvent<HTMLInputElement>) => {
+                  store.setNestPosition({
+                    ...simulationSettings.nestPositon,
+                    x: Number.parseInt(event.target.value, 10),
+                  });
+                })}
+              />
+            </div>
+            <div style={{ textAlign: 'center' }}>y</div>
+            <div>
+              <InputField
+                style={{ width: '100%' }}
+                type='number'
+                value={`${simulationSettings.nestPositon.y}`}
+                name='next-position-y'
+                onChange={action((event: ChangeEvent<HTMLInputElement>) => {
+                  store.setNestPosition({
+                    ...simulationSettings.nestPositon,
+                    y: Number.parseInt(event.target.value, 10),
+                  });
+                })}
+              />
+            </div>
+          </div>
+        </Option>
+      </Paragraph>
+
       <NavItem>
         <Button onClick={() => store.createSimulation()}>Restart simulation</Button>
       </NavItem>

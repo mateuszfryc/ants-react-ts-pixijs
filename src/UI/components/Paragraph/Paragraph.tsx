@@ -1,6 +1,6 @@
 import styled, { css } from 'styled-components';
 
-export const Paragraph = styled.p(
+export const Paragraph = styled.div(
   ({ theme: { colors, spacings } }) => css`
     color: ${colors.shadeUltraLight};
     font-size: 0.9rem;

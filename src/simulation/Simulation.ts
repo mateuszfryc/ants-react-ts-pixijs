@@ -5,28 +5,28 @@ import {
   setupFPSDisplay,
   setupPheromonesCounter,
 } from 'simulation/debug';
+import { SimulationSettings, Size } from 'simulation/types';
 import { CreateAntsColony } from './AntsColony';
 import { makeSomeFood, foodSprites, foodCollisionShapes, foodProps } from './Food';
-import { Size } from './types';
+import { createNest } from './Nest';
 
 export class Simulation {
-  antsCount: number;
+  settings: SimulationSettings;
   graphics: PixiSetupResultType;
   worldBounds: Size;
 
-  constructor(container: HTMLElement, antsCount = 100) {
-    this.antsCount = antsCount;
-    this.graphics = setupGraphics(container, antsCount);
+  constructor(container: HTMLElement, simulationSettings: SimulationSettings) {
+    this.settings = simulationSettings;
+    this.graphics = setupGraphics(container, simulationSettings.antsCount);
     this.worldBounds = {
       width: container.offsetWidth,
       height: container.offsetHeight,
     };
 
-    this.run();
+    this.run(simulationSettings);
   }
 
-  private run(): void {
-    const { antsCount } = this;
+  private run({ antsCount, nestPositon }: SimulationSettings): void {
     const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = this.graphics;
     const { width: worldWidth, height: worldHeight } = this.worldBounds;
 
@@ -41,15 +41,10 @@ export class Simulation {
       worldWidth,
       worldHeight,
     );
-    const {
-      antsCollisions,
-      antsCollisionShapes,
-      nest,
-      getPheromonesCount,
-      pheromones,
-    } = AntsColony;
+    const { antsCollisions, antsCollisionShapes, getPheromonesCount, pheromones } = AntsColony;
     // eslint-disable-next-line no-console
     console.timeEnd(initLabel);
+    const nest = createNest(nestPositon.x, nestPositon.y, stage, antsCollisions);
 
     const { updateFPSDisplay } = setupFPSDisplay();
     const { updateAntsCounter } = setupAntCounter();
@@ -66,8 +61,8 @@ export class Simulation {
         stage.addChild(foodSprite);
         foodProps.set(id, properties);
       },
-      nest.x + foodDistanceToNest,
-      nest.y + foodDistanceToNest,
+      worldWidth - 150,
+      worldHeight - 150,
     );
 
     let isTabFocused = true;
