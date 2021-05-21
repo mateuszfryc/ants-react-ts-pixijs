@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 
 import { MenuIcon, CloseIcon } from 'UI/icons';
 import { Paragraph } from 'UI/components/Paragraph';
 import { ScrollVertical } from 'UI/components/ScrollVertical';
-import { colorsLibrary, navigationWidth } from 'UI/styles/themeDefault';
 import { Flex } from 'UI/components/Flex';
 import { NavItem } from './NavItem';
 import { NavItemWithContent } from './NavItemWithContent';
-import { Simulation } from './Simulation';
+import { SimulationSettings } from './SimulationSettings';
 
 const OpenMenuButton = styled(Flex)(
   ({ theme: { spacings } }) => css`
@@ -21,7 +20,7 @@ const OpenMenuButton = styled(Flex)(
 );
 
 const NavigationOpen = styled.div(
-  ({ theme: { colors } }) => css`
+  ({ theme: { colors, navigationWidth } }) => css`
     align-items: flex-start;
     background-color: ${colors.primary};
     color: ${colors.secondary};
@@ -40,25 +39,26 @@ const NavigationOpen = styled.div(
 
 export const Navigation: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { colors, navigationWidth } = useTheme();
 
   return (
     <>
       <OpenMenuButton as='button' type='button' onClick={() => setIsOpen(true)}>
-        <MenuIcon color={colorsLibrary.secondary} />
+        <MenuIcon color={colors.secondary} />
       </OpenMenuButton>
       <NavigationOpen style={{ right: isOpen ? 0 : `${-navigationWidth}px` }}>
         <ScrollVertical>
           <NavItem style={{ fontWeight: 'bold', justifyContent: 'space-between' }}>
             <Flex>
-              <MenuIcon color={colorsLibrary.secondary} style={{ marginRight: '0.5rem' }} />
+              <MenuIcon color={colors.secondary} style={{ marginRight: '0.5rem' }} />
               Ants Simulation
             </Flex>
             <Flex as='button' type='button' onClick={() => setIsOpen(false)}>
-              <CloseIcon color={colorsLibrary.secondary} />
+              <CloseIcon color={colors.secondary} />
             </Flex>
           </NavItem>
 
-          <Simulation />
+          <SimulationSettings />
 
           <NavItemWithContent title='Graphics'>
             <Paragraph>

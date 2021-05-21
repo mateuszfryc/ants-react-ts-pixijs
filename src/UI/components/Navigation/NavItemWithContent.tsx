@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 
 import { ArrowIcon } from 'UI/icons';
 import { ScrollVertical } from 'UI/components/ScrollVertical';
-import { colorsLibrary, navigationWidth } from 'UI/styles/themeDefault';
+import { navigationWidth } from 'UI/styles/themeDefault';
 import { animateValue } from 'UI/utils/animateValue';
 import { NavItem } from './NavItem';
+import { Paragraph } from '../Paragraph';
 
 const NavLink = styled(NavItem)(
   ({ theme: { colors } }) => css`
@@ -25,9 +26,8 @@ const NavLink = styled(NavItem)(
   `,
 );
 
-const ContentWrapper = styled.div(
-  ({ theme: { colors, paragraph } }) => css`
-    ${paragraph}
+const ContentWrapper = styled(Paragraph)(
+  ({ theme: { colors } }) => css`
     background-color: ${colors.primary};
     padding: 0;
     position: absolute;
@@ -58,6 +58,7 @@ type MenuItemType = {
 };
 
 export const NavItemWithContent: React.FC<MenuItemType> = ({ children, title }) => {
+  const { colors } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [leftOffset, setLeftOffset] = useState(navigationWidth);
   const openItem = (): void => {
@@ -81,14 +82,14 @@ export const NavItemWithContent: React.FC<MenuItemType> = ({ children, title }) 
     <>
       <NavLink as='button' type='button' onClick={openItem}>
         {title}
-        <ArrowIcon color={colorsLibrary.shadeLight} />
+        <ArrowIcon color={colors.shadeLight} />
       </NavLink>
       {isOpen && (
         <ContentWrapper style={{ left: leftOffset }}>
           <ScrollVertical>
             <GoBackButton as='button' type='button' onClick={closeItem}>
               <ArrowIcon
-                color={colorsLibrary.shadeUltraLight}
+                color={colors.shadeUltraLight}
                 style={{ marginRight: '0.5rem' }}
                 transform='scaleX(-1)'
               />
@@ -97,7 +98,7 @@ export const NavItemWithContent: React.FC<MenuItemType> = ({ children, title }) 
             <div>
               <NavItem
                 style={{
-                  color: colorsLibrary.hightlight,
+                  color: colors.hightlight,
                   fontWeight: 'bold',
                 }}
               >

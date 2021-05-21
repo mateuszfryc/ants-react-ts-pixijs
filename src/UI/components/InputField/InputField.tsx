@@ -26,7 +26,7 @@ const Input = styled.input(
     color: ${colors.shadeUltraLight};
     display: block;
     margin-left: 10px;
-    padding: ${spacings.XS} ${spacings.S};
+    padding: ${spacings.XS};
     width: 50%;
   `,
 );

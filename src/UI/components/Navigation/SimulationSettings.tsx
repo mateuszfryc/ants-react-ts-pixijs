@@ -1,4 +1,5 @@
 import React, { useContext } from 'react';
+import { useTheme } from 'styled-components';
 import { observer } from 'mobx-react';
 
 import { InputField } from 'UI/components/InputField';
@@ -8,12 +9,15 @@ import { Paragraph } from '../Paragraph';
 import { NavItem } from './NavItem';
 import { NavItemWithContent } from './NavItemWithContent';
 
-export const Simulation: React.FC = observer(() => {
+export const SimulationSettings: React.FC = observer(() => {
   const store = useContext(storeContext);
+  const { spacings } = useTheme();
 
   return (
     <NavItemWithContent title='Simulation'>
-      <Paragraph>The following settings require to restart simulation after each change.</Paragraph>
+      <Paragraph style={{ padding: spacings.M }}>
+        The following settings require to restart simulation after each change.
+      </Paragraph>
       <NavItem>
         <InputField
           label='Number of ants'

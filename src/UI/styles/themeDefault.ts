@@ -1,16 +1,7 @@
-import { setColor } from 'UI/utils/styles';
-import { ObjectOfNumbers, ObjectOfStrings } from 'UI/types/baseTypes';
-import * as colors from './colors';
+import { DefaultTheme } from 'styled-components';
 
-export const colorsLibrary: ObjectOfStrings = {
-  primary: setColor(colors.gray40),
-  secondary: setColor(colors.white),
-  shadeDark: setColor(colors.gray60),
-  shadeMid: setColor(colors.gray80),
-  shadeLight: setColor(colors.gray100),
-  shadeUltraLight: setColor(colors.gray190),
-  hightlight: setColor(colors.blueLight),
-};
+import { setColor } from 'UI/utils/styles';
+import * as colors from './colors';
 
 const setFontSize = (size: number): string => {
   return `
@@ -39,18 +30,18 @@ const fonts = {
 export const navigationClosedWidth = 40;
 export const navigationWidth = 320;
 
-export const paragraph = `
-  color: ${colorsLibrary.shadeUltraLight};
-  font-size: 0.9rem;
-  line-height: 1.3rem;
-  padding: ${spacings.M} ${spacings.L};
-`;
-
-export const theme = {
-  colors: colorsLibrary,
+export const theme: DefaultTheme = {
+  colors: {
+    primary: setColor(colors.gray40),
+    secondary: setColor(colors.white),
+    shadeDark: setColor(colors.gray60),
+    shadeMid: setColor(colors.gray80),
+    shadeLight: setColor(colors.gray100),
+    shadeUltraLight: setColor(colors.gray190),
+    hightlight: setColor(colors.blueLight),
+  },
   fonts,
   navigationClosedWidth,
   navigationWidth,
   spacings,
-  paragraph,
 };
