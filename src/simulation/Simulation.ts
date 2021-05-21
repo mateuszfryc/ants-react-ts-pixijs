@@ -6,7 +6,7 @@ import {
   setupPheromonesCounter,
 } from 'simulation/debug';
 import { SimulationSettings, Size } from 'simulation/types';
-import { CreateAntsColony } from './AntsColony';
+import { TheAntColony } from './AntsColony';
 import { makeSomeFood, foodSprites, foodCollisionShapes, foodProps } from './Food';
 import { createNest } from './Nest';
 
@@ -33,7 +33,7 @@ export class Simulation {
     const initLabel = 'CreateAntsColony execution time';
     // eslint-disable-next-line no-console
     console.time(initLabel);
-    const AntsColony = CreateAntsColony(
+    const AntsColony = new TheAntColony(
       antsCount,
       stage,
       antsSprites,
@@ -41,10 +41,10 @@ export class Simulation {
       worldWidth,
       worldHeight,
     );
-    const { antsCollisions, antsCollisionShapes, getPheromonesCount, pheromones } = AntsColony;
+    const { collisions, antsCollisionShapes, getPheromonesCount, pheromones } = AntsColony;
     // eslint-disable-next-line no-console
     console.timeEnd(initLabel);
-    const nest = createNest(nestPositon.x, nestPositon.y, stage, antsCollisions);
+    const nest = createNest(nestPositon.x, nestPositon.y, stage, collisions);
 
     const { updateFPSDisplay } = setupFPSDisplay();
     const { updateAntsCounter } = setupAntCounter();
@@ -56,7 +56,7 @@ export class Simulation {
     makeSomeFood(
       ({ id, foodCollisionShape, foodSprite, properties }): void => {
         foodCollisionShapes.set(id, foodCollisionShape);
-        antsCollisions.insert(foodCollisionShape);
+        collisions.insert(foodCollisionShape);
         foodSprites.set(id, foodSprite);
         stage.addChild(foodSprite);
         foodProps.set(id, properties);
@@ -78,9 +78,14 @@ export class Simulation {
       if (!isTabFocused) return;
       const frameStartTime = performance.now();
       const deltaSeconds = Math.min((frameStartTime - lastTime) / 1000, 0.5);
-      let antsOnScreenCounter = 0;
 
-      AntsColony.update(deltaSeconds, frameStartTime);
+      const antsOnScreenCount = AntsColony.update(
+        deltaSeconds,
+        frameStartTime,
+        stage,
+        worldWidth,
+        worldHeight,
+      );
 
       // _draw.clear();
       // _draw.lineStyle(1, 0xff0000);
@@ -106,9 +111,9 @@ export class Simulation {
 
       if (debugTimer.update(deltaSeconds)) {
         updateFPSDisplay(deltaSeconds);
-        updatePheromonesCounter(getPheromonesCount());
+        updatePheromonesCounter(AntsColony.getPheromonesCount());
         const { size } = antsCollisionShapes;
-        updateAntsCounter(size, size - antsOnScreenCounter);
+        updateAntsCounter(size, size - antsOnScreenCount);
       }
 
       lastTime = frameStartTime;

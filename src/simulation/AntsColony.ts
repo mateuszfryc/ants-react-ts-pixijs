@@ -16,48 +16,62 @@ import {
 } from './Food';
 import { Pheromones } from './Pheromones';
 
-export function CreateAntsColony(
-  antsCount: number,
-  stage: Container,
-  antsSprites: ParticleContainer,
-  foodBitesSprites: ParticleContainer,
-  worldWidth: number,
-  worldHeight: number,
-): any {
-  const { min, atan2, cos, sin, abs, sqrt } = Math;
-  const antsScale = 3;
-  const antsProps: number[][] = [];
-  antsProps.length = antsCount;
-  /**
-   * Desribes how many single pheromones
-   * can be emitted before ant
-   * will have to visit nest or find food,
-   * to start emitting pheromones again.
-   */
-  const maxPheromonesEmission = 64;
-  const antsCollisions = new Collisions();
-  const antsCollisionShapes = new Map<number, Circle>();
-  const randomDirectionMaxAngle = 1;
-  const directionChangeMultiplier = 0.16;
+export class TheAntColony {
+  antsProps: number[][] = [];
+  antsCollisionShapes = new Map<number, Circle>();
+  antsSpritesMap = new Map<number, Sprite>();
+  antTexture = Texture.from(AntImage);
+  collisions = new Collisions();
+  timers = new Map<number, Timer>();
+  pheromonesSteeringSensitivity = 0.1;
+  directionChangeMultiplier = 0.16;
+  randomDirectionMaxAngle = 1;
+  maxPheromonesEmission = 64;
+  lastCreatedAntId = 0;
+  antsScale = 3;
+  tags = TAGS;
+  indexes = {
+    idIndex: 0,
+    directionXIndex: 1,
+    directionYIndex: 2,
+    randomDirectionXIndex: 3,
+    randomDirectionYIndex: 4,
+    speedIndex: 5,
+    speedTargetIndex: 6,
+    maxSpeedIndex: 7,
+    hasFoodIndex: 8,
+    pheromoneStrengthIndex: 9,
+  };
 
-  const antTexture = Texture.from(AntImage);
-  const timers = new Map<number, Timer>();
+  antsCount: number;
+  antsSprites: ParticleContainer;
+  foodBitesSprites: ParticleContainer;
+  pheromones: Pheromones;
 
-  let lastCreatedAntId = 0;
-  const antsSpritesMap = new Map<number, Sprite>();
+  constructor(
+    antsCount: number,
+    stage: Container,
+    antsSprites: ParticleContainer,
+    foodBitesSprites: ParticleContainer,
+    worldWidth: number,
+    worldHeight: number,
+  ) {
+    this.antsCount = antsCount;
+    this.antsProps.length = antsCount;
+    this.antsSprites = antsSprites;
+    this.foodBitesSprites = foodBitesSprites;
+    this.pheromones = new Pheromones(
+      antsCount,
+      this.antsScale,
+      Math.max(worldWidth, worldHeight) + 1,
+    );
 
-  const idIndex = 0;
-  const directionXIndex = 1;
-  const directionYIndex = 2;
-  const randomDirectionXIndex = 3;
-  const randomDirectionYIndex = 4;
-  const speedIndex = 5;
-  const speedTargetIndex = 6;
-  const maxSpeedIndex = 7;
-  const hasFoodIndex = 8;
-  const pheromoneStrengthIndex = 9;
+    stage.addChild((this.pheromones.sprites as unknown) as DisplayObject);
+    this.collisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
+  }
 
-  function spawnAnt(id: number, x: number, y: number): any {
+  private spawnAnt(id: number, x: number, y: number): boolean {
+    const { antsScale, antTexture } = this;
     const antCollisionShape = new Circle(
       x,
       y,
@@ -96,56 +110,70 @@ export function CreateAntsColony(
       pheromoneStrength,
     ];
 
-    antsCollisionShapes.set(id, antCollisionShape);
-    antsCollisions.insert(antCollisionShape as Shape);
-    antsSpritesMap.set(id, antSprite);
-    antsSprites.addChild(antSprite);
-    timers.set(id, rotationChangeTimer);
-    antsProps[id] = properties;
-    lastCreatedAntId++;
+    this.antsCollisionShapes.set(id, antCollisionShape);
+    this.collisions.insert(antCollisionShape as Shape);
+    this.antsSpritesMap.set(id, antSprite);
+    this.antsSprites.addChild(antSprite);
+    this.timers.set(id, rotationChangeTimer);
+    this.antsProps[id] = properties;
+    this.lastCreatedAntId++;
 
-    return antsCollisionShapes.size < antsCount;
+    return this.antsCollisionShapes.size < this.antsCount;
   }
 
-  function releaseOneByOne(xSpawn: number, ySpawn: number): void {
+  public releaseOneByOne(xSpawn: number, ySpawn: number): void {
     setTimeout(() => {
-      const shouldSpawnNextAnt = spawnAnt(
-        lastCreatedAntId,
+      const shouldSpawnNextAnt = this.spawnAnt(
+        this.lastCreatedAntId,
         xSpawn + MATH.randomInRange(-10, 10),
         ySpawn + MATH.randomInRange(-10, 10),
       );
       if (shouldSpawnNextAnt) {
-        releaseOneByOne(xSpawn, ySpawn);
+        this.releaseOneByOne(xSpawn, ySpawn);
       }
     }, 0);
   }
 
-  const throwAllAtOnce = (): void => {
+  public throwAllAtOnce(worldWidth: number, worldHeight: number): void {
     doNTimes(() => {
-      spawnAnt(
-        lastCreatedAntId,
+      this.spawnAnt(
+        this.lastCreatedAntId,
         MATH.randomInRange(10, worldWidth - 10),
         MATH.randomInRange(10, worldHeight - 10),
       );
-    }, antsCount);
-  };
+    }, this.antsCount);
+  }
 
-  const initLabel = 'Pheromones build time';
-  // eslint-disable-next-line no-console
-  console.time(initLabel);
-  const pheromones = new Pheromones(antsCount, antsScale, Math.max(worldWidth, worldHeight) + 1);
-  stage.addChild((pheromones.sprites as unknown) as DisplayObject);
-  // eslint-disable-next-line no-console
-  console.timeEnd(initLabel);
-
-  const pheromonesSteeringSensitivity = 0.1;
-  const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, NEST_VISIBLE_AREA } = TAGS;
-  const collisionTestResult: number[] = [];
-  antsCollisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
-
-  function update(deltaSeconds: number, frameStartTime: number): void {
+  public update(
+    deltaSeconds: number,
+    frameStartTime: number,
+    stage: Container,
+    worldWidth: number,
+    worldHeight: number,
+  ): number {
+    const {
+      pheromones,
+      antsProps,
+      indexes: {
+        idIndex,
+        directionXIndex,
+        directionYIndex,
+        randomDirectionXIndex,
+        randomDirectionYIndex,
+        speedIndex,
+        speedTargetIndex,
+        hasFoodIndex,
+        pheromoneStrengthIndex,
+      },
+      antsCollisionShapes,
+      collisions,
+      foodBitesSprites,
+      maxPheromonesEmission,
+      tags: { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, NEST_VISIBLE_AREA },
+    } = this;
     let antsOnScreenCounter = 0;
     const shouldSpawnPheromones = pheromones.pheromoneEmissionTimer.update(deltaSeconds);
+    const collisionTestResult: number[] = [];
 
     antsCollisionShapes.forEach((ant: Circle) => {
       const { id } = ant;
@@ -155,7 +183,7 @@ export function CreateAntsColony(
       ant.y += speed * props[directionYIndex] * deltaSeconds;
     });
 
-    antsCollisions.update();
+    collisions.update();
 
     antsProps.forEach((ant: number[]) => {
       let [
@@ -176,8 +204,8 @@ export function CreateAntsColony(
       let speedInterpolationSpeed = 1;
       let makeRandomTurn = true;
 
-      for (const other of antsCollisions.getPotentials(antBody as Shape)) {
-        if (antsCollisions.areBodiesColliding(antBody as Shape, other, collisionTestResult)) {
+      for (const other of collisions.getPotentials(antBody as Shape)) {
+        if (collisions.areBodiesColliding(antBody as Shape, other, collisionTestResult)) {
           let [overlap, overlapX, overlapY] = collisionTestResult;
           const { id: otherId, tag, radius } = other;
 
@@ -292,26 +320,26 @@ export function CreateAntsColony(
 
       const { x, y } = antBody;
 
-      const rotationChangeTImer = timers.get(id);
+      const rotationChangeTImer = this.timers.get(id);
       if (rotationChangeTImer!.update(deltaSeconds)) {
         const angle =
-          atan2(directionY, directionX) +
-          MATH.randomInRange(0, randomDirectionMaxAngle) * MATH.randomSign();
-        randomDirectionX = cos(angle);
-        randomDirectionY = sin(angle);
+          Math.atan2(directionY, directionX) +
+          MATH.randomInRange(0, this.randomDirectionMaxAngle) * MATH.randomSign();
+        randomDirectionX = Math.cos(angle);
+        randomDirectionY = Math.sin(angle);
       }
 
       if (makeRandomTurn) {
-        const xABS = abs(randomDirectionX);
+        const xABS = Math.abs(randomDirectionX);
         if (xABS > 0) {
-          const partOfComponent = randomDirectionX * directionChangeMultiplier * (1 / xABS);
+          const partOfComponent = randomDirectionX * this.directionChangeMultiplier * (1 / xABS);
           directionTargetX += partOfComponent;
           randomDirectionX -= partOfComponent;
         }
 
-        const yABS = abs(randomDirectionY);
+        const yABS = Math.abs(randomDirectionY);
         if (yABS > 0) {
-          const partOfComponent = randomDirectionY * directionChangeMultiplier * (1 / yABS);
+          const partOfComponent = randomDirectionY * this.directionChangeMultiplier * (1 / yABS);
           directionTargetY += partOfComponent;
           randomDirectionY -= partOfComponent;
         }
@@ -322,7 +350,7 @@ export function CreateAntsColony(
         y,
         directionX,
         directionY,
-        antsScale,
+        this.antsScale,
         hasFood > 0,
         frameStartTime,
       );
@@ -333,8 +361,8 @@ export function CreateAntsColony(
        * pheromones more fluent. The higher this number
        * the more sudden turns towards pheromones are.
        */
-      directionTargetX += pheromoneSteerForceX * pheromonesSteeringSensitivity;
-      directionTargetY += pheromoneSteerForceY * pheromonesSteeringSensitivity;
+      directionTargetX += pheromoneSteerForceX * this.pheromonesSteeringSensitivity;
+      directionTargetY += pheromoneSteerForceY * this.pheromonesSteeringSensitivity;
 
       /**
        * In this setup radian angle = PI points up,
@@ -344,7 +372,7 @@ export function CreateAntsColony(
       if (directionTargetX !== directionX || directionY !== directionTargetY) {
         directionX = directionTargetX;
         directionY = directionTargetY;
-        const length = sqrt(directionX * directionX + directionY * directionY);
+        const length = Math.sqrt(directionX * directionX + directionY * directionY);
         directionX /= length;
         directionY /= length;
       }
@@ -354,10 +382,10 @@ export function CreateAntsColony(
 
       speed = MATH.interpolate(speed, speedTarget, deltaSeconds, speedInterpolationSpeed);
 
-      const antSprite = antsSpritesMap.get(id)!;
+      const antSprite = this.antsSpritesMap.get(id)!;
       antSprite.x = x;
       antSprite.y = y;
-      const turnAngle = atan2(directionX, directionY);
+      const turnAngle = Math.atan2(directionX, directionY);
       antSprite.rotation = -turnAngle;
 
       /** Drag the food sprite along */
@@ -389,20 +417,11 @@ export function CreateAntsColony(
     });
 
     pheromones.updatePheromones(frameStartTime);
+
+    return antsOnScreenCounter;
   }
 
-  return {
-    antsCollisions,
-    antsCollisionShapes,
-    antsProps,
-    antsScale,
-    antsSpritesMap,
-    getPheromonesCount: () => pheromones.getPheromonesCount(),
-    maxPheromonesEmission,
-    pheromones,
-    releaseOneByOne,
-    throwAllAtOnce,
-    timers,
-    update,
-  };
+  getPheromonesCount(): number {
+    return this.pheromones.getPheromonesCount();
+  }
 }
