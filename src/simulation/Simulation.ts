@@ -27,9 +27,12 @@ export class Simulation {
 
   private run(): void {
     const { antsCount } = this;
-    const { graphicsEngine, stage, antsSprites, foodBitesSprites } = this.graphics;
+    const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = this.graphics;
     const { width: worldWidth, height: worldHeight } = this.worldBounds;
 
+    const initLabel = 'CreateAntsColony execution time';
+    // eslint-disable-next-line no-console
+    console.time(initLabel);
     const AntsColony = CreateAntsColony(
       antsCount,
       stage,
@@ -38,14 +41,23 @@ export class Simulation {
       worldWidth,
       worldHeight,
     );
-    const { antsCollisions, antsCollisionShapes, nest, getPheromonesCount } = AntsColony;
+    const {
+      antsCollisions,
+      antsCollisionShapes,
+      nest,
+      getPheromonesCount,
+      pheromones,
+    } = AntsColony;
+    // eslint-disable-next-line no-console
+    console.timeEnd(initLabel);
+
     const { updateFPSDisplay } = setupFPSDisplay();
     const { updateAntsCounter } = setupAntCounter();
     const { updatePheromonesCounter } = setupPheromonesCounter();
     const foodDistanceToNest = 200;
     let lastTime = performance.now();
-    // AntsColony.releaseOneByOne(nest.x, nest.y);
-    AntsColony.throwAllAtOnce();
+    AntsColony.releaseOneByOne(nest.x, nest.y);
+    // AntsColony.throwAllAtOnce();
     makeSomeFood(
       ({ id, foodCollisionShape, foodSprite, properties }): void => {
         foodCollisionShapes.set(id, foodCollisionShape);
@@ -77,6 +89,7 @@ export class Simulation {
 
       // _draw.clear();
       // _draw.lineStyle(1, 0xff0000);
+      // pheromones.drawShapes(_draw);
       // drawSensors(_draw);
       // _draw.lineStyle(1, 0x005500);
       // pheremonesCollisionShapes.forEach((pheromone) => {
@@ -98,9 +111,9 @@ export class Simulation {
 
       if (debugTimer.update(deltaSeconds)) {
         updateFPSDisplay(deltaSeconds);
+        updatePheromonesCounter(getPheromonesCount());
         const { size } = antsCollisionShapes;
         updateAntsCounter(size, size - antsOnScreenCounter);
-        updatePheromonesCounter(getPheromonesCount());
       }
 
       lastTime = frameStartTime;

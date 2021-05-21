@@ -1,4 +1,4 @@
-import { doNTimes } from 'utils/do-n-times';
+import * as PIXI from 'pixi.js';
 
 export class CirclesBVHMinimalCollisions {
   readonly bodiesMaxCount: number;
@@ -35,24 +35,39 @@ export class CirclesBVHMinimalCollisions {
     this.bodies.length = bodiesMaxCount;
     this.branches.length = this.branchesMaxCount;
     this.lastNodeBranchIndex = bodiesMaxCount;
+  }
 
-    /** Pre-initialise all circles. */
-    doNTimes((index: number): void => {
+  public initialiseBodies(defaultRadius: number, outOfBoundsDistance = 9999): void {
+    const initLabel = 'CirclesBVHMinimalCollisions bodies init time';
+    // eslint-disable-next-line no-console
+    console.time(initLabel);
+    /**
+     * Pre-initialise all circles and put them
+     * outside of the world bounds.
+     */
+    let index = 0;
+    const highNumber = outOfBoundsDistance;
+    const { bodiesMaxCount } = this;
+    for (index; index < bodiesMaxCount; index++) {
       // prettier-ignore
       const circle = [
-        index,      /* 0: id     */
-        -2 * index, /* 1: x      */
-        -2 * index, /* 2: y      */
-        1,          /* 3: radius */
-        0,          /* 4: tag    */
+        index,                                    /* 0: id     */
+        highNumber + (defaultRadius + 1) * index, /* 1: x      */
+        highNumber + (defaultRadius + 1) * index, /* 2: y      */
+        defaultRadius,                            /* 3: radius */
+        0,                                        /* 4: tag    */
       ];
       this.bodies[index] = circle;
+      this.branches[index] = [index, 1, -1, -1, -1, -1, -1, -1, -1];
       this.insert(circle);
-    }, bodiesMaxCount);
+    }
+    // eslint-disable-next-line no-console
+    console.timeEnd(initLabel);
   }
 
   /** Inserts a body into the BVH */
-  private insert(body: number[]): void {
+  public insert(body: number[]): void {
+    // console.time('Insert');
     const [id, x, y, radius] = body;
     const xMin = x - radius;
     const yMin = y - radius;
@@ -63,33 +78,28 @@ export class CirclesBVHMinimalCollisions {
      * Create branch node that will represent the body in the tree.
      * Its id should be the same as the id of the body it represents.
      */
-    const newBranch = [id, 1, xMin, yMin, xMax, yMax, -1, -1, -1];
-    this.branches[id] = newBranch;
+    const { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex } = this.brachIndexes;
+    const branch = this.branches[id];
+    branch[AABB_leftIndex] = xMin;
+    branch[AABB_topIndex] = yMin;
+    branch[AABB_rightIndex] = xMax;
+    branch[AABB_bottomIndex] = yMax;
 
     if (this.rootBranch.length === 0) {
-      this.rootBranch = newBranch;
+      this.rootBranch = branch;
 
       return;
     }
 
     let current = this.rootBranch;
-    const {
-      idIndex,
-      isLeafIndex,
-      AABB_leftIndex,
-      AABB_topIndex,
-      AABB_rightIndex,
-      AABB_bottomIndex,
-      parentIdIndex,
-      rightIdIndex,
-      leftIdIndex,
-    } = this.brachIndexes;
+    const { idIndex, isLeafIndex, parentIdIndex, rightIdIndex, leftIdIndex } = this.brachIndexes;
+    const { branches } = this;
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
       /** is of BranchType */
       if (current[isLeafIndex] === 0) {
-        const left = this.branches[current[leftIdIndex]];
+        const left = branches[current[leftIdIndex]];
         /** Get left AABB */
         const xMinLeft = left[AABB_leftIndex];
         const yMinLeft = left[AABB_topIndex];
@@ -108,7 +118,7 @@ export class CirclesBVHMinimalCollisions {
         const left_difference = left_new_volume - left_volume;
 
         /** Get right AABB */
-        const right = this.branches[current[rightIdIndex]];
+        const right = branches[current[rightIdIndex]];
         const xMinRight = right[AABB_leftIndex];
         const yMinRight = right[AABB_topIndex];
         const xMaxRight = right[AABB_rightIndex];
@@ -135,7 +145,7 @@ export class CirclesBVHMinimalCollisions {
       // Leaf
       else {
         const parentId = current[parentIdIndex];
-        const grandparent = this.branches[parentId] ?? [];
+        const grandparent = branches[parentId] ?? [];
         const parent_min_x = current[AABB_leftIndex];
         const parent_min_y = current[AABB_topIndex];
         const parent_max_x = current[AABB_rightIndex];
@@ -151,12 +161,12 @@ export class CirclesBVHMinimalCollisions {
           Math.max(xMax, parent_max_x),
           Math.max(yMax, parent_max_y),
           parentId > -1 ? grandparent[idIndex] : -1,
-          newBranch[idIndex],
+          branch[idIndex],
           current[idIndex],
         ];
-        this.branches[newParentId] = newParent;
+        branches[newParentId] = newParent;
         current[parentIdIndex] = newParentId;
-        newBranch[parentIdIndex] = newParentId;
+        branch[parentIdIndex] = newParentId;
 
         if (grandparent.length === 0) {
           this.rootBranch = newParent;
@@ -169,9 +179,10 @@ export class CirclesBVHMinimalCollisions {
         break;
       }
     }
+    // console.timeEnd('Insert');
   }
 
-  private remove(body: number[]): void {
+  public remove(body: number[]): void {
     const [id] = body;
     const branch = this.branches[id];
     const {
@@ -246,11 +257,6 @@ export class CirclesBVHMinimalCollisions {
     }
 
     this.avilableNodeBranches.push(parentId);
-  }
-
-  public update(body: number[]): void {
-    this.remove(body);
-    this.insert(body);
   }
 
   /** Returns a list of potential collisions for a body */
@@ -362,5 +368,12 @@ export class CirclesBVHMinimalCollisions {
     }
 
     return true;
+  }
+
+  drawShapes(context: PIXI.Graphics): void {
+    this.bodies.forEach((body: number[]): void => {
+      const [, x, y, radius] = body;
+      context.drawCircle(x, y, radius);
+    });
   }
 }

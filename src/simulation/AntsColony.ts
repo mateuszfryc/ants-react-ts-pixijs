@@ -8,11 +8,11 @@ import { Timer } from 'simulation/Timer';
 import { doNTimes } from 'utils/do-n-times';
 import { Shape } from './collisions/proxyTypes';
 import {
-  foodImageTexture,
   foodSprites,
   foodBitesSpritesMap,
   foodCollisionShapes,
   foodProps,
+  foodImageTexture,
 } from './Food';
 import { createNest } from './Nest';
 import { Pheromones } from './Pheromones';
@@ -131,8 +131,13 @@ export function CreateAntsColony(
     }, antsCount);
   };
 
-  const pheromones = new Pheromones(antsCount, antsScale, 0.066 * antsScale);
+  const initLabel = 'Pheromones build time';
+  // eslint-disable-next-line no-console
+  console.time(initLabel);
+  const pheromones = new Pheromones(antsCount, antsScale, Math.max(worldWidth, worldHeight) + 1);
   stage.addChild((pheromones.sprites as unknown) as DisplayObject);
+  // eslint-disable-next-line no-console
+  console.timeEnd(initLabel);
 
   const pheromonesSteeringSensitivity = 0.1;
   const { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, NEST_VISIBLE_AREA } = TAGS;
@@ -171,7 +176,6 @@ export function CreateAntsColony(
       let directionTargetX = directionX;
       let directionTargetY = directionY;
       let speedInterpolationSpeed = 1;
-      let isStandingOnPheromone = false;
       let makeRandomTurn = true;
 
       for (const other of antsCollisions.getPotentials(antBody as Shape)) {
@@ -218,11 +222,9 @@ export function CreateAntsColony(
               break;
 
             case PHEROMONE_FOOD:
-              isStandingOnPheromone = true;
               break;
 
             case PHEROMONE_NEST:
-              isStandingOnPheromone = true;
               break;
 
             case FOOD:
@@ -370,7 +372,7 @@ export function CreateAntsColony(
         }
       }
 
-      if (pheromoneStrength > 0 && shouldSpawnPheromones && !isStandingOnPheromone) {
+      if (pheromoneStrength > 0 && shouldSpawnPheromones) {
         pheromones.addPheromone(x, y, hasFood > 0, frameStartTime);
         pheromoneStrength--;
       }
@@ -400,6 +402,7 @@ export function CreateAntsColony(
     getPheromonesCount: () => pheromones.getPheromonesCount(),
     maxPheromonesEmission,
     nest,
+    pheromones,
     releaseOneByOne,
     throwAllAtOnce,
     timers,

@@ -17,7 +17,7 @@ export class GlobalStore {
     this.simulationContainer = undefined;
     this.currentSimulation = undefined;
     this.simulationSettings = {
-      antsCount: 100,
+      antsCount: 500,
     };
   }
 

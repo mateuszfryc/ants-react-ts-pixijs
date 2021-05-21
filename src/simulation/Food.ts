@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+import { Texture, Sprite } from 'pixi.js';
 
 import FoodImage from 'assets/food.png';
 import { Circle } from 'simulation/collisions/circle';
@@ -7,8 +7,6 @@ import { doNTimes } from 'utils/do-n-times';
 
 const { random } = Math;
 let lastCreatedFoodId = 0;
-
-export const foodImageTexture = PIXI.Texture.from(FoodImage);
 
 export function spawnFood(id: number, x: number, y: number, radius = 20): any {
   const foodCollisionShape = new Circle(
@@ -21,7 +19,7 @@ export function spawnFood(id: number, x: number, y: number, radius = 20): any {
     id,
   );
 
-  const foodSprite = PIXI.Sprite.from(FoodImage);
+  const foodSprite = Sprite.from(FoodImage);
   foodSprite.x = x;
   foodSprite.y = y;
   foodSprite.scale.set(radius * 0.022);
@@ -59,7 +57,8 @@ export function makeSomeFood(
   }, foodAmount);
 }
 
-export const foodSprites = new Map<number, PIXI.Sprite>();
-export const foodBitesSpritesMap = new Map<number, PIXI.Sprite>();
+export const foodImageTexture = Texture.from(FoodImage);
+export const foodSprites = new Map<number, Sprite>();
+export const foodBitesSpritesMap = new Map<number, Sprite>();
 export const foodCollisionShapes = new Map<number, Circle>();
 export const foodProps = new Map<number, number[]>();
