@@ -55,6 +55,7 @@ export class TheAntColony {
     foodBitesSprites: ParticleContainer,
     worldWidth: number,
     worldHeight: number,
+    pheromonesMaxLifeSpan: number,
   ) {
     this.antsCount = antsCount;
     this.antsProps.length = antsCount;
@@ -64,6 +65,7 @@ export class TheAntColony {
       antsCount,
       this.antsScale,
       Math.max(worldWidth, worldHeight) + 1,
+      pheromonesMaxLifeSpan,
     );
 
     stage.addChild((this.pheromones.sprites as unknown) as DisplayObject);

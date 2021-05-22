@@ -19,8 +19,10 @@ export class GlobalStore {
     this.simulationContainer = undefined;
     this.currentSimulation = undefined;
     this.simulationSettings = {
-      antsCount: 200,
+      antsCount: 10,
       nestPositon: { x: 150, y: 150 },
+      /** In seconds */
+      pheromonesLifeSpan: 16,
     };
   }
 
@@ -41,6 +43,10 @@ export class GlobalStore {
 
   setNestPosition(position: Vector): void {
     this.simulationSettings.nestPositon = position;
+  }
+
+  setPheromonesLifeSpan(lifeSpan: number): void {
+    this.simulationSettings.pheromonesLifeSpan = lifeSpan;
   }
 }
 

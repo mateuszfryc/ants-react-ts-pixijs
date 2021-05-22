@@ -26,7 +26,7 @@ export class Simulation {
     this.run(simulationSettings);
   }
 
-  private run({ antsCount, nestPositon }: SimulationSettings): void {
+  private run({ antsCount, nestPositon, pheromonesLifeSpan }: SimulationSettings): void {
     const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = this.graphics;
     const { width: worldWidth, height: worldHeight } = this.worldBounds;
 
@@ -40,6 +40,7 @@ export class Simulation {
       foodBitesSprites,
       worldWidth,
       worldHeight,
+      pheromonesLifeSpan,
     );
     const { collisions, antsCollisionShapes, getPheromonesCount, pheromones } = AntsColony;
     // eslint-disable-next-line no-console

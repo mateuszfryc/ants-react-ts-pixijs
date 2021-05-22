@@ -19,6 +19,13 @@ const Option = styled(Flex)(
   `,
 );
 
+const Label = styled.div(
+  ({ theme: { spacings, fonts } }) => css`
+    ${fonts.size.S}
+    padding-right: ${spacings.M};
+  `,
+);
+
 export const SimulationSettings: React.FC = observer(() => {
   const { spacings } = useTheme();
   const store = useContext(storeContext);
@@ -31,7 +38,7 @@ export const SimulationSettings: React.FC = observer(() => {
       </Paragraph>
       <Paragraph as='div'>
         <Option>
-          <span>Ants total count</span>
+          <Label>Ants total count</Label>
           <InputField
             name='ants-count-field'
             type='number'
@@ -42,7 +49,7 @@ export const SimulationSettings: React.FC = observer(() => {
           />
         </Option>
         <Option>
-          <span>Nest position</span>
+          <Label>Nest position</Label>
           <div style={{ display: 'grid', gridTemplateColumns: '15px 1fr 25px 1fr' }}>
             <span>x</span>
             <div>
@@ -75,6 +82,19 @@ export const SimulationSettings: React.FC = observer(() => {
               />
             </div>
           </div>
+        </Option>
+        <Option>
+          <Label>
+            Pheromones life span<Label>(in seconds)</Label>
+          </Label>
+          <InputField
+            name='pheromones-life-span'
+            type='number'
+            value={`${simulationSettings.pheromonesLifeSpan}`}
+            onChange={action((event: ChangeEvent<HTMLInputElement>) => {
+              store.setPheromonesLifeSpan(Number.parseInt(event.target.value, 10));
+            })}
+          />
         </Option>
       </Paragraph>
 

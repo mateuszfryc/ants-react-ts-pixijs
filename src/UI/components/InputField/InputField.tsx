@@ -4,7 +4,8 @@ import styled, { css } from 'styled-components';
 import { inputTypes } from './types';
 
 const Input = styled.input(
-  ({ theme: { colors, spacings } }) => css`
+  ({ theme: { colors, spacings, fonts } }) => css`
+    ${fonts.size.S}
     background-color: ${colors.shadeMid};
     border: 1px solid ${colors.shadeLight};
     border-radius: 5px;

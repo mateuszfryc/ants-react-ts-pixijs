@@ -16,15 +16,15 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
   readonly sensorForwardDistance = 3.8;
   readonly sensorsSideDistance = 0.46;
   readonly sensorsSideSpread = 0.7;
+  readonly pheromonesMaxLifeSpan: number;
+  readonly pheromoneEmissionTimer: Timer;
+  readonly pheromoneRadius: number;
+  readonly sensorRadius: number;
   /**
    * This additional property of the minimal collisions items
    * is added on top of other circles properties.
    */
   readonly spawnTimeIndex = 5;
-  readonly pheromonesMaxLifeSpan: number;
-  readonly pheromoneEmissionTimer: Timer;
-  readonly pheromoneRadius: number;
-  readonly sensorRadius: number;
 
   constructor(
     antsCount: number,
@@ -35,10 +35,10 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
      * World width or height (whichever is higher)
      */
     outOfBoundsDistance: number,
+    pheromonesMaxLifeSpan: number,
     defaultRadius = 1.2,
     /** Time between consequent emmisions in seconds */
     timeBetweenEmissions = 0.2,
-    pheromonesMaxLifeSpan = 8,
   ) {
     super(antsCount * Math.round(1 / timeBetweenEmissions) * pheromonesMaxLifeSpan);
 
