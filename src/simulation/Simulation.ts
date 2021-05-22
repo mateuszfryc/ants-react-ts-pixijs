@@ -51,8 +51,8 @@ export class Simulation {
     const { updatePheromonesCounter } = setupPheromonesCounter();
     const foodDistanceToNest = 200;
     let lastTime = performance.now();
-    AntsColony.releaseOneByOne(nest.x, nest.y);
-    // AntsColony.throwAllAtOnce();
+    // AntsColony.releaseOneByOne(nest.x, nest.y);
+    AntsColony.throwAllAtOnce(worldWidth, worldHeight);
     makeSomeFood(
       ({ id, foodCollisionShape, foodSprite, properties }): void => {
         foodCollisionShapes.set(id, foodCollisionShape);
