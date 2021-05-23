@@ -52,8 +52,8 @@ export class Simulation {
     const { updatePheromonesCounter } = setupPheromonesCounter();
     const foodDistanceToNest = 200;
     let lastTime = performance.now();
-    // AntsColony.releaseOneByOne(nest.x, nest.y);
-    AntsColony.throwAllAtOnce(worldWidth, worldHeight);
+    AntsColony.releaseOneByOne(nest.x, nest.y);
+    // AntsColony.throwAllAtOnce(worldWidth, worldHeight);
     makeSomeFood(
       ({ id, foodCollisionShape, foodSprite, properties }): void => {
         foodCollisionShapes.set(id, foodCollisionShape);
@@ -67,26 +67,20 @@ export class Simulation {
     );
 
     let isTabFocused = true;
-    window.addEventListener('blur', () => {
-      isTabFocused = false;
-    });
-    window.addEventListener('focus', () => {
-      lastTime = performance.now();
-      isTabFocused = true;
-    });
+    // window.addEventListener('blur', () => {
+    //   isTabFocused = false;
+    // });
+    // window.addEventListener('focus', () => {
+    //   lastTime = performance.now();
+    //   isTabFocused = true;
+    // });
 
     function simulationUpdate(): void {
       if (!isTabFocused) return;
       const frameStartTime = performance.now();
       const deltaSeconds = Math.min((frameStartTime - lastTime) / 1000, 0.5);
 
-      const antsOnScreenCount = AntsColony.update(
-        deltaSeconds,
-        frameStartTime,
-        stage,
-        worldWidth,
-        worldHeight,
-      );
+      const antsOnScreenCount = AntsColony.update(deltaSeconds, stage, worldWidth, worldHeight);
 
       // _draw.clear();
       // _draw.lineStyle(1, 0xff0000);

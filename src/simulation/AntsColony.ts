@@ -23,10 +23,10 @@ export class TheAntColony {
   antTexture = Texture.from(AntImage);
   collisions = new Collisions();
   timers = new Map<number, Timer>();
-  pheromonesSteeringSensitivity = 0.1;
+  pheromonesSteeringSensitivity = 1;
   directionChangeMultiplier = 0.16;
   randomDirectionMaxAngle = 1;
-  maxPheromonesEmission = 64;
+  maxPheromoneFuel = 128;
   lastCreatedAntId = 0;
   antsScale = 3;
   tags = TAGS;
@@ -55,7 +55,7 @@ export class TheAntColony {
     foodBitesSprites: ParticleContainer,
     worldWidth: number,
     worldHeight: number,
-    pheromonesMaxLifeSpan: number,
+    pheromonesLifeSpan: number,
   ) {
     this.antsCount = antsCount;
     this.antsProps.length = antsCount;
@@ -65,7 +65,7 @@ export class TheAntColony {
       antsCount,
       this.antsScale,
       Math.max(worldWidth, worldHeight) + 1,
-      pheromonesMaxLifeSpan,
+      pheromonesLifeSpan,
     );
 
     stage.addChild((this.pheromones.sprites as unknown) as DisplayObject);
@@ -148,7 +148,6 @@ export class TheAntColony {
 
   public update(
     deltaSeconds: number,
-    frameStartTime: number,
     stage: Container,
     worldWidth: number,
     worldHeight: number,
@@ -170,7 +169,7 @@ export class TheAntColony {
       antsCollisionShapes,
       collisions,
       foodBitesSprites,
-      maxPheromonesEmission,
+      maxPheromoneFuel,
       tags: { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, NEST_VISIBLE_AREA },
     } = this;
     let antsOnScreenCounter = 0;
@@ -198,7 +197,7 @@ export class TheAntColony {
         speedTarget,
         maxSpeed,
         hasFood,
-        pheromoneStrength,
+        pheromoneFuel,
       ] = ant;
       const antBody = antsCollisionShapes.get(id)!;
       let directionTargetX = directionX;
@@ -237,7 +236,7 @@ export class TheAntColony {
                 directionTargetX = -directionX;
                 directionTargetY = -directionY;
               } else {
-                pheromoneStrength = maxPheromonesEmission;
+                pheromoneFuel = maxPheromoneFuel;
               }
               break;
 
@@ -299,7 +298,7 @@ export class TheAntColony {
                     foodCollisionShapes.delete(otherId);
                   }
                   foodProps.set(otherId, [amount, isEmpty]);
-                  pheromoneStrength = maxPheromonesEmission;
+                  pheromoneFuel = maxPheromoneFuel;
                 }
               }
 
@@ -347,14 +346,13 @@ export class TheAntColony {
         }
       }
 
-      const [pheromoneSteerForceX, pheromoneSteerForceY] = pheromones.getDirectionFromSensors(
+      const [pheromoneSteerForceX, pheromoneSteerForceY] = pheromones.getDirectionFromSensor(
         x,
         y,
         directionX,
         directionY,
         this.antsScale,
         hasFood > 0,
-        frameStartTime,
       );
 
       /**
@@ -400,9 +398,9 @@ export class TheAntColony {
         }
       }
 
-      if (pheromoneStrength > 0 && shouldSpawnPheromones) {
-        pheromones.addPheromone(x, y, hasFood > 0, frameStartTime);
-        pheromoneStrength--;
+      if (shouldSpawnPheromones && pheromoneFuel > 0) {
+        pheromones.placePheromone(x, y, hasFood > 0, pheromoneFuel / maxPheromoneFuel);
+        pheromoneFuel--;
       }
 
       if (x > 0 && y > 0 && x < worldWidth && y < worldHeight) antsOnScreenCounter++;
@@ -415,10 +413,10 @@ export class TheAntColony {
       ant[speedIndex] = speed;
       ant[speedTargetIndex] = speedTarget;
       ant[hasFoodIndex] = hasFood;
-      ant[pheromoneStrengthIndex] = pheromoneStrength;
+      ant[pheromoneStrengthIndex] = pheromoneFuel;
     });
 
-    pheromones.updatePheromones(frameStartTime);
+    pheromones.updatePheromones(deltaSeconds);
 
     return antsOnScreenCounter;
   }

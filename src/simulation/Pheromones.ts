@@ -24,7 +24,7 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
    * This additional property of the minimal collisions items
    * is added on top of other circles properties.
    */
-  readonly spawnTimeIndex = 5;
+  readonly intensityIndex = 5;
 
   constructor(
     antsCount: number,
@@ -105,15 +105,15 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     });
   }
 
-  public addPheromone(x: number, y: number, hasFood: boolean, spawnTime: number): void {
+  public placePheromone(x: number, y: number, hasFood: boolean, initialIntensity: number): void {
     const { PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
-    const { spawnTimeIndex } = this;
+    const { intensityIndex, pheromonesMaxLifeSpan } = this;
     let { lastPheromonePickedIndex } = this;
     const { xIndex, yIndex, tagIndex } = this.pheromoneBodyIndexes;
     const pheromone = this.bodies[lastPheromonePickedIndex];
     pheromone[xIndex] = x;
     pheromone[yIndex] = y;
-    pheromone[spawnTimeIndex] = spawnTime;
+    pheromone[intensityIndex] = initialIntensity * pheromonesMaxLifeSpan;
     pheromone[tagIndex] = hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST;
     const [id] = pheromone;
     this.activePheromones.push(id);
@@ -123,7 +123,7 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     const pheromoneSprite = this.pheromonesSpritesMap[id];
     pheromoneSprite.x = x;
     pheromoneSprite.y = y;
-    pheromoneSprite.alpha = 1;
+    pheromoneSprite.alpha = initialIntensity;
     pheromoneSprite.tint = hasFood ? 0x00cc22 : 0x0088ff;
 
     lastPheromonePickedIndex++;
@@ -131,16 +131,16 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
       lastPheromonePickedIndex >= this.bodiesMaxCount ? 3 : lastPheromonePickedIndex;
   }
 
-  public updatePheromones(frameStartTime: number): void {
-    const { spawnTimeIndex, pheromonesMaxLifeSpan, pheromoneRadius } = this;
+  public updatePheromones(deltaSeconds: number): void {
+    const { intensityIndex, pheromoneRadius, pheromonesMaxLifeSpan } = this;
     const { xIndex, yIndex } = this.pheromoneBodyIndexes;
     const toBeRemoved: number[] = [];
     this.activePheromones.forEach((activeId: number): void => {
       const pheromone = this.bodies[activeId];
-      let lifeSpan = (frameStartTime - pheromone[spawnTimeIndex]) / 1000;
+      pheromone[intensityIndex] -= deltaSeconds;
       const sprite = this.pheromonesSpritesMap[activeId];
-      if (lifeSpan < pheromonesMaxLifeSpan) {
-        sprite.alpha = 1 - lifeSpan / pheromonesMaxLifeSpan;
+      if (pheromone[intensityIndex] > 0) {
+        sprite.alpha = pheromone[intensityIndex] / pheromonesMaxLifeSpan;
       } else {
         pheromone[xIndex] = activeId * -pheromoneRadius;
         pheromone[yIndex] = activeId * -pheromoneRadius;
@@ -167,16 +167,15 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
    * that picks up most of pheromones
    * is the returned as ant direction.
    */
-  public getDirectionFromSensors(
+  public getDirectionFromSensor(
     x: number,
     y: number,
     directionX: number,
     directionY: number,
     antsScale: number,
     hasFood: boolean,
-    frameStartTime: number,
   ): [number, number] {
-    const { sensorForwardDistance, sensorsSideDistance, sensorsSideSpread, spawnTimeIndex } = this;
+    const { sensorForwardDistance, sensorsSideDistance, sensorsSideSpread, intensityIndex } = this;
     const [sensorLeft, sensorForward, sensorRight] = this.sensors;
     const { xIndex, yIndex, tagIndex } = this.pheromoneBodyIndexes;
     const { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex } = this.brachIndexes;
@@ -224,33 +223,33 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     let rightSensorInputSum = 0;
 
     for (const other of this.getPotentials(sensorForward)) {
-      const matchesSearchedTag = other[tagIndex] === tag;
-      if (matchesSearchedTag && this.areCirclesOverlapping(sensorForward, other)) {
-        frontSensorInputSum += frameStartTime - other[spawnTimeIndex];
+      if (other[tagIndex] === tag && this.areCirclesOverlapping(sensorForward, other)) {
+        frontSensorInputSum += other[intensityIndex];
       }
     }
 
     for (const other of this.getPotentials(sensorLeft)) {
       const matchesSearchedTag = other[tagIndex] === tag;
       if (matchesSearchedTag && this.areCirclesOverlapping(sensorLeft, other)) {
-        leftSensorInputSum += frameStartTime - other[spawnTimeIndex];
+        leftSensorInputSum += other[intensityIndex];
       }
     }
 
     for (const other of this.getPotentials(sensorRight)) {
       const matchesSearchedTag = other[tagIndex] === tag;
       if (matchesSearchedTag && this.areCirclesOverlapping(sensorRight, other)) {
-        rightSensorInputSum += frameStartTime - other[spawnTimeIndex];
+        rightSensorInputSum += other[intensityIndex];
       }
+    }
+
+    if (frontSensorInputSum > Math.max(leftSensorInputSum, rightSensorInputSum)) {
+      return [0, 0];
     }
 
     let directionTargetX = 0;
     let directionTargetY = 0;
 
-    if (frontSensorInputSum > Math.max(leftSensorInputSum, rightSensorInputSum)) {
-      directionTargetX = sensorForward[xIndex] - x;
-      directionTargetY = sensorForward[yIndex] - y;
-    } else if (leftSensorInputSum > rightSensorInputSum) {
+    if (leftSensorInputSum > rightSensorInputSum) {
       directionTargetX = sensorLeft[xIndex] - x;
       directionTargetY = sensorLeft[yIndex] - y;
     } else if (rightSensorInputSum > leftSensorInputSum) {
