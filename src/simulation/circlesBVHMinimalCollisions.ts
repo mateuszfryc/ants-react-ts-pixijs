@@ -8,6 +8,7 @@ export class CirclesBVHMinimalCollisions {
   readonly branches: number[][] = [];
   lastNodeBranchIndex = 0;
   rootBranch: number[] = [];
+  radius: number;
 
   readonly brachIndexes = {
     idIndex: 0,
@@ -25,19 +26,19 @@ export class CirclesBVHMinimalCollisions {
     idIndex: 0,
     xIndex: 1,
     yIndex: 2,
-    radiusIndex: 3,
-    tagIndex: 4,
   };
 
-  constructor(bodiesMaxCount: number) {
+  constructor(bodiesMaxCount: number, defaultRadius: number) {
     this.bodiesMaxCount = bodiesMaxCount;
     this.branchesMaxCount = bodiesMaxCount * 2 - 1;
     this.bodies.length = bodiesMaxCount;
     this.branches.length = this.branchesMaxCount;
     this.lastNodeBranchIndex = bodiesMaxCount;
+    this.radius = defaultRadius;
   }
 
-  public initialiseBodies(defaultRadius: number, outOfBoundsDistance = 9999): void {
+  public initialiseBodies(outOfBoundsDistance = 9999): void {
+    const { radius } = this;
     const initLabel = 'CirclesBVHMinimalCollisions bodies init time';
     // eslint-disable-next-line no-console
     console.time(initLabel);
@@ -51,11 +52,9 @@ export class CirclesBVHMinimalCollisions {
     for (index; index < bodiesMaxCount; index++) {
       // prettier-ignore
       const circle = [
-        index,                                    /* 0: id     */
-        highNumber + (defaultRadius + 1) * index, /* 1: x      */
-        highNumber + (defaultRadius + 1) * index, /* 2: y      */
-        defaultRadius,                            /* 3: radius */
-        0,                                        /* 4: tag    */
+        index,                             /* 0: id     */
+        highNumber + (radius + 1) * index, /* 1: x      */
+        highNumber + (radius + 1) * index, /* 2: y      */
       ];
       this.bodies[index] = circle;
       this.branches[index] = [index, 1, -1, -1, -1, -1, -1, -1, -1];
@@ -68,7 +67,8 @@ export class CirclesBVHMinimalCollisions {
   /** Inserts a body into the BVH */
   public insert(body: number[]): void {
     // console.time('Insert');
-    const [id, x, y, radius] = body;
+    const { radius } = this;
+    const [id, x, y] = body;
     const xMin = x - radius;
     const yMin = y - radius;
     const xMax = x + radius;
@@ -338,15 +338,20 @@ export class CirclesBVHMinimalCollisions {
     return potentials;
   }
 
-  public areCirclesOverlapping(a: number[], b: number[]): boolean {
+  public areCirclesOverlapping(
+    a: number[],
+    b: number[],
+    radiusA = this.radius,
+    radiusB = this.radius,
+  ): boolean {
     /** Stage 1: AABB test step by step */
-    const [, xA, yA, radiusA] = a;
+    const [, xA, yA] = a;
     const a_min_x = xA - radiusA;
     const a_min_y = yA - radiusA;
     const a_max_x = xA + radiusA;
     const a_max_y = yA + radiusA;
 
-    const [, xB, yB, radiusB] = b;
+    const [, xB, yB] = b;
     const b_min_x = xB - radiusB;
     const b_min_y = yB - radiusB;
     const b_max_x = xB + radiusB;
@@ -372,7 +377,8 @@ export class CirclesBVHMinimalCollisions {
 
   drawShapes(context: PIXI.Graphics): void {
     this.bodies.forEach((body: number[]): void => {
-      const [, x, y, radius] = body;
+      const { radius } = this;
+      const [, x, y] = body;
       context.drawCircle(x, y, radius);
     });
   }
