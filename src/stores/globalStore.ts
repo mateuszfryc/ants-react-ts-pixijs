@@ -22,7 +22,7 @@ export class GlobalStore {
       antsCount: 300,
       nestPositon: { x: 500, y: 500 },
       /** In seconds */
-      pheromonesLifeSpan: 32,
+      pheromonesLifeSpan: 30,
     };
   }
 

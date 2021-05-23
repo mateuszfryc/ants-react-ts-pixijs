@@ -203,6 +203,7 @@ export class TheAntColony {
       let directionTargetX = directionX;
       let directionTargetY = directionY;
       let speedInterpolationSpeed = 1;
+      let searchForPheromones = true;
       let makeRandomTurn = true;
 
       for (const other of collisions.getPotentials(antBody as Shape)) {
@@ -245,6 +246,7 @@ export class TheAntColony {
                 directionTargetX = other.x - antBody.x;
                 directionTargetY = other.y - antBody.y;
                 makeRandomTurn = false;
+                searchForPheromones = false;
               }
               break;
 
@@ -261,6 +263,7 @@ export class TheAntColony {
                   directionTargetX = overlapX;
                   directionTargetY = overlapY;
                   makeRandomTurn = false;
+                  searchForPheromones = false;
                 }
               } else {
                 overlap -= halfRadius;
@@ -309,6 +312,7 @@ export class TheAntColony {
               antBody.y -= overlap * overlapY;
               speed = 0;
               makeRandomTurn = false;
+              searchForPheromones = false;
               /** By default move along reflection vector */
               directionTargetX = directionX - 2 * (directionX * -overlapX) * -overlapX;
               directionTargetY = directionY - 2 * (directionY * -overlapY) * -overlapY;
@@ -346,23 +350,25 @@ export class TheAntColony {
         }
       }
 
-      const [pheromoneSteerForceX, pheromoneSteerForceY] = pheromones.getDirectionFromSensor(
-        x,
-        y,
-        directionX,
-        directionY,
-        this.antsScale,
-        hasFood > 0,
-      );
+      if (searchForPheromones) {
+        const [pheromoneSteerForceX, pheromoneSteerForceY] = pheromones.getDirectionFromSensor(
+          x,
+          y,
+          directionX,
+          directionY,
+          this.antsScale,
+          hasFood > 0,
+        );
 
-      /**
-       * pheromonesSteeringSensitivity
-       * helps here to make movement towards
-       * pheromones more fluent. The higher this number
-       * the more sudden turns towards pheromones are.
-       */
-      directionTargetX += pheromoneSteerForceX * this.pheromonesSteeringSensitivity;
-      directionTargetY += pheromoneSteerForceY * this.pheromonesSteeringSensitivity;
+        /**
+         * pheromonesSteeringSensitivity
+         * helps here to make movement towards
+         * pheromones more fluent. The higher this number
+         * the more sudden turns towards pheromones are.
+         */
+        directionTargetX += pheromoneSteerForceX * this.pheromonesSteeringSensitivity;
+        directionTargetY += pheromoneSteerForceY * this.pheromonesSteeringSensitivity;
+      }
 
       /**
        * In this setup radian angle = PI points up,

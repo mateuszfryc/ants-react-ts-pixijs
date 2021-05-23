@@ -35,7 +35,7 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     pheromonesMaxLifeSpan: number,
     defaultRadius = 1.2,
     /** Time between consequent emmisions in seconds */
-    timeBetweenEmissions = 0.2,
+    timeBetweenEmissions = 0.15,
   ) {
     super(
       antsCount * Math.round(1 / timeBetweenEmissions) * pheromonesMaxLifeSpan,
@@ -43,7 +43,7 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     );
 
     this.pheromonesMaxLifeSpan = pheromonesMaxLifeSpan;
-    this.sensorRadius = this.radius * 2.5;
+    this.sensorRadius = this.radius * 4;
     this.pheromoneEmissionTimer = new Timer(timeBetweenEmissions);
 
     this.initialiseBodies(outOfBoundsDistance);
@@ -84,7 +84,7 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
       pheromoneSprite.x = -10;
       pheromoneSprite.y = -10;
       pheromoneSprite.anchor.set(0.5);
-      pheromoneSprite.scale.set(0.1 * this.radius);
+      pheromoneSprite.scale.set(0.09 * this.radius);
       this.pheromonesSpritesMap[index] = pheromoneSprite;
       pheromonesSprites.addChild(pheromoneSprite);
     }, this.bodiesMaxCount);
@@ -175,8 +175,8 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     const { PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
 
     let tag = hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD;
-    sensor[xIndex] = x + directionX * sensorRadius;
-    sensor[yIndex] = y + directionY * sensorRadius;
+    sensor[xIndex] = x + directionX * sensorRadius * 0.5;
+    sensor[yIndex] = y + directionY * sensorRadius * 0.5;
 
     const [id, xB, yB] = sensor;
     const branch = this.branches[id];
