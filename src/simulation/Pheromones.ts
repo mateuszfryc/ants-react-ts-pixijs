@@ -43,7 +43,7 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     );
 
     this.pheromonesMaxLifeSpan = pheromonesMaxLifeSpan;
-    this.sensorRadius = this.radius * 4;
+    this.sensorRadius = this.radius * 6;
     this.pheromoneEmissionTimer = new Timer(timeBetweenEmissions);
 
     this.initialiseBodies(outOfBoundsDistance);

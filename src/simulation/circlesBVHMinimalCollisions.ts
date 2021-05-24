@@ -28,11 +28,13 @@ export class CirclesBVHMinimalCollisions {
     this.bodiesMaxCount = bodiesMaxCount;
     this.branchesMaxCount = bodiesMaxCount * 2 - 1;
     this.bodies.length = bodiesMaxCount;
+    this.branches.length = this.branchesMaxCount;
+
     this.longitudes = new Float32Array(bodiesMaxCount);
     this.longitudes.fill(0);
     this.latitudes = new Float32Array(bodiesMaxCount);
     this.latitudes.fill(0);
-    this.branches.length = this.branchesMaxCount;
+
     this.lastNodeBranchIndex = bodiesMaxCount;
     this.radius = defaultRadius;
   }
