@@ -19,7 +19,7 @@ export class GlobalStore {
     this.simulationContainer = undefined;
     this.currentSimulation = undefined;
     this.simulationSettings = {
-      antsCount: 300,
+      antsCount: 150,
       nestPositon: { x: 500, y: 500 },
       /** In seconds */
       pheromonesLifeSpan: 30,

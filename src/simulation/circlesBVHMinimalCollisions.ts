@@ -8,6 +8,8 @@ export class CirclesBVHMinimalCollisions {
   readonly branches: number[][] = [];
   lastNodeBranchIndex = 0;
   rootBranch: number[] = [];
+  longitudes: Float32Array;
+  latitudes: Float32Array;
   radius: number;
 
   readonly brachIndexes = {
@@ -22,16 +24,14 @@ export class CirclesBVHMinimalCollisions {
     leftIdIndex: 8,
   };
 
-  readonly pheromoneBodyIndexes = {
-    idIndex: 0,
-    xIndex: 1,
-    yIndex: 2,
-  };
-
   constructor(bodiesMaxCount: number, defaultRadius: number) {
     this.bodiesMaxCount = bodiesMaxCount;
     this.branchesMaxCount = bodiesMaxCount * 2 - 1;
     this.bodies.length = bodiesMaxCount;
+    this.longitudes = new Float32Array(bodiesMaxCount);
+    this.longitudes.fill(0);
+    this.latitudes = new Float32Array(bodiesMaxCount);
+    this.latitudes.fill(0);
     this.branches.length = this.branchesMaxCount;
     this.lastNodeBranchIndex = bodiesMaxCount;
     this.radius = defaultRadius;
@@ -51,33 +51,31 @@ export class CirclesBVHMinimalCollisions {
     const { bodiesMaxCount } = this;
     for (index; index < bodiesMaxCount; index++) {
       // prettier-ignore
-      const circle = [
-        index,                             /* 0: id     */
-        highNumber + (radius + 1) * index, /* 1: x      */
-        highNumber + (radius + 1) * index, /* 2: y      */
-      ];
+      const circle = [index];
       this.bodies[index] = circle;
+      const distance = highNumber + (radius + 1) * index;
+      /** x */
+      this.longitudes[index] = distance;
+      /** y */
+      this.latitudes[index] = distance;
       this.branches[index] = [index, 1, -1, -1, -1, -1, -1, -1, -1];
-      this.insert(circle);
+      this.insert(index);
     }
     // eslint-disable-next-line no-console
     console.timeEnd(initLabel);
   }
 
   /** Inserts a body into the BVH */
-  public insert(body: number[]): void {
+  public insert(id = 0): void {
     // console.time('Insert');
     const { radius } = this;
-    const [id, x, y] = body;
+    const x = this.longitudes[id];
+    const y = this.latitudes[id];
     const xMin = x - radius;
     const yMin = y - radius;
     const xMax = x + radius;
     const yMax = y + radius;
 
-    /**
-     * Create branch node that will represent the body in the tree.
-     * Its id should be the same as the id of the body it represents.
-     */
     const { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex } = this.brachIndexes;
     const branch = this.branches[id];
     branch[AABB_leftIndex] = xMin;
@@ -182,8 +180,7 @@ export class CirclesBVHMinimalCollisions {
     // console.timeEnd('Insert');
   }
 
-  public remove(body: number[]): void {
-    const [id] = body;
+  public remove(id = 0): void {
     const branch = this.branches[id];
     const {
       idIndex,
@@ -260,7 +257,7 @@ export class CirclesBVHMinimalCollisions {
   }
 
   /** Returns a list of potential collisions for a body */
-  public getPotentials(body: number[]): number[][] {
+  public getPotentials(id = 0): number[][] {
     const potentials: number[][] = [];
     const {
       idIndex,
@@ -277,7 +274,6 @@ export class CirclesBVHMinimalCollisions {
       return potentials;
     }
 
-    const [id] = body;
     const branch = this.branches[id];
     const xMin = branch[AABB_leftIndex];
     const yMin = branch[AABB_topIndex];
@@ -339,19 +335,21 @@ export class CirclesBVHMinimalCollisions {
   }
 
   public areCirclesOverlapping(
-    a: number[],
-    b: number[],
+    aID: number,
+    bID: number,
     radiusA = this.radius,
     radiusB = this.radius,
   ): boolean {
     /** Stage 1: AABB test step by step */
-    const [, xA, yA] = a;
+    const xA = this.longitudes[aID];
+    const yA = this.latitudes[aID];
     const a_min_x = xA - radiusA;
     const a_min_y = yA - radiusA;
     const a_max_x = xA + radiusA;
     const a_max_y = yA + radiusA;
 
-    const [, xB, yB] = b;
+    const xB = this.longitudes[bID];
+    const yB = this.latitudes[bID];
     const b_min_x = xB - radiusB;
     const b_min_y = yB - radiusB;
     const b_max_x = xB + radiusB;
@@ -378,7 +376,9 @@ export class CirclesBVHMinimalCollisions {
   drawShapes(context: PIXI.Graphics): void {
     this.bodies.forEach((body: number[]): void => {
       const { radius } = this;
-      const [, x, y] = body;
+      const id = body[0];
+      const x = this.longitudes[id];
+      const y = this.latitudes[id];
       context.drawCircle(x, y, radius);
     });
   }

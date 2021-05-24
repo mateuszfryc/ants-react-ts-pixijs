@@ -10,9 +10,9 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
   /** List of IDs of the pheromones that are currenlty in the use. */
   activePheromones: number[] = [];
   pheromonesSpritesMap: Sprite[] = [];
-  sensor: number[] = [];
+  sensor: number[] = [0];
   sprites = ParticleContainer;
-  lastPheromonePickedIndex = 3;
+  lastPheromonePickedIndex = 1;
   readonly pheromonesMaxLifeSpan: number;
   readonly pheromoneEmissionTimer: Timer;
   readonly sensorRadius: number;
@@ -20,8 +20,8 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
    * This additional property of the minimal collisions items
    * is added on top of other circles properties.
    */
-  readonly tagIndex = 3;
-  readonly intensityIndex = 4;
+  readonly tagIndex = 1;
+  readonly intensityIndex = 2;
 
   constructor(
     antsCount: number,
@@ -48,7 +48,7 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
 
     this.initialiseBodies(outOfBoundsDistance);
     this.initialiseSprites();
-    this.initialiseSensor();
+    this.sensor[this.tagIndex] = TAGS.ANT_SENSOR;
 
     // eslint-disable-next-line no-console
     console.log(`time between emissions: ${timeBetweenEmissions}`);
@@ -92,27 +92,18 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     console.timeEnd(initLabel);
   }
 
-  private initialiseSensor(): void {
-    const { ANT_SENSOR } = TAGS;
-    const { tagIndex } = this;
-    this.sensor = this.bodies[0];
-    this.sensor[tagIndex] = ANT_SENSOR;
-  }
-
   public placePheromone(x: number, y: number, hasFood: boolean, initialIntensity: number): void {
     const { PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
-    const { tagIndex, intensityIndex, pheromonesMaxLifeSpan } = this;
     let { lastPheromonePickedIndex } = this;
-    const { xIndex, yIndex } = this.pheromoneBodyIndexes;
     const pheromone = this.bodies[lastPheromonePickedIndex];
-    pheromone[xIndex] = x;
-    pheromone[yIndex] = y;
-    pheromone[intensityIndex] = initialIntensity * pheromonesMaxLifeSpan;
-    pheromone[tagIndex] = hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST;
     const [id] = pheromone;
+    this.longitudes[id] = x;
+    this.latitudes[id] = y;
+    pheromone[this.tagIndex] = hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST;
+    pheromone[this.intensityIndex] = initialIntensity * this.pheromonesMaxLifeSpan;
     this.activePheromones.push(id);
-    this.remove(pheromone);
-    this.insert(pheromone);
+    this.remove(id);
+    this.insert(id);
 
     const pheromoneSprite = this.pheromonesSpritesMap[id];
     pheromoneSprite.x = x;
@@ -122,27 +113,25 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
 
     lastPheromonePickedIndex++;
     this.lastPheromonePickedIndex =
-      lastPheromonePickedIndex >= this.bodiesMaxCount ? 3 : lastPheromonePickedIndex;
+      lastPheromonePickedIndex >= this.bodiesMaxCount ? 1 : lastPheromonePickedIndex;
   }
 
   public updatePheromones(deltaSeconds: number): void {
-    const { intensityIndex, radius, pheromonesMaxLifeSpan } = this;
-    const { xIndex, yIndex } = this.pheromoneBodyIndexes;
     const toBeRemoved: number[] = [];
-    this.activePheromones.forEach((activeId: number): void => {
-      const pheromone = this.bodies[activeId];
-      pheromone[intensityIndex] -= deltaSeconds;
-      const sprite = this.pheromonesSpritesMap[activeId];
-      if (pheromone[intensityIndex] > 0) {
-        sprite.alpha = pheromone[intensityIndex] / pheromonesMaxLifeSpan;
+    this.activePheromones.forEach((id: number): void => {
+      const pheromone = this.bodies[id];
+      pheromone[this.intensityIndex] -= deltaSeconds;
+      const sprite = this.pheromonesSpritesMap[id];
+      if (pheromone[this.intensityIndex] > 0) {
+        sprite.alpha = pheromone[this.intensityIndex] / this.pheromonesMaxLifeSpan;
       } else {
-        pheromone[xIndex] = activeId * -radius;
-        pheromone[yIndex] = activeId * -radius;
+        this.longitudes[id] = id * -this.radius;
+        this.latitudes[id] = id * -this.radius;
         if (sprite) {
           sprite.x = -10;
           sprite.y = -10;
         }
-        toBeRemoved.push(activeId);
+        toBeRemoved.push(id);
       }
     });
     this.activePheromones = this.activePheromones.filter(
@@ -169,42 +158,43 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     _antsScale: number,
     hasFood: boolean,
   ): [number, number] {
-    const { intensityIndex, tagIndex, sensor, sensorRadius } = this;
-    const { xIndex, yIndex } = this.pheromoneBodyIndexes;
+    const { sensorRadius, longitudes, latitudes } = this;
     const { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex } = this.brachIndexes;
     const { PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
 
     let tag = hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD;
-    sensor[xIndex] = x + directionX * sensorRadius * 0.5;
-    sensor[yIndex] = y + directionY * sensorRadius * 0.5;
+    longitudes[0] = x + directionX * sensorRadius;
+    latitudes[0] = y + directionY * sensorRadius;
 
-    const [id, xB, yB] = sensor;
-    const branch = this.branches[id];
+    const xS = longitudes[0];
+    const yS = latitudes[0];
+    const branch = this.branches[0];
 
     if (
-      xB - sensorRadius < branch[AABB_leftIndex] ||
-      yB - sensorRadius < branch[AABB_topIndex] ||
-      xB + sensorRadius > branch[AABB_rightIndex] ||
-      yB + sensorRadius > branch[AABB_bottomIndex]
+      xS - sensorRadius < branch[AABB_leftIndex] ||
+      yS - sensorRadius < branch[AABB_topIndex] ||
+      xS + sensorRadius > branch[AABB_rightIndex] ||
+      yS + sensorRadius > branch[AABB_bottomIndex]
     ) {
-      this.remove(sensor);
-      this.insert(sensor);
+      this.remove();
+      this.insert();
     }
 
     let intensity = 0;
     let directionTargetX = 0;
     let directionTargetY = 0;
 
-    for (const other of this.getPotentials(sensor)) {
-      const otherIntensity = other[intensityIndex];
+    for (const other of this.getPotentials()) {
+      const otherId = other[0];
+      const otherIntensity = other[this.intensityIndex];
       if (
         otherIntensity > intensity &&
-        other[tagIndex] === tag &&
-        this.areCirclesOverlapping(sensor, other, sensorRadius)
+        other[this.tagIndex] === tag &&
+        this.areCirclesOverlapping(0, otherId, sensorRadius)
       ) {
         intensity = otherIntensity;
-        directionTargetX = other[xIndex] - x;
-        directionTargetY = other[yIndex] - y;
+        directionTargetX = longitudes[otherId] - x;
+        directionTargetY = latitudes[otherId] - y;
       }
     }
 
