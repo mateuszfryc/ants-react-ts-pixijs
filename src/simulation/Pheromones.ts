@@ -133,10 +133,6 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     );
   }
 
-  public getPheromonesCount(): number {
-    return this.activePheromones.length;
-  }
-
   /**
    * Set sensors position and direction to match
    * selected ant's properties and perform search

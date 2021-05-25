@@ -2,10 +2,10 @@ import React, { useContext, useEffect, useRef } from 'react';
 import styled, { css } from 'styled-components';
 import { observer } from 'mobx-react';
 
+import storeContext from 'stores/globalStore';
 import { Navigation } from 'UI/components/Navigation';
 import { SEO } from 'UI/components/SEO';
 import { updateRendererSize } from 'utils/graphics';
-import storeContext from 'stores/globalStore';
 import { StatusBar } from '../StatusBar';
 
 export const AppContainer = styled.div(
@@ -25,7 +25,7 @@ export const Content = styled.div(
   `,
 );
 
-export const App: React.FC = observer(() => {
+export const App = observer(() => {
   const store = useContext(storeContext);
   const simulationInitalLock = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);

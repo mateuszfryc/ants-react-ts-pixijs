@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import styled, { css } from 'styled-components';
+import { observer } from 'mobx-react';
+
+import storeContext from 'stores/globalStore';
 import { Flex } from '../Flex';
 
 const Bar = styled.div(
@@ -33,31 +36,33 @@ const Status = styled.div(
 
 const fpsWidth = '45px';
 
-export const StatusBar: React.FC = () => {
+export const StatusBar = observer(() => {
+  const store = useContext(storeContext);
+
   return (
     <Bar>
       <Flex>
         <Status id='status-fps' style={{ width: fpsWidth }}>
-          FPS: <span>0</span>
+          FPS: <span>{store.metrics.fps}</span>
         </Status>
         <Status id='status-fps-min' style={{ width: fpsWidth }}>
-          MIN: <span>0</span>
+          MIN: <span>{store.metrics.fpsMin}</span>
         </Status>
         <Status id='status-fps-max' style={{ width: fpsWidth }}>
-          MAX: <span>0</span>
+          MAX: <span>{store.metrics.fpsMax}</span>
         </Status>
       </Flex>
       <Flex>
         <Status id='status-pheromones-total' style={{ width: '160px' }}>
-          Pheromones count: <span>0</span>
+          Pheromones count: <span>{store.metrics.pheromonesCount}</span>
         </Status>
         <Status id='status-ants-total' style={{ width: '100px' }}>
-          Ants count: <span>0</span>
+          Ants count: <span>{store.metrics.antsCount}</span>
         </Status>
         <Status id='status-ants-on-screen' style={{ width: '120px' }}>
-          Ants OFF screen: <span>0</span>
+          Ants OFF screen: <span>{store.metrics.antsOffScreenCount}</span>
         </Status>
       </Flex>
     </Bar>
   );
-};
+});
