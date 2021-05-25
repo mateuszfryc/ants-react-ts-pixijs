@@ -5,6 +5,7 @@ import { doNTimes } from 'utils/do-n-times';
 import { Timer } from './Timer';
 import { TAGS } from './collisions/collisions';
 import { CirclesBVHMinimalCollisions } from './circlesBVHMinimalCollisions';
+import { SimulationSettings } from './types';
 
 export class Pheromones extends CirclesBVHMinimalCollisions {
   /** List of IDs of the pheromones that are currenlty in the use. */
@@ -23,41 +24,34 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
   readonly tagIndex = 1;
   readonly intensityIndex = 2;
 
-  constructor(
-    antsCount: number,
-    antsScale: number,
-    /**
-     * Distance that is used to place unused
-     * pheromones out of world bounds.
-     * World width or height (whichever is higher)
-     */
-    outOfBoundsDistance: number,
-    pheromonesMaxLifeSpan: number,
-    defaultRadius = 1.2,
-    /** Time between consequent emmisions in seconds */
-    timeBetweenEmissions = 0.15,
-  ) {
+  constructor(settings: SimulationSettings, outOfWorldBoundsDistance: number, defaultRadius = 1.4) {
     super(
-      antsCount * Math.round(1 / timeBetweenEmissions) * pheromonesMaxLifeSpan,
-      defaultRadius * antsScale,
+      settings.antsCount *
+        Math.round(1 / settings.timeBetweenPheromonesEmissions) *
+        settings.pheromonesLifeSpan,
+      defaultRadius * settings.antsScale,
     );
 
-    this.pheromonesMaxLifeSpan = pheromonesMaxLifeSpan;
-    this.sensorRadius = this.radius * 6;
-    this.pheromoneEmissionTimer = new Timer(timeBetweenEmissions);
+    this.pheromonesMaxLifeSpan = settings.pheromonesLifeSpan;
+    this.sensorRadius = this.radius * 3;
+    this.pheromoneEmissionTimer = new Timer(settings.timeBetweenPheromonesEmissions);
 
-    this.initialiseBodies(outOfBoundsDistance);
+    this.initialiseBodies(outOfWorldBoundsDistance);
     this.initialiseSprites();
     this.sensor[this.tagIndex] = TAGS.ANT_SENSOR;
 
-    // eslint-disable-next-line no-console
-    console.log(`time between emissions: ${timeBetweenEmissions}`);
-    // eslint-disable-next-line no-console
-    console.log(
-      `pheromones body count: ${
-        antsCount * Math.round(1 / timeBetweenEmissions) * pheromonesMaxLifeSpan
-      }`,
-    );
+    this.onConstructionLog();
+  }
+
+  private onConstructionLog(): void {
+    // // eslint-disable-next-line no-console
+    // console.log(`time between emissions: ${timeBetweenEmissions}`);
+    // // eslint-disable-next-line no-console
+    // console.log(
+    //   `pheromones body count: ${
+    //     settings.antsCount * Math.round(1 / timeBetweenEmissions) * settings.pheromonesLifeSpan
+    //   }`,
+    // );
   }
 
   private initialiseSprites(): void {
@@ -155,7 +149,6 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     y: number,
     directionX: number,
     directionY: number,
-    _antsScale: number,
     hasFood: boolean,
   ): [number, number] {
     const { sensorRadius, longitudes, latitudes } = this;

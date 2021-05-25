@@ -1,4 +1,4 @@
-import { Container, DisplayObject, ParticleContainer, Sprite, Texture } from 'pixi.js';
+import { Container, ParticleContainer, Sprite, Texture } from 'pixi.js';
 
 import AntImage from 'assets/ant-red.png';
 import { Circle } from 'simulation/collisions/circle';
@@ -15,20 +15,19 @@ import {
   foodImageTexture,
 } from './Food';
 import { Pheromones } from './Pheromones';
+import { SimulationSettings, Size } from './types';
 
 export class TheAntColony {
   antsProps: number[][] = [];
   antsCollisionShapes = new Map<number, Circle>();
   antsSpritesMap = new Map<number, Sprite>();
   antTexture = Texture.from(AntImage);
-  collisions = new Collisions();
   timers = new Map<number, Timer>();
   pheromonesSteeringSensitivity = 1;
   directionChangeMultiplier = 0.16;
   randomDirectionMaxAngle = 1;
   maxPheromoneFuel = 128;
   lastCreatedAntId = 0;
-  antsScale = 3;
   tags = TAGS;
   indexes = {
     idIndex: 0,
@@ -43,33 +42,53 @@ export class TheAntColony {
     pheromoneStrengthIndex: 9,
   };
 
+  antsScale: number;
   antsCount: number;
   antsSprites: ParticleContainer;
+  collisions: Collisions;
   foodBitesSprites: ParticleContainer;
   pheromones: Pheromones;
 
-  constructor(
-    antsCount: number,
-    stage: Container,
-    antsSprites: ParticleContainer,
-    foodBitesSprites: ParticleContainer,
-    worldWidth: number,
-    worldHeight: number,
-    pheromonesLifeSpan: number,
-  ) {
+  constructor(settings: SimulationSettings, world: Size, collisions: Collisions) {
+    const { antsCount } = settings;
     this.antsCount = antsCount;
+    this.antsScale = settings.antsScale;
     this.antsProps.length = antsCount;
-    this.antsSprites = antsSprites;
-    this.foodBitesSprites = foodBitesSprites;
-    this.pheromones = new Pheromones(
-      antsCount,
-      this.antsScale,
-      Math.max(worldWidth, worldHeight) + 1,
-      pheromonesLifeSpan,
-    );
+    this.collisions = collisions;
+    this.pheromones = new Pheromones(settings, Math.max(world.width, world.height) + 1);
 
-    stage.addChild((this.pheromones.sprites as unknown) as DisplayObject);
-    this.collisions.createWorldBounds(worldWidth, worldHeight, 200, -199);
+    this.antsSprites = new ParticleContainer(this.antsCount, {
+      position: true,
+      scale: true,
+      tint: true,
+      rotation: true,
+
+      alpha: false,
+      uvs: false,
+      vertices: false,
+    });
+    this.antsSprites.zIndex = 3;
+
+    this.foodBitesSprites = new ParticleContainer(this.antsCount, {
+      position: true,
+      scale: true,
+      rotation: true,
+
+      tint: false,
+      alpha: false,
+      uvs: false,
+      vertices: false,
+    });
+    this.foodBitesSprites.zIndex = 4;
+  }
+
+  public getAntsCollisionShapes(): Shape[] {
+    const shapes: Shape[] = [];
+    this.antsCollisionShapes.forEach((shape: Circle) => {
+      shapes.push(shape as Shape);
+    });
+
+    return shapes;
   }
 
   private spawnAnt(id: number, x: number, y: number): boolean {
@@ -149,6 +168,7 @@ export class TheAntColony {
   public update(
     deltaSeconds: number,
     stage: Container,
+    collisions: Collisions,
     worldWidth: number,
     worldHeight: number,
   ): number {
@@ -167,7 +187,6 @@ export class TheAntColony {
         pheromoneStrengthIndex,
       },
       antsCollisionShapes,
-      collisions,
       foodBitesSprites,
       maxPheromoneFuel,
       tags: { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, NEST_VISIBLE_AREA },
@@ -214,7 +233,7 @@ export class TheAntColony {
           /* eslint-disable indent */
           switch (tag) {
             case ANT:
-              if (!hasFood) {
+              if (!hasFood && !other[hasFoodIndex]) {
                 overlap *= 0.5;
                 antBody.x -= overlap * overlapX;
                 antBody.y -= overlap * overlapY;
@@ -289,7 +308,6 @@ export class TheAntColony {
                   const foodChunkSprite = Sprite.from(foodImageTexture);
                   foodChunkSprite.scale.set(0.2);
                   foodChunkSprite.anchor.set(0.5, -0.8);
-                  foodChunkSprite.zIndex = 3;
                   foodBitesSprites.addChild(foodChunkSprite);
                   foodBitesSpritesMap.set(id, foodChunkSprite);
                   amount--;
@@ -356,7 +374,6 @@ export class TheAntColony {
           y,
           directionX,
           directionY,
-          this.antsScale,
           hasFood > 0,
         );
 

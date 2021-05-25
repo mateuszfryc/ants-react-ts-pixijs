@@ -19,10 +19,13 @@ export class GlobalStore {
     this.simulationContainer = undefined;
     this.currentSimulation = undefined;
     this.simulationSettings = {
-      antsCount: 500,
+      antsCount: 120,
+      antsScale: 3,
       nestPositon: { x: 150, y: 150 },
-      /** In seconds */
-      pheromonesLifeSpan: 60,
+      /** seconds */
+      pheromonesLifeSpan: 30,
+      /** Time between consequent emmisions in seconds */
+      timeBetweenPheromonesEmissions: 0.15,
     };
   }
 
@@ -30,6 +33,8 @@ export class GlobalStore {
     if (this.currentSimulation) this.currentSimulation.prepeareToBeRemoved();
     if (this.simulationContainer) {
       this.currentSimulation = new Simulation(this.simulationContainer, this.simulationSettings);
+      // eslint-disable-next-line no-console
+      console.log(this.simulationSettings);
     }
   }
 

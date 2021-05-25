@@ -1,59 +1,61 @@
-import { PixiSetupResultType, setupGraphics } from 'utils/graphics';
-import {
-  debugTimer,
-  setupAntCounter,
-  setupFPSDisplay,
-  setupPheromonesCounter,
-} from 'simulation/debug';
+import { Application, DisplayObject, Graphics } from 'pixi.js';
+import { getMetrics } from 'simulation/Metrics';
 import { SimulationSettings, Size } from 'simulation/types';
 import { TheAntColony } from './AntsColony';
+import { Collisions } from './collisions/collisions';
+import { Shape } from './collisions/proxyTypes';
 import { makeSomeFood, foodSprites, foodCollisionShapes, foodProps } from './Food';
-import { createNest } from './Nest';
+import { Nest } from './Nest';
 
 export class Simulation {
   settings: SimulationSettings;
-  graphics: PixiSetupResultType;
-  worldBounds: Size;
+  graphics: Application;
+  collisions = new Collisions();
+  debugDraw: Graphics;
+  world: Size;
 
   constructor(container: HTMLElement, simulationSettings: SimulationSettings) {
     this.settings = simulationSettings;
-    this.graphics = setupGraphics(container, simulationSettings.antsCount);
-    this.worldBounds = {
+    this.graphics = this.setupGraphics(container);
+    this.world = {
       width: container.offsetWidth,
       height: container.offsetHeight,
     };
+    this.debugDraw = this.setupDebugDraw();
 
     this.run(simulationSettings);
   }
 
-  private run({ antsCount, nestPositon, pheromonesLifeSpan }: SimulationSettings): void {
-    const { graphicsEngine, stage, antsSprites, foodBitesSprites, _draw } = this.graphics;
-    const { width: worldWidth, height: worldHeight } = this.worldBounds;
+  private setupGraphics(container: HTMLElement): Application {
+    const graphics = new Application({
+      backgroundColor: 0x000000, // 0xc5bb8e
+    });
+    graphics.resizeTo = container;
+    graphics.stage.sortableChildren = true;
+    graphics.stop();
+    container.append(graphics.view);
 
-    const initLabel = 'CreateAntsColony execution time';
-    // eslint-disable-next-line no-console
-    console.time(initLabel);
-    const AntsColony = new TheAntColony(
-      antsCount,
-      stage,
-      antsSprites,
-      foodBitesSprites,
-      worldWidth,
-      worldHeight,
-      pheromonesLifeSpan,
-    );
-    const { collisions, antsCollisionShapes, getPheromonesCount, pheromones } = AntsColony;
-    // eslint-disable-next-line no-console
-    console.timeEnd(initLabel);
-    const nest = createNest(nestPositon.x, nestPositon.y, stage, collisions);
+    return graphics;
+  }
 
-    const { updateFPSDisplay } = setupFPSDisplay();
-    const { updateAntsCounter } = setupAntCounter();
-    const { updatePheromonesCounter } = setupPheromonesCounter();
-    const foodDistanceToNest = 200;
-    let lastTime = performance.now();
+  private setupDebugDraw(): Graphics {
+    const draw = new Graphics();
+    draw.zIndex = 10;
+    this.graphics.stage.addChild(draw);
+
+    return draw;
+  }
+
+  private run(settings: SimulationSettings): void {
+    const { nestPositon } = settings;
+    const { collisions, world, debugDraw } = this;
+    const { stage } = this.graphics;
+
+    const nest = new Nest(nestPositon.x, nestPositon.y);
+    const AntsColony = new TheAntColony(settings, world, collisions);
     AntsColony.releaseOneByOne(nest.x, nest.y);
     // AntsColony.throwAllAtOnce(worldWidth, worldHeight);
+
     makeSomeFood(
       ({ id, foodCollisionShape, foodSprite, properties }): void => {
         foodCollisionShapes.set(id, foodCollisionShape);
@@ -62,11 +64,30 @@ export class Simulation {
         stage.addChild(foodSprite);
         foodProps.set(id, properties);
       },
-      worldWidth - 150,
-      worldHeight - 150,
+      world.width - 150,
+      world.height - 150,
     );
 
-    let isTabFocused = true;
+    collisions.insert(nest.body, nest.areaIsVisibleIn);
+    collisions.createWorldBounds(world.width, world.height, 200, -199);
+
+    this.graphics.stage.addChild(
+      AntsColony.antsSprites,
+      AntsColony.foodBitesSprites,
+      (AntsColony.pheromones.sprites as unknown) as DisplayObject,
+      nest,
+      nest.entranceCoverSprite,
+    );
+
+    const [
+      metricsTimer,
+      updateFPSDisplay,
+      updateAntsCounter,
+      updatePheromonesCounter,
+    ] = getMetrics();
+
+    let lastTime = performance.now();
+    // let isTabFocused = true;
     // window.addEventListener('blur', () => {
     //   isTabFocused = false;
     // });
@@ -76,15 +97,21 @@ export class Simulation {
     // });
 
     function simulationUpdate(): void {
-      if (!isTabFocused) return;
+      // if (!isTabFocused) return;
       const frameStartTime = performance.now();
       const deltaSeconds = Math.min((frameStartTime - lastTime) / 1000, 0.5);
 
-      const antsOnScreenCount = AntsColony.update(deltaSeconds, stage, worldWidth, worldHeight);
+      const antsOnScreenCount = AntsColony.update(
+        deltaSeconds,
+        stage,
+        collisions,
+        world.width,
+        world.height,
+      );
 
-      // _draw.clear();
-      // _draw.lineStyle(1, 0xff0000);
-      // pheromones.drawShapes(_draw);
+      // debugDraw.clear();
+      // debugDraw.lineStyle(1, 0xff0000);
+      // AntsColony.pheromones.drawShapes(debugDraw);
       // drawSensors(_draw);
       // _draw.lineStyle(1, 0x005500);
       // pheremonesCollisionShapes.forEach((pheromone) => {
@@ -104,26 +131,23 @@ export class Simulation {
       // _draw.lineStyle(1, 0x888888);
       // antsCollisions.draw(_draw);
 
-      if (debugTimer.update(deltaSeconds)) {
+      if (metricsTimer.update(deltaSeconds)) {
         updateFPSDisplay(deltaSeconds);
         updatePheromonesCounter(AntsColony.getPheromonesCount());
-        const { size } = antsCollisionShapes;
+        const { size } = AntsColony.antsCollisionShapes;
         updateAntsCounter(size, size - antsOnScreenCount);
       }
 
       lastTime = frameStartTime;
     }
 
-    graphicsEngine.ticker.add(simulationUpdate);
-    graphicsEngine.start();
+    this.graphics.ticker.add(simulationUpdate);
+    this.graphics.start();
   }
 
   public prepeareToBeRemoved(): void {
-    const { graphics: g } = this;
-    g.stage.children.length = 0;
-    g.foodBitesSprites.children.length = 0;
-    g.antsSprites.children.length = 0;
-    g._draw.clear();
-    g.graphicsEngine.ticker.stop();
+    this.graphics.stage.children.length = 0;
+    this.graphics.ticker.stop();
+    this.debugDraw.clear();
   }
 }

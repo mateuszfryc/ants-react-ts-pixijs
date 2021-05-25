@@ -7,6 +7,8 @@ export type Vector = {
 
 export type SimulationSettings = {
   antsCount: number;
+  antsScale: number;
   nestPositon: Vector;
   pheromonesLifeSpan: number;
+  timeBetweenPheromonesEmissions: number;
 };
