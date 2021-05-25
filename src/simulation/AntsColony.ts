@@ -47,15 +47,13 @@ export class TheAntColony {
   antsSprites: ParticleContainer;
   collisions: Collisions;
   foodBitesSprites: ParticleContainer;
-  pheromones: Pheromones;
 
-  constructor(settings: SimulationSettings, world: Size, collisions: Collisions) {
+  constructor(settings: SimulationSettings, collisions: Collisions) {
     const { antsCount } = settings;
     this.antsCount = antsCount;
     this.antsScale = settings.antsScale;
     this.antsProps.length = antsCount;
     this.collisions = collisions;
-    this.pheromones = new Pheromones(settings, Math.max(world.width, world.height) + 1);
 
     this.antsSprites = new ParticleContainer(this.antsCount, {
       position: true,
@@ -168,12 +166,11 @@ export class TheAntColony {
   public update(
     deltaSeconds: number,
     stage: Container,
-    collisions: Collisions,
+    pheromones: Pheromones,
     worldWidth: number,
     worldHeight: number,
   ): number {
     const {
-      pheromones,
       antsProps,
       indexes: {
         idIndex,
@@ -203,7 +200,7 @@ export class TheAntColony {
       ant.y += speed * props[directionYIndex] * deltaSeconds;
     });
 
-    collisions.update();
+    this.collisions.update();
 
     antsProps.forEach((ant: number[]) => {
       let [
@@ -214,7 +211,7 @@ export class TheAntColony {
         randomDirectionY,
         speed,
         speedTarget,
-        maxSpeed,
+        ,
         hasFood,
         pheromoneFuel,
       ] = ant;
@@ -225,8 +222,8 @@ export class TheAntColony {
       let searchForPheromones = true;
       let makeRandomTurn = true;
 
-      for (const other of collisions.getPotentials(antBody as Shape)) {
-        if (collisions.areBodiesColliding(antBody as Shape, other, collisionTestResult)) {
+      for (const other of this.collisions.getPotentials(antBody as Shape)) {
+        if (this.collisions.areBodiesColliding(antBody as Shape, other, collisionTestResult)) {
           let [overlap, overlapX, overlapY] = collisionTestResult;
           const { id: otherId, tag, radius } = other;
 
@@ -439,12 +436,6 @@ export class TheAntColony {
       ant[pheromoneStrengthIndex] = pheromoneFuel;
     });
 
-    pheromones.updatePheromones(deltaSeconds);
-
     return antsOnScreenCounter;
-  }
-
-  getPheromonesCount(): number {
-    return this.pheromones.getPheromonesCount();
   }
 }

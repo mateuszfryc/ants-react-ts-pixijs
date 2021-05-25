@@ -3,24 +3,26 @@ import { getMetrics } from 'simulation/Metrics';
 import { SimulationSettings, Size } from 'simulation/types';
 import { TheAntColony } from './AntsColony';
 import { Collisions } from './collisions/collisions';
-import { Shape } from './collisions/proxyTypes';
 import { makeSomeFood, foodSprites, foodCollisionShapes, foodProps } from './Food';
 import { Nest } from './Nest';
+import { Pheromones } from './Pheromones';
 
 export class Simulation {
   settings: SimulationSettings;
   graphics: Application;
+  pheromones: Pheromones;
   collisions = new Collisions();
   debugDraw: Graphics;
   world: Size;
 
   constructor(container: HTMLElement, simulationSettings: SimulationSettings) {
+    const width = container.offsetWidth;
+    const height = container.offsetHeight;
+
     this.settings = simulationSettings;
     this.graphics = this.setupGraphics(container);
-    this.world = {
-      width: container.offsetWidth,
-      height: container.offsetHeight,
-    };
+    this.pheromones = new Pheromones(simulationSettings, Math.max(width, height) + 1);
+    this.world = { width, height };
     this.debugDraw = this.setupDebugDraw();
 
     this.run(simulationSettings);
@@ -48,11 +50,11 @@ export class Simulation {
 
   private run(settings: SimulationSettings): void {
     const { nestPositon } = settings;
-    const { collisions, world, debugDraw } = this;
+    const { collisions, world, pheromones, debugDraw } = this;
     const { stage } = this.graphics;
 
     const nest = new Nest(nestPositon.x, nestPositon.y);
-    const AntsColony = new TheAntColony(settings, world, collisions);
+    const AntsColony = new TheAntColony(settings, collisions);
     AntsColony.releaseOneByOne(nest.x, nest.y);
     // AntsColony.throwAllAtOnce(worldWidth, worldHeight);
 
@@ -74,7 +76,7 @@ export class Simulation {
     this.graphics.stage.addChild(
       AntsColony.antsSprites,
       AntsColony.foodBitesSprites,
-      (AntsColony.pheromones.sprites as unknown) as DisplayObject,
+      (this.pheromones.sprites as unknown) as DisplayObject,
       nest,
       nest.entranceCoverSprite,
     );
@@ -104,7 +106,7 @@ export class Simulation {
       const antsOnScreenCount = AntsColony.update(
         deltaSeconds,
         stage,
-        collisions,
+        pheromones,
         world.width,
         world.height,
       );
@@ -131,9 +133,11 @@ export class Simulation {
       // _draw.lineStyle(1, 0x888888);
       // antsCollisions.draw(_draw);
 
+      pheromones.updatePheromones(deltaSeconds);
+
       if (metricsTimer.update(deltaSeconds)) {
         updateFPSDisplay(deltaSeconds);
-        updatePheromonesCounter(AntsColony.getPheromonesCount());
+        updatePheromonesCounter(pheromones.getPheromonesCount());
         const { size } = AntsColony.antsCollisionShapes;
         updateAntsCounter(size, size - antsOnScreenCount);
       }
