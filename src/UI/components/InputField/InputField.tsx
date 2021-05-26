@@ -16,12 +16,14 @@ const Input = styled.input(
 
 type InputFieldType = {
   name: string;
-  id?: string;
-  type?: inputTypes;
+
+  checked?: boolean;
   disabled?: boolean;
-  placeholder?: string;
+  id?: string;
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
   style?: React.CSSProperties;
+  type?: inputTypes;
   value?: string;
 };
 

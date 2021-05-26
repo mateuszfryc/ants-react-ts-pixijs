@@ -23,6 +23,7 @@ export class DebugDraw extends Graphics {
   constructor() {
     super();
     makeObservable(this, {
+      queue: observable,
       drawables: observable,
       registerDrawable: action,
     });
@@ -41,7 +42,7 @@ export class DebugDraw extends Graphics {
     this.drawables.push(new DrawableReference(this.drawables.length + 1, label, item));
   }
 
-  updateQueue(drawable: DrawableReference): void {
+  updateDrawable(drawable: DrawableReference): void {
     if (this.queue.some((item) => item.id === drawable.id)) {
       this.queue = this.queue.filter((item) => item.id !== drawable.id);
       this.clear();

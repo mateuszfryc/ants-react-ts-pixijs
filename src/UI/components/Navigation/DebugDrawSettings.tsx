@@ -35,17 +35,22 @@ export const DebugDrawSettings: React.FC = observer(() => {
         that can crash the browser. Use only with minmal objects count on the screen.
       </Paragraph>
       <Paragraph as='div'>
-        {debugDraw.drawables.map((item) => (
-          <Option>
-            <InputField
-              type='checkbox'
-              name='debug-draw-collisions'
-              id='debug-draw-collisions'
-              onChange={() => debugDraw.updateQueue(item)}
-            />
-            <Label htmlFor='debug-draw-collisions'>{item.label}</Label>
-          </Option>
-        ))}
+        {debugDraw.drawables.map((item) => {
+          const id = `debug-draw-${item.label}`;
+
+          return (
+            <Option key={item.label}>
+              <InputField
+                checked={debugDraw.queue.some((drawable) => drawable.id === item.id)}
+                id={id}
+                name={id}
+                type='checkbox'
+                onChange={() => debugDraw.updateDrawable(item)}
+              />
+              <Label htmlFor={id}>{item.label}</Label>
+            </Option>
+          );
+        })}
       </Paragraph>
     </NavItemWithContent>
   );
