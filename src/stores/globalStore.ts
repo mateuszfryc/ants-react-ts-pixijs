@@ -3,9 +3,11 @@ import { makeObservable, observable, action } from 'mobx';
 import { Simulation } from 'simulation/Simulation';
 import { SimulationSettings, Vector } from 'simulation/types';
 import { Metrics } from 'simulation/Metrics';
+import { DebugDraw } from 'simulation/DebugDraw';
 
 export class GlobalStore {
   metrics = new Metrics();
+  debugDraw = new DebugDraw();
   currentSimulation: Simulation | undefined;
   simulationContainer: HTMLElement | undefined;
   simulationSettings: SimulationSettings;
@@ -13,6 +15,8 @@ export class GlobalStore {
   constructor() {
     makeObservable(this, {
       currentSimulation: observable,
+      metrics: observable,
+      debugDraw: observable,
       simulationSettings: observable,
       createSimulation: action,
       setAntsCount: action,
@@ -33,14 +37,16 @@ export class GlobalStore {
   }
 
   createSimulation(): void {
-    this.metrics = new Metrics();
     if (this.currentSimulation) this.currentSimulation.prepeareToBeRemoved();
+    this.metrics = new Metrics();
+    this.debugDraw = new DebugDraw();
     this.currentSimulation = undefined;
     if (this.simulationContainer) {
       this.currentSimulation = new Simulation(
         this.simulationContainer,
         this.simulationSettings,
         this.metrics,
+        this.debugDraw,
       );
     }
   }

@@ -8,6 +8,7 @@ import { Flex } from 'UI/components/Flex';
 import { NavItem } from './NavItem';
 import { NavItemWithContent } from './NavItemWithContent';
 import { SimulationSettings } from './SimulationSettings';
+import { DebugDrawSettings } from './DebugDrawSettings';
 
 const OpenMenuButton = styled(Flex)(
   ({ theme: { spacings } }) => css`
@@ -67,12 +68,7 @@ export const Navigation: React.FC = () => {
             </Paragraph>
           </NavItemWithContent>
 
-          <NavItemWithContent title='Debug Draw'>
-            <Paragraph>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-              incididunt ut labore et dolore magna aliqua.
-            </Paragraph>
-          </NavItemWithContent>
+          <DebugDrawSettings />
         </ScrollVertical>
       </NavigationOpen>
     </>

@@ -326,17 +326,8 @@ export class BVH {
     return shapes;
   }
 
-  // Draws the bodies within the BVH to a CanvasRenderingContext2D's current path
+  /** Draw bounding volume hierarchy (without bodies) */
   draw(context: PIXI.Graphics): void {
-    const { bodies } = this;
-    const count = bodies.length;
-
-    for (let i = 0; i < count; ++i) {
-      bodies[i].draw(context);
-    }
-  }
-
-  drawBVH(context: PIXI.Graphics): void {
     let current = this.root;
     let traverse_left = true;
 

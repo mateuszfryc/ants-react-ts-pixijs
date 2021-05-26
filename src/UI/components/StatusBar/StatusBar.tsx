@@ -36,31 +36,31 @@ const Status = styled.div(
 
 const fpsWidth = '45px';
 
-export const StatusBar = observer(() => {
-  const store = useContext(storeContext);
+export const StatusBar: React.FC = observer(() => {
+  const { metrics } = useContext(storeContext);
 
   return (
     <Bar>
       <Flex>
         <Status id='status-fps' style={{ width: fpsWidth }}>
-          FPS: <span>{store.metrics.fps}</span>
+          FPS: <span>{metrics.fps}</span>
         </Status>
         <Status id='status-fps-min' style={{ width: fpsWidth }}>
-          MIN: <span>{store.metrics.fpsMin}</span>
+          MIN: <span>{metrics.fpsMin}</span>
         </Status>
         <Status id='status-fps-max' style={{ width: fpsWidth }}>
-          MAX: <span>{store.metrics.fpsMax}</span>
+          MAX: <span>{metrics.fpsMax}</span>
         </Status>
       </Flex>
       <Flex>
         <Status id='status-pheromones-total' style={{ width: '160px' }}>
-          Pheromones count: <span>{store.metrics.pheromonesCount}</span>
+          Pheromones count: <span>{metrics.pheromonesCount}</span>
         </Status>
         <Status id='status-ants-total' style={{ width: '100px' }}>
-          Ants count: <span>{store.metrics.antsCount}</span>
+          Ants count: <span>{metrics.antsCount}</span>
         </Status>
         <Status id='status-ants-on-screen' style={{ width: '120px' }}>
-          Ants OFF screen: <span>{store.metrics.antsOffScreenCount}</span>
+          Ants OFF screen: <span>{metrics.antsOffScreenCount}</span>
         </Status>
       </Flex>
     </Bar>

@@ -25,7 +25,7 @@ export const Content = styled.div(
   `,
 );
 
-export const App = observer(() => {
+export const App: React.FC = observer(() => {
   const store = useContext(storeContext);
   const simulationInitalLock = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);

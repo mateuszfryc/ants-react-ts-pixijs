@@ -78,11 +78,12 @@ export class Collisions {
 
   // Draws the bodies within the system to a CanvasRenderingContext2D's current path
   draw(context: PIXI.Graphics): void {
-    this.bvh.draw(context);
-  }
+    const { bodies } = this.bvh;
+    const count = bodies.length;
 
-  drawBVH(context: PIXI.Graphics): void {
-    this.bvh.drawBVH(context);
+    for (let i = 0; i < count; ++i) {
+      bodies[i].draw(context);
+    }
   }
 
   // Returns a list of potential collisions

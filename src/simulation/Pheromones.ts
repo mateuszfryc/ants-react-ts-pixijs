@@ -1,4 +1,4 @@
-import { ParticleContainer, Sprite, Texture } from 'pixi.js';
+import * as PIXI from 'pixi.js';
 
 import PheromoneImage from 'assets/pheromone.png';
 import { doNTimes } from 'utils/do-n-times';
@@ -10,9 +10,9 @@ import { SimulationSettings } from './types';
 export class Pheromones extends CirclesBVHMinimalCollisions {
   /** List of IDs of the pheromones that are currenlty in the use. */
   activePheromones: number[] = [];
-  pheromonesSpritesMap: Sprite[] = [];
+  pheromonesSpritesMap: PIXI.Sprite[] = [];
   sensor: number[] = [0];
-  sprites = ParticleContainer;
+  sprites = PIXI.ParticleContainer;
   lastPheromonePickedIndex = 1;
   readonly pheromonesMaxLifeSpan: number;
   readonly pheromoneEmissionTimer: Timer;
@@ -58,7 +58,7 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     const initLabel = 'Pheromones sprites build time';
     // eslint-disable-next-line no-console
     console.time(initLabel);
-    const pheromonesSprites = new ParticleContainer(this.bodiesMaxCount, {
+    const pheromonesSprites = new PIXI.ParticleContainer(this.bodiesMaxCount, {
       alpha: true,
       position: true,
       scale: true,
@@ -69,12 +69,12 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
       vertices: false,
     });
     pheromonesSprites.zIndex = 1;
-    this.sprites = (pheromonesSprites as unknown) as typeof ParticleContainer;
+    this.sprites = (pheromonesSprites as unknown) as typeof PIXI.ParticleContainer;
 
-    const pheromoneImageTexture = Texture.from(PheromoneImage);
+    const pheromoneImageTexture = PIXI.Texture.from(PheromoneImage);
     /** Create all the sprites in advance. */
     doNTimes((index: number): void => {
-      const pheromoneSprite = Sprite.from(pheromoneImageTexture);
+      const pheromoneSprite = PIXI.Sprite.from(pheromoneImageTexture);
       pheromoneSprite.x = -10;
       pheromoneSprite.y = -10;
       pheromoneSprite.anchor.set(0.5);
@@ -188,5 +188,9 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     }
 
     return [directionTargetX, directionTargetY];
+  }
+
+  draw(context: PIXI.Graphics): void {
+    this.drawShapes(context);
   }
 }

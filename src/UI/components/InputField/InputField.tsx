@@ -16,6 +16,7 @@ const Input = styled.input(
 
 type InputFieldType = {
   name: string;
+  id?: string;
   type?: inputTypes;
   disabled?: boolean;
   placeholder?: string;

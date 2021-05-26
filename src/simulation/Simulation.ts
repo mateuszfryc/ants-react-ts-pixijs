@@ -1,4 +1,4 @@
-import { Application, DisplayObject, Graphics } from 'pixi.js';
+import * as PIXI from 'pixi.js';
 import { Metrics } from 'simulation/Metrics';
 import { SimulationSettings, Size } from 'simulation/types';
 import { TheAntColony } from './AntsColony';
@@ -11,32 +11,47 @@ import { Pheromones } from './Pheromones';
 export class Simulation {
   collisions = new Collisions();
   settings: SimulationSettings;
-  graphics: Application;
+  graphics: PIXI.Application;
   antsColony: TheAntColony;
   pheromones: Pheromones;
-  debugDraw: Graphics;
+  debugDraw: DebugDraw;
   metrics: Metrics;
   world: Size;
   lastTime = 0;
 
-  constructor(container: HTMLElement, simulationSettings: SimulationSettings, metrics: Metrics) {
+  constructor(
+    container: HTMLElement,
+    settings: SimulationSettings,
+    metrics: Metrics,
+    debugDraw: DebugDraw,
+  ) {
     const width = container.offsetWidth;
     const height = container.offsetHeight;
     this.world = { width, height };
-    this.settings = simulationSettings;
-    this.antsColony = new TheAntColony(simulationSettings, this.collisions);
-    this.pheromones = new Pheromones(simulationSettings, Math.max(width, height) + 1);
-    this.debugDraw = new DebugDraw();
+    this.graphics = this.setupGraphics(container);
+    this.antsColony = new TheAntColony(settings, this.collisions);
+    this.pheromones = new Pheromones(settings, Math.max(width, height) + 1);
+    this.debugDraw = debugDraw;
+    this.settings = settings;
     this.metrics = metrics;
-    const graphics = new Application({
+
+    debugDraw.registerDrawable(this.collisions, 'Ants Collisions');
+    debugDraw.registerDrawable(this.collisions.bvh, 'Bounding Volume Hierarchy');
+    debugDraw.registerDrawable(this.pheromones, 'Pheromones collisions');
+
+    this.run(settings);
+  }
+
+  private setupGraphics(container: HTMLElement): PIXI.Application {
+    const graphics = new PIXI.Application({
       backgroundColor: 0x000000, // 0xc5bb8e
     });
     graphics.resizeTo = container;
     graphics.stage.sortableChildren = true;
     graphics.stop();
     container.append(graphics.view);
-    this.graphics = graphics;
-    this.run(simulationSettings);
+
+    return graphics;
   }
 
   private run(settings: SimulationSettings): void {
@@ -66,7 +81,7 @@ export class Simulation {
     this.graphics.stage.addChild(
       this.antsColony.antsSprites,
       this.antsColony.foodBitesSprites,
-      (this.pheromones.sprites as unknown) as DisplayObject,
+      (this.pheromones.sprites as unknown) as PIXI.DisplayObject,
       nest,
       nest.entranceCoverSprite,
       this.debugDraw,
@@ -98,27 +113,7 @@ export class Simulation {
       this.world.height,
     );
 
-    // debugDraw.clear();
-    // debugDraw.lineStyle(1, 0xff0000);
-    // pheromones.drawShapes(debugDraw);
-    // drawSensors(_draw);
-    // _draw.lineStyle(1, 0x005500);
-    // pheremonesCollisionShapes.forEach((pheromone) => {
-    //   pheromone.draw(_draw);
-    // });
-    // for (const bound of worldBounds) bound.draw(draw);
-    // antsCollisionShapes.forEach((ant) => {
-    //   ant.draw(_draw);
-    // });
-    // draw.lineStyle(1, 0x00ff00);
-    // foodCollisionShapes.forEach((bite) => {
-    //   bite.draw(draw);
-    // });
-    // drawSensors(_draw);
-    // _draw.lineStyle(1, 0x660000);
-    // antsCollisions.drawBVH(_draw);
-    // _draw.lineStyle(1, 0x888888);
-    // antsCollisions.draw(_draw);
+    this.debugDraw.draw();
 
     this.pheromones.updatePheromones(deltaSeconds);
 
@@ -135,6 +130,7 @@ export class Simulation {
   }
 
   public prepeareToBeRemoved(): void {
+    this.debugDraw.clearReferences();
     this.graphics.ticker.stop();
     this.graphics.destroy(true, { children: true, texture: false, baseTexture: false });
   }
