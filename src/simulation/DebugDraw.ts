@@ -1,19 +1,6 @@
 import { Graphics } from 'pixi.js';
 import { makeObservable, observable, action } from 'mobx';
-
-type DrawableObject = { draw: (context: Graphics) => void };
-
-class DrawableReference {
-  id: number;
-  label: string;
-  ref: DrawableObject;
-
-  constructor(id: number, label: string, ref: DrawableObject) {
-    this.id = id;
-    this.label = label;
-    this.ref = ref;
-  }
-}
+import { DrawableObject, DrawableReference } from './DrawableReference';
 
 export class DebugDraw extends Graphics {
   /** Array of objects that implement: draw method */
@@ -34,12 +21,15 @@ export class DebugDraw extends Graphics {
     if (this.queue.length > 0) {
       this.clear();
       this.lineStyle(1, 0xff0000);
-      this.queue.forEach((item): void => item.ref.draw(this));
+      this.queue.forEach((item): void => {
+        this.lineStyle(1, item.color);
+        item.ref.draw(this);
+      });
     }
   }
 
-  registerDrawable(item: DrawableObject, label: string): void {
-    this.drawables.push(new DrawableReference(this.drawables.length + 1, label, item));
+  registerDrawable(item: DrawableObject, label: string, color = 0xff0000): void {
+    this.drawables.push(new DrawableReference(this.drawables.length + 1, label, item, color));
   }
 
   updateDrawable(drawable: DrawableReference): void {

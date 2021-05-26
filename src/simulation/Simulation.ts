@@ -36,8 +36,8 @@ export class Simulation {
     this.metrics = metrics;
 
     debugDraw.registerDrawable(this.collisions, 'Ants Collisions');
-    debugDraw.registerDrawable(this.collisions.bvh, 'Bounding Volume Hierarchy');
-    debugDraw.registerDrawable(this.pheromones, 'Pheromones collisions');
+    debugDraw.registerDrawable(this.collisions.bvh, 'Bounding Volume Hierarchy', 0x666666);
+    debugDraw.registerDrawable(this.pheromones, 'Pheromones collisions', 0x2299ff);
 
     this.run(settings);
   }
