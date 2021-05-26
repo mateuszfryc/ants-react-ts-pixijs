@@ -58,9 +58,8 @@ export class Simulation {
     const { nestPositon } = settings;
     const { collisions, world } = this;
     const { stage } = this.graphics;
-    const nest = new Nest(nestPositon.x, nestPositon.y);
 
-    this.antsColony.releaseOneByOne(nest.x, nest.y);
+    this.antsColony.releaseOneByOne();
     // this.antsColony.throwAllAtOnce(worldWidth, worldHeight);
 
     makeSomeFood(
@@ -75,15 +74,15 @@ export class Simulation {
       world.height - 150,
     );
 
-    collisions.insert(nest.body, nest.areaIsVisibleIn);
+    collisions.insert(this.antsColony.nest.body, this.antsColony.nest.areaIsVisibleIn);
     collisions.createWorldBounds(world.width, world.height, 200, -199);
 
     this.graphics.stage.addChild(
+      this.antsColony.nest,
+      this.antsColony.nest.entranceCoverSprite,
       this.antsColony.antsSprites,
       this.antsColony.foodBitesSprites,
       (this.pheromones.sprites as unknown) as PIXI.DisplayObject,
-      nest,
-      nest.entranceCoverSprite,
       this.debugDraw,
     );
 

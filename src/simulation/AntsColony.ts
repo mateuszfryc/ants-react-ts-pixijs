@@ -15,7 +15,8 @@ import {
   foodImageTexture,
 } from './Food';
 import { Pheromones } from './Pheromones';
-import { SimulationSettings, Size } from './types';
+import { SimulationSettings } from './types';
+import { Nest } from './Nest';
 
 export class TheAntColony {
   antsProps: number[][] = [];
@@ -42,6 +43,7 @@ export class TheAntColony {
     pheromoneStrengthIndex: 9,
   };
 
+  nest: Nest;
   antsScale: number;
   antsCount: number;
   antsSprites: ParticleContainer;
@@ -50,6 +52,7 @@ export class TheAntColony {
 
   constructor(settings: SimulationSettings, collisions: Collisions) {
     const { antsCount } = settings;
+    this.nest = new Nest(settings.nestPositon.x, settings.nestPositon.y);
     this.antsCount = antsCount;
     this.antsScale = settings.antsScale;
     this.antsProps.length = antsCount;
@@ -140,7 +143,7 @@ export class TheAntColony {
     return this.antsCollisionShapes.size < this.antsCount;
   }
 
-  public releaseOneByOne(xSpawn: number, ySpawn: number): void {
+  public releaseOneByOne(xSpawn = this.nest.x, ySpawn = this.nest.y): void {
     setTimeout(() => {
       const shouldSpawnNextAnt = this.spawnAnt(
         this.lastCreatedAntId,
@@ -287,8 +290,9 @@ export class TheAntColony {
                 antBody.y -= overlap * overlapY;
                 let [amount, isEmpty] = foodProps.get(otherId)!;
                 if (!hasFood && !isEmpty) {
-                  directionTargetX = -directionX;
-                  directionTargetY = -directionY;
+                  /** Ants generally remambre the direction back to the nest. */
+                  directionTargetX = this.nest.x - antBody.x;
+                  directionTargetY = this.nest.y - antBody.y;
                   makeRandomTurn = false;
                   speed = 0;
                   const foodSprite = foodSprites.get(otherId);
