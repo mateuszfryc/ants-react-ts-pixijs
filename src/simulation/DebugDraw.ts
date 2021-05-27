@@ -12,6 +12,7 @@ export class DebugDraw extends Graphics {
     makeObservable(this, {
       queue: observable,
       drawables: observable,
+      updateQueue: action,
       registerDrawable: action,
     });
     this.zIndex = 10;
@@ -32,9 +33,13 @@ export class DebugDraw extends Graphics {
     this.drawables.push(new DrawableReference(this.drawables.length + 1, label, item, color));
   }
 
+  updateQueue(newQueue: DrawableReference[]): void {
+    this.queue = newQueue;
+  }
+
   updateDrawable(drawable: DrawableReference): void {
     if (this.queue.some((item) => item.id === drawable.id)) {
-      this.queue = this.queue.filter((item) => item.id !== drawable.id);
+      this.updateQueue(this.queue.filter((item) => item.id !== drawable.id));
       this.clear();
 
       return;

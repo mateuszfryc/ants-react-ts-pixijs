@@ -7,13 +7,7 @@ import * as MATH from 'utils/math';
 import { Timer } from 'simulation/Timer';
 import { doNTimes } from 'utils/do-n-times';
 import { Shape } from './collisions/proxyTypes';
-import {
-  foodSprites,
-  foodBitesSpritesMap,
-  foodCollisionShapes,
-  foodProps,
-  foodImageTexture,
-} from './Food';
+import { FoodSource } from './Food';
 import { Pheromones } from './Pheromones';
 import { SimulationSettings } from './types';
 import { Nest } from './Nest';
@@ -170,6 +164,13 @@ export class TheAntColony {
     deltaSeconds: number,
     stage: Container,
     pheromones: Pheromones,
+    {
+      bitesSpritesMap,
+      props: foodProps,
+      sprites: foodSprites,
+      collisionShapes: foodCollisionShapes,
+      imageTexture: foodImageTexture,
+    }: FoodSource,
     worldWidth: number,
     worldHeight: number,
   ): number {
@@ -246,10 +247,10 @@ export class TheAntColony {
             case NEST:
               if (hasFood) {
                 hasFood = 0;
-                const foodChunkToBeRemoved = foodBitesSpritesMap.get(id);
+                const foodChunkToBeRemoved = bitesSpritesMap.get(id);
                 if (foodChunkToBeRemoved) {
                   foodBitesSprites.removeChild(foodChunkToBeRemoved);
-                  foodBitesSpritesMap.delete(id);
+                  bitesSpritesMap.delete(id);
                 }
                 makeRandomTurn = false;
                 speed = 0;
@@ -310,7 +311,7 @@ export class TheAntColony {
                   foodChunkSprite.scale.set(0.2);
                   foodChunkSprite.anchor.set(0.5, -0.8);
                   foodBitesSprites.addChild(foodChunkSprite);
-                  foodBitesSpritesMap.set(id, foodChunkSprite);
+                  bitesSpritesMap.set(id, foodChunkSprite);
                   amount--;
                   isEmpty = amount <= 0 ? 1 : 0;
                   if (isEmpty) {
@@ -414,7 +415,7 @@ export class TheAntColony {
 
       /** Drag the food sprite along */
       if (hasFood) {
-        const foodChunkSprite = foodBitesSpritesMap.get(id);
+        const foodChunkSprite = bitesSpritesMap.get(id);
         if (foodChunkSprite) {
           foodChunkSprite.x = x;
           foodChunkSprite.y = y;

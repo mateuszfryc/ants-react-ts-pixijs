@@ -1,17 +1,18 @@
 import * as PIXI from 'pixi.js';
-import { Metrics } from 'simulation/Metrics';
 import { SimulationSettings, Size } from 'simulation/types';
-import { TheAntColony } from './AntsColony';
+import { Metrics } from 'simulation/Metrics';
 import { Collisions } from './collisions/collisions';
-import { DebugDraw } from './DebugDraw';
-import { makeSomeFood, foodSprites, foodCollisionShapes, foodProps } from './Food';
-import { Nest } from './Nest';
+import { TheAntColony } from './AntsColony';
 import { Pheromones } from './Pheromones';
+import { Food, FoodSource } from './Food';
+import { DebugDraw } from './DebugDraw';
+import { Shape } from './collisions/proxyTypes';
 
 export class Simulation {
   collisions = new Collisions();
-  settings: SimulationSettings;
+  foodSource = new FoodSource();
   graphics: PIXI.Application;
+  settings: SimulationSettings;
   antsColony: TheAntColony;
   pheromones: Pheromones;
   debugDraw: DebugDraw;
@@ -39,7 +40,7 @@ export class Simulation {
     debugDraw.registerDrawable(this.collisions.bvh, 'Bounding Volume Hierarchy', 0x666666);
     debugDraw.registerDrawable(this.pheromones, 'Pheromones collisions', 0x2299ff);
 
-    this.run(settings);
+    this.run();
   }
 
   private setupGraphics(container: HTMLElement): PIXI.Application {
@@ -54,24 +55,22 @@ export class Simulation {
     return graphics;
   }
 
-  private run(settings: SimulationSettings): void {
-    const { nestPositon } = settings;
+  private run(): void {
     const { collisions, world } = this;
     const { stage } = this.graphics;
 
     this.antsColony.releaseOneByOne();
     // this.antsColony.throwAllAtOnce(worldWidth, worldHeight);
 
-    makeSomeFood(
-      ({ id, foodCollisionShape, foodSprite, properties }): void => {
-        foodCollisionShapes.set(id, foodCollisionShape);
-        collisions.insert(foodCollisionShape);
-        foodSprites.set(id, foodSprite);
-        stage.addChild(foodSprite);
-        foodProps.set(id, properties);
+    this.foodSource.spawnFoodInArea(
+      (food: Food): void => {
+        const [, shape, sprite] = food;
+        collisions.insert(shape as Shape);
+        stage.addChild(sprite);
       },
       world.width - 150,
       world.height - 150,
+      5,
     );
 
     collisions.insert(this.antsColony.nest.body, this.antsColony.nest.areaIsVisibleIn);
@@ -108,6 +107,7 @@ export class Simulation {
       deltaSeconds,
       this.graphics.stage,
       this.pheromones,
+      this.foodSource,
       this.world.width,
       this.world.height,
     );

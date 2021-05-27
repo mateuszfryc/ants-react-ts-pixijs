@@ -5,60 +5,70 @@ import { Circle } from 'simulation/collisions/circle';
 import { TAGS } from 'simulation/collisions/collisions';
 import { doNTimes } from 'utils/do-n-times';
 
-const { random } = Math;
-let lastCreatedFoodId = 0;
+type Props = [number, number];
+export type Food = [number, Circle, Sprite, Props];
 
-export function spawnFood(id: number, x: number, y: number, radius = 20): any {
-  const foodCollisionShape = new Circle(
-    x,
-    y,
-    radius, // radius
-    TAGS.FOOD,
-    0.7, // scale
-    0, // padding
-    id,
-  );
+export class FoodSource {
+  imageTexture = Texture.from(FoodImage);
+  lastCreatedFoodId = 0;
+  bitesSpritesMap = new Map<number, Sprite>();
+  collisionShapes = new Map<number, Circle>();
+  sprites = new Map<number, Sprite>();
+  props = new Map<number, Props>();
 
-  const foodSprite = Sprite.from(FoodImage);
-  foodSprite.x = x;
-  foodSprite.y = y;
-  foodSprite.scale.set(radius * 0.022);
-  foodSprite.anchor.set(0.5);
-
-  const amount = radius * 50;
-  const isEmpty = false;
-
-  const properties = [amount, isEmpty];
-
-  return [id, foodCollisionShape, foodSprite, properties];
-}
-
-export function makeSomeFood(
-  useFoodCallback: (food: any) => void,
-  xSpawn: number,
-  ySpawn: number,
-  foodAmount = 10,
-  range = 100,
-  radius = 20,
-): void {
-  doNTimes((): void => {
-    const x = xSpawn + (random() * range - range * 0.5);
-    const y = ySpawn + (random() * range - range * 0.5);
-
-    const [id, foodCollisionShape, foodSprite, properties] = spawnFood(
-      lastCreatedFoodId,
+  /**
+   * Food chunk with specified amount
+   * of bites that can be harvested.
+   */
+  public spawnFoodPatch(x: number, y: number, radius = 20, density = 50): Food {
+    const { lastCreatedFoodId: id } = this;
+    const collisionShape = new Circle(
       x,
       y,
-      radius,
+      radius, // radius
+      TAGS.FOOD,
+      0.7, // scale
+      0, // padding
+      id,
     );
-    lastCreatedFoodId++;
 
-    useFoodCallback({ id, foodCollisionShape, foodSprite, properties });
-  }, foodAmount);
+    const foodSprite = Sprite.from(FoodImage);
+    foodSprite.x = x;
+    foodSprite.y = y;
+    foodSprite.scale.set(radius * 0.022);
+    foodSprite.anchor.set(0.5);
+
+    const amount = radius * density;
+    const isEmpty = 0;
+    const props: Props = [amount, isEmpty];
+
+    this.collisionShapes.set(id, collisionShape);
+    this.sprites.set(id, foodSprite);
+    this.props.set(id, props);
+    this.lastCreatedFoodId++;
+
+    return [id, collisionShape, foodSprite, [amount, isEmpty]];
+  }
+
+  /**
+   * Spawn few food bites in an area.
+   * Pass callback for additional setup.
+   */
+  public spawnFoodInArea(
+    useFoodCallback: (food: Food) => void,
+    xSpawn: number,
+    ySpawn: number,
+    density = 50,
+    patchesInArea = 10,
+    range = 100,
+    radius = 20,
+  ): void {
+    const { random } = Math;
+    doNTimes((): void => {
+      const x = xSpawn + (random() * range - range * 0.5);
+      const y = ySpawn + (random() * range - range * 0.5);
+
+      useFoodCallback(this.spawnFoodPatch(x, y, radius, density));
+    }, patchesInArea);
+  }
 }
-
-export const foodImageTexture = Texture.from(FoodImage);
-export const foodSprites = new Map<number, Sprite>();
-export const foodBitesSpritesMap = new Map<number, Sprite>();
-export const foodCollisionShapes = new Map<number, Circle>();
-export const foodProps = new Map<number, number[]>();
