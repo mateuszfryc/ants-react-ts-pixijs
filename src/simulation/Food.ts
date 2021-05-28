@@ -1,74 +1,95 @@
-import { Texture, Sprite } from 'pixi.js';
+import { Texture, Sprite, ParticleContainer } from 'pixi.js';
 
 import FoodImage from 'assets/food.png';
 import { Circle } from 'simulation/collisions/circle';
-import { TAGS } from 'simulation/collisions/collisions';
-import { doNTimes } from 'utils/do-n-times';
+import { Collisions, TAGS } from 'simulation/collisions/collisions';
+import { Shape } from './collisions/proxyTypes';
 
-type Props = [number, number];
-export type Food = [number, Circle, Sprite, Props];
+type SpawnFoodInAreaArgs = {
+  location: [number, number];
+  amount?: number;
+  count?: number;
+  radius?: number;
+};
 
-export class FoodSource {
-  imageTexture = Texture.from(FoodImage);
+export class Food {
   lastCreatedFoodId = 0;
-  bitesSpritesMap = new Map<number, Sprite>();
-  collisionShapes = new Map<number, Circle>();
-  sprites = new Map<number, Sprite>();
-  props = new Map<number, Props>();
-
+  foodTexture = Texture.from(FoodImage);
+  crumbsCount: number;
+  collisions: Collisions;
+  spritesParticles: ParticleContainer;
   /**
-   * Food chunk with specified amount
-   * of bites that can be harvested.
+   * Maps allow for quick access
+   * to sprites and collisions shapes
    */
-  public spawnFoodPatch(x: number, y: number, radius = 20, density = 50): Food {
+  shapes = new Map<number, Circle>();
+  sprites = new Map<number, Sprite>();
+
+  constructor(collisions: Collisions, crumbsCount = 10000) {
+    this.collisions = collisions;
+    this.crumbsCount = crumbsCount;
+    this.spritesParticles = new ParticleContainer(crumbsCount, {
+      position: true,
+      scale: true,
+      rotation: true,
+
+      tint: false,
+      alpha: false,
+      uvs: false,
+      vertices: false,
+    });
+    this.spritesParticles.zIndex = 4;
+  }
+
+  public spawnOneCrumb(x: number, y: number): void {
+    if (this.lastCreatedFoodId >= this.crumbsCount) return;
+
     const { lastCreatedFoodId: id } = this;
     const collisionShape = new Circle(
       x,
       y,
-      radius, // radius
+      15, // radius
       TAGS.FOOD,
-      0.7, // scale
+      1, // scale
       0, // padding
       id,
     );
 
-    const foodSprite = Sprite.from(FoodImage);
+    const foodSprite = Sprite.from(this.foodTexture);
     foodSprite.x = x;
     foodSprite.y = y;
-    foodSprite.scale.set(radius * 0.022);
+    foodSprite.scale.set(0.2);
     foodSprite.anchor.set(0.5);
 
-    const amount = radius * density;
-    const isEmpty = 0;
-    const props: Props = [amount, isEmpty];
-
-    this.collisionShapes.set(id, collisionShape);
+    this.spritesParticles.addChild(foodSprite);
     this.sprites.set(id, foodSprite);
-    this.props.set(id, props);
+    this.collisions.insert(collisionShape as Shape);
+    this.shapes.set(id, collisionShape);
     this.lastCreatedFoodId++;
-
-    return [id, collisionShape, foodSprite, [amount, isEmpty]];
   }
 
-  /**
-   * Spawn few food bites in an area.
-   * Pass callback for additional setup.
-   */
-  public spawnFoodInArea(
-    useFoodCallback: (food: Food) => void,
-    xSpawn: number,
-    ySpawn: number,
-    density = 50,
-    patchesInArea = 10,
-    range = 100,
-    radius = 20,
-  ): void {
-    const { random } = Math;
-    doNTimes((): void => {
-      const x = xSpawn + (random() * range - range * 0.5);
-      const y = ySpawn + (random() * range - range * 0.5);
+  public pickUpCrumb(id: number): void {
+    /** Picked up crumb doesn't need collision shape anymore. */
+    this.collisions.remove(this.shapes.get(id) as Shape);
+    this.shapes.delete(id);
+    this.sprites.get(id)?.anchor.set(0.5, -0.8);
+  }
 
-      useFoodCallback(this.spawnFoodPatch(x, y, radius, density));
-    }, patchesInArea);
+  public remove(id: number): void {
+    let sprite = this.sprites.get(id);
+    this.sprites.delete(id);
+    this.spritesParticles.removeChild(sprite!);
+    sprite = undefined;
+  }
+
+  public spawnFoodInArea({ location, count = 10, radius = 100 }: SpawnFoodInAreaArgs): void {
+    const { random } = Math;
+    let i = 0;
+    for (i; i < count; i++) {
+      const x = location[0] + (random() * radius - radius * 0.5);
+      const y = location[1] + (random() * radius - radius * 0.5);
+
+      this.spawnOneCrumb(x, y);
+    }
   }
 }

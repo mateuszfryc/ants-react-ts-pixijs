@@ -7,7 +7,7 @@ import * as MATH from 'utils/math';
 import { Timer } from 'simulation/Timer';
 import { doNTimes } from 'utils/do-n-times';
 import { Shape } from './collisions/proxyTypes';
-import { FoodSource } from './Food';
+import { Food } from './Food';
 import { Pheromones } from './Pheromones';
 import { SimulationSettings } from './types';
 import { Nest } from './Nest';
@@ -23,6 +23,7 @@ export class TheAntColony {
   randomDirectionMaxAngle = 1;
   maxPheromoneFuel = 128;
   lastCreatedAntId = 0;
+  maxSpeed = MATH.randomInRange(55, 65);
   tags = TAGS;
   indexes = {
     idIndex: 0,
@@ -32,7 +33,7 @@ export class TheAntColony {
     randomDirectionYIndex: 4,
     speedIndex: 5,
     speedTargetIndex: 6,
-    maxSpeedIndex: 7,
+    payloadIdIndex: 7,
     hasFoodIndex: 8,
     pheromoneStrengthIndex: 9,
   };
@@ -42,7 +43,6 @@ export class TheAntColony {
   antsCount: number;
   antsSprites: ParticleContainer;
   collisions: Collisions;
-  foodBitesSprites: ParticleContainer;
 
   constructor(settings: SimulationSettings, collisions: Collisions) {
     const { antsCount } = settings;
@@ -63,18 +63,6 @@ export class TheAntColony {
       vertices: false,
     });
     this.antsSprites.zIndex = 3;
-
-    this.foodBitesSprites = new ParticleContainer(this.antsCount, {
-      position: true,
-      scale: true,
-      rotation: true,
-
-      tint: false,
-      alpha: false,
-      uvs: false,
-      vertices: false,
-    });
-    this.foodBitesSprites.zIndex = 4;
   }
 
   public getAntsCollisionShapes(): Shape[] {
@@ -108,9 +96,9 @@ export class TheAntColony {
     const [directionX, directionY] = MATH.randomUnitVector();
     const randomDirectionX = 0;
     const randomDirectionY = 0;
-    const maxSpeed = MATH.randomInRange(55, 65);
-    const speed = maxSpeed * 0.5;
-    const targetSpeed = maxSpeed;
+    const payloadId = -1;
+    const speed = this.maxSpeed * Math.random();
+    const targetSpeed = this.maxSpeed;
     const hasFood = 0;
     const pheromoneStrength = 0;
     const properties = [
@@ -121,7 +109,7 @@ export class TheAntColony {
       randomDirectionY,
       speed,
       targetSpeed,
-      maxSpeed,
+      payloadId,
       hasFood,
       pheromoneStrength,
     ];
@@ -162,15 +150,8 @@ export class TheAntColony {
 
   public update(
     deltaSeconds: number,
-    stage: Container,
     pheromones: Pheromones,
-    {
-      bitesSpritesMap,
-      props: foodProps,
-      sprites: foodSprites,
-      collisionShapes: foodCollisionShapes,
-      imageTexture: foodImageTexture,
-    }: FoodSource,
+    food: Food,
     worldWidth: number,
     worldHeight: number,
   ): number {
@@ -184,11 +165,11 @@ export class TheAntColony {
         randomDirectionYIndex,
         speedIndex,
         speedTargetIndex,
+        payloadIdIndex,
         hasFoodIndex,
         pheromoneStrengthIndex,
       },
       antsCollisionShapes,
-      foodBitesSprites,
       maxPheromoneFuel,
       tags: { ANT, FOOD, NEST, PHEROMONE_FOOD, PHEROMONE_NEST, NEST_VISIBLE_AREA },
     } = this;
@@ -215,7 +196,7 @@ export class TheAntColony {
         randomDirectionY,
         speed,
         speedTarget,
-        ,
+        payloadId,
         hasFood,
         pheromoneFuel,
       ] = ant;
@@ -229,7 +210,7 @@ export class TheAntColony {
       for (const other of this.collisions.getPotentials(antBody as Shape)) {
         if (this.collisions.areBodiesColliding(antBody as Shape, other, collisionTestResult)) {
           let [overlap, overlapX, overlapY] = collisionTestResult;
-          const { id: otherId, tag, radius } = other;
+          const { id: otherId, tag } = other;
 
           /* eslint-disable indent */
           switch (tag) {
@@ -247,11 +228,7 @@ export class TheAntColony {
             case NEST:
               if (hasFood) {
                 hasFood = 0;
-                const foodChunkToBeRemoved = bitesSpritesMap.get(id);
-                if (foodChunkToBeRemoved) {
-                  foodBitesSprites.removeChild(foodChunkToBeRemoved);
-                  bitesSpritesMap.delete(id);
-                }
+                food.remove(id);
                 makeRandomTurn = false;
                 speed = 0;
                 directionTargetX = -directionX;
@@ -277,7 +254,7 @@ export class TheAntColony {
               break;
 
             case FOOD:
-              const halfRadius = other.radius * 0.5;
+              const halfRadius = other.radius * 0.85;
               if (overlap < halfRadius) {
                 if (!hasFood) {
                   directionTargetX = overlapX;
@@ -289,38 +266,15 @@ export class TheAntColony {
                 overlap -= halfRadius;
                 antBody.x -= overlap * overlapX;
                 antBody.y -= overlap * overlapY;
-                let [amount, isEmpty] = foodProps.get(otherId)!;
-                if (!hasFood && !isEmpty) {
-                  /** Ants generally remambre the direction back to the nest. */
+                if (!hasFood) {
+                  /** In general ants remambre overal direction back to the nest. */
                   directionTargetX = this.nest.x - antBody.x;
                   directionTargetY = this.nest.y - antBody.y;
                   makeRandomTurn = false;
                   speed = 0;
-                  const foodSprite = foodSprites.get(otherId);
-                  if (foodSprite) {
-                    const {
-                      scale,
-                      scale: { x },
-                    } = foodSprite;
-                    const newSize = x - MATH.mapRangeClamped(1, 0, amount, 0, x);
-                    scale.set(newSize);
-                    other.radius = (newSize * radius) / x;
-                  }
                   hasFood = 1;
-                  const foodChunkSprite = Sprite.from(foodImageTexture);
-                  foodChunkSprite.scale.set(0.2);
-                  foodChunkSprite.anchor.set(0.5, -0.8);
-                  foodBitesSprites.addChild(foodChunkSprite);
-                  bitesSpritesMap.set(id, foodChunkSprite);
-                  amount--;
-                  isEmpty = amount <= 0 ? 1 : 0;
-                  if (isEmpty) {
-                    stage.removeChild(foodSprite!);
-                    foodProps.delete(otherId);
-                    foodSprites.delete(otherId);
-                    foodCollisionShapes.delete(otherId);
-                  }
-                  foodProps.set(otherId, [amount, isEmpty]);
+                  food.pickUpCrumb(otherId);
+                  payloadId = otherId;
                   pheromoneFuel = maxPheromoneFuel;
                 }
               }
@@ -415,11 +369,11 @@ export class TheAntColony {
 
       /** Drag the food sprite along */
       if (hasFood) {
-        const foodChunkSprite = bitesSpritesMap.get(id);
-        if (foodChunkSprite) {
-          foodChunkSprite.x = x;
-          foodChunkSprite.y = y;
-          foodChunkSprite.rotation = antSprite.rotation;
+        const foodCrumb = food.sprites.get(payloadId);
+        if (foodCrumb) {
+          foodCrumb.x = x;
+          foodCrumb.y = y;
+          foodCrumb.rotation = antSprite.rotation;
         }
       }
 
@@ -437,6 +391,7 @@ export class TheAntColony {
       ant[randomDirectionYIndex] = randomDirectionY;
       ant[speedIndex] = speed;
       ant[speedTargetIndex] = speedTarget;
+      ant[payloadIdIndex] = payloadId;
       ant[hasFoodIndex] = hasFood;
       ant[pheromoneStrengthIndex] = pheromoneFuel;
     });

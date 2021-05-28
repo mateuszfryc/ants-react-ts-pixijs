@@ -69,7 +69,7 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
       vertices: false,
     });
     pheromonesSprites.zIndex = 1;
-    this.sprites = (pheromonesSprites as unknown) as typeof PIXI.ParticleContainer;
+    this.sprites = pheromonesSprites as unknown as typeof PIXI.ParticleContainer;
 
     const pheromoneImageTexture = PIXI.Texture.from(PheromoneImage);
     /** Create all the sprites in advance. */

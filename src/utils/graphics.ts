@@ -1,4 +1,4 @@
-import { Application } from 'pixi.js';
+import * as PIXI from 'pixi.js';
 
 export const updateRendererSize = <T extends HTMLElement>(container: T): void => {
   const canavs = document.querySelector('canvas');

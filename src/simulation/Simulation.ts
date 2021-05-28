@@ -4,17 +4,17 @@ import { Metrics } from 'simulation/Metrics';
 import { Collisions } from './collisions/collisions';
 import { TheAntColony } from './AntsColony';
 import { Pheromones } from './Pheromones';
-import { Food, FoodSource } from './Food';
+import { Food } from './Food';
 import { DebugDraw } from './DebugDraw';
 import { Shape } from './collisions/proxyTypes';
 
 export class Simulation {
   collisions = new Collisions();
-  foodSource = new FoodSource();
   graphics: PIXI.Application;
   settings: SimulationSettings;
   antsColony: TheAntColony;
   pheromones: Pheromones;
+  food: Food;
   debugDraw: DebugDraw;
   metrics: Metrics;
   world: Size;
@@ -32,6 +32,7 @@ export class Simulation {
     this.graphics = this.setupGraphics(container);
     this.antsColony = new TheAntColony(settings, this.collisions);
     this.pheromones = new Pheromones(settings, Math.max(width, height) + 1);
+    this.food = new Food(this.collisions);
     this.debugDraw = debugDraw;
     this.settings = settings;
     this.metrics = metrics;
@@ -62,16 +63,17 @@ export class Simulation {
     this.antsColony.releaseOneByOne();
     // this.antsColony.throwAllAtOnce(worldWidth, worldHeight);
 
-    this.foodSource.spawnFoodInArea(
-      (food: Food): void => {
-        const [, shape, sprite] = food;
-        collisions.insert(shape as Shape);
-        stage.addChild(sprite);
-      },
-      world.width - 150,
-      world.height - 150,
-      5,
-    );
+    this.food.spawnFoodInArea({
+      location: [world.width * 0.5, world.height - 150],
+      count: 500,
+      radius: 50,
+    });
+
+    this.food.spawnFoodInArea({
+      location: [world.width - 100, 250],
+      count: 500,
+      radius: 50,
+    });
 
     collisions.insert(this.antsColony.nest.body, this.antsColony.nest.areaIsVisibleIn);
     collisions.createWorldBounds(world.width, world.height, 200, -199);
@@ -80,8 +82,8 @@ export class Simulation {
       this.antsColony.nest,
       this.antsColony.nest.entranceCoverSprite,
       this.antsColony.antsSprites,
-      this.antsColony.foodBitesSprites,
-      (this.pheromones.sprites as unknown) as PIXI.DisplayObject,
+      this.pheromones.sprites as unknown as PIXI.DisplayObject,
+      this.food.spritesParticles,
       this.debugDraw,
     );
 
@@ -105,17 +107,12 @@ export class Simulation {
     const deltaSeconds = Math.min((frameStartTime - this.lastTime) / 1000, 0.5);
     const antsOnScreenCount = this.antsColony.update(
       deltaSeconds,
-      this.graphics.stage,
       this.pheromones,
-      this.foodSource,
+      this.food,
       this.world.width,
       this.world.height,
     );
-
-    this.debugDraw.draw();
-
     this.pheromones.updatePheromones(deltaSeconds);
-
     if (this.metrics.timer.update(deltaSeconds)) {
       const { size } = this.antsColony.antsCollisionShapes;
       this.metrics.update(
@@ -125,6 +122,7 @@ export class Simulation {
         this.pheromones.activePheromones.length,
       );
     }
+    this.debugDraw.draw();
     this.lastTime = frameStartTime;
   }
 
