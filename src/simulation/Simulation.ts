@@ -6,7 +6,6 @@ import { TheAntColony } from './AntsColony';
 import { Pheromones } from './Pheromones';
 import { Food } from './Food';
 import { DebugDraw } from './DebugDraw';
-import { Shape } from './collisions/proxyTypes';
 
 export class Simulation {
   collisions = new Collisions();
