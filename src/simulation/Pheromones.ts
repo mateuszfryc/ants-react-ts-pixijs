@@ -16,6 +16,7 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
   lastPheromonePickedIndex = 1;
   readonly pheromonesMaxLifeSpan: number;
   readonly pheromoneEmissionTimer: Timer;
+  readonly radius: number;
   readonly sensorRadius: number;
   /**
    * This additional property of the minimal collisions items
@@ -25,14 +26,16 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
   readonly intensityIndex = 2;
 
   constructor(settings: SimulationSettings, outOfWorldBoundsDistance: number, defaultRadius = 1.4) {
+    // prettier-ignore
     super(
       settings.antsCount *
-        Math.round(1 / settings.timeBetweenPheromonesEmissions) *
-        settings.pheromonesLifeSpan,
+      Math.round(1 / settings.timeBetweenPheromonesEmissions) *
+      settings.pheromonesLifeSpan,
       defaultRadius * settings.antsScale,
     );
 
     this.pheromonesMaxLifeSpan = settings.pheromonesLifeSpan;
+    this.radius = defaultRadius * settings.antsScale;
     this.sensorRadius = this.radius * 3;
     this.pheromoneEmissionTimer = new Timer(settings.timeBetweenPheromonesEmissions);
 
@@ -40,18 +43,23 @@ export class Pheromones extends CirclesBVHMinimalCollisions {
     this.initialiseSprites();
     this.sensor[this.tagIndex] = TAGS.ANT_SENSOR;
 
-    this.onConstructionLog();
+    this.onConstructionLog(settings);
   }
 
-  private onConstructionLog(): void {
-    // // eslint-disable-next-line no-console
-    // console.log(`time between emissions: ${timeBetweenEmissions}`);
-    // // eslint-disable-next-line no-console
-    // console.log(
-    //   `pheromones body count: ${
-    //     settings.antsCount * Math.round(1 / timeBetweenEmissions) * settings.pheromonesLifeSpan
-    //   }`,
-    // );
+  private onConstructionLog({
+    antsCount,
+    pheromonesLifeSpan,
+    timeBetweenPheromonesEmissions,
+  }: SimulationSettings): void {
+    // eslint-disable-next-line no-console, prettier/prettier
+    console.log(`time between emissions: ${timeBetweenPheromonesEmissions}`);
+    // eslint-disable-next-line no-console
+    console.log(
+      // eslint-disable-next-line prettier/prettier
+      `pheromones body count: ${
+        antsCount * Math.round(1 / timeBetweenPheromonesEmissions) * pheromonesLifeSpan
+      }`,
+    );
   }
 
   private initialiseSprites(): void {

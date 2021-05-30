@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { SimulationSettings } from './types';
 
 export class CirclesBVHMinimalCollisions {
   readonly bodiesMaxCount: number;
@@ -39,7 +40,7 @@ export class CirclesBVHMinimalCollisions {
     this.radius = defaultRadius;
   }
 
-  public initialiseBodies(outOfBoundsDistance = 9999): void {
+  public initialiseBodies(outOfBoundsDistance: number): void {
     const { radius } = this;
     const initLabel = 'CirclesBVHMinimalCollisions bodies init time';
     // eslint-disable-next-line no-console
