@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { SimulationSettings } from './types';
 
-export class CirclesBVHMinimalCollisions {
+export class BVHCircles {
   readonly bodiesMaxCount: number;
   readonly branchesMaxCount: number;
   readonly avilableNodeBranches: number[] = [];

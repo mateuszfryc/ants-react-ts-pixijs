@@ -4,10 +4,10 @@ import PheromoneImage from 'assets/pheromone.png';
 import { doNTimes } from 'utils/do-n-times';
 import { Timer } from './Timer';
 import { TAGS } from './collisions/collisions';
-import { CirclesBVHMinimalCollisions } from './circlesBVHMinimalCollisions';
+import { BVHCircles } from './BVHCircles';
 import { SimulationSettings } from './types';
 
-export class Pheromones extends CirclesBVHMinimalCollisions {
+export class Pheromones extends BVHCircles {
   /** List of IDs of the pheromones that are currenlty in the use. */
   activePheromones: number[] = [];
   pheromonesSpritesMap: PIXI.Sprite[] = [];
