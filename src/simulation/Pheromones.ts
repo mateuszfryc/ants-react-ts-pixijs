@@ -34,7 +34,7 @@ export class Pheromones extends BVHCircles {
     );
 
     this.pheromonesMaxLifeSpan = settings.pheromonesLifeSpan;
-    this.sensorRadius = this.radius * 3;
+    this.sensorRadius = this.radius * 2;
     this.pheromoneEmissionTimer = new Timer(settings.timeBetweenPheromonesEmissions);
 
     this.initialiseBodies(outOfWorldBoundsDistance);
