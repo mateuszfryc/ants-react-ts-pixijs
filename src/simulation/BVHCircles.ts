@@ -1,14 +1,16 @@
 import * as PIXI from 'pixi.js';
-import { SimulationSettings } from './types';
+
+type Body = number[];
+type Branch = number[];
 
 export class BVHCircles {
   readonly bodiesMaxCount: number;
   readonly branchesMaxCount: number;
-  readonly avilableNodeBranches: number[] = [];
-  readonly bodies: number[][] = [];
-  readonly branches: number[][] = [];
+  readonly avilableNodeBranches: Branch = [];
+  readonly bodies: Body[] = [];
+  readonly branches: Branch[] = [];
   lastNodeBranchIndex = 0;
-  rootBranch: number[] = [];
+  rootBranch: Branch | undefined;
   longitudes: Float32Array;
   latitudes: Float32Array;
   radius: number;
@@ -86,7 +88,7 @@ export class BVHCircles {
     branch[AABB_rightIndex] = xMax;
     branch[AABB_bottomIndex] = yMax;
 
-    if (this.rootBranch.length === 0) {
+    if (this.rootBranch === undefined) {
       this.rootBranch = branch;
 
       return;
@@ -146,7 +148,7 @@ export class BVHCircles {
       // Leaf
       else {
         const parentId = current[parentIdIndex];
-        const grandparent = branches[parentId] ?? [];
+        const grandparent: Branch | undefined = branches[parentId];
         const parent_min_x = current[AABB_leftIndex];
         const parent_min_y = current[AABB_topIndex];
         const parent_max_x = current[AABB_rightIndex];
@@ -161,7 +163,7 @@ export class BVHCircles {
           Math.min(yMin, parent_min_y),
           Math.max(xMax, parent_max_x),
           Math.max(yMax, parent_max_y),
-          parentId > -1 ? grandparent[idIndex] : -1,
+          grandparent !== undefined ? grandparent[idIndex] : -1,
           branch[idIndex],
           current[idIndex],
         ];
@@ -169,7 +171,7 @@ export class BVHCircles {
         current[parentIdIndex] = newParentId;
         branch[parentIdIndex] = newParentId;
 
-        if (grandparent.length === 0) {
+        if (grandparent === undefined) {
           this.rootBranch = newParent;
         } else if (grandparent[leftIdIndex] === current[idIndex]) {
           grandparent[leftIdIndex] = newParentId;
@@ -184,9 +186,18 @@ export class BVHCircles {
   }
 
   public remove(id = 0): void {
+    if (this.rootBranch === undefined) return;
+
     const branch = this.branches[id];
+    const { idIndex } = this.brachIndexes;
+    /** Don't remove root body/branch */
+    if (this.rootBranch[idIndex] === id) {
+      this.rootBranch = undefined;
+
+      return;
+    }
+
     const {
-      idIndex,
       AABB_leftIndex,
       AABB_topIndex,
       AABB_rightIndex,
@@ -195,12 +206,6 @@ export class BVHCircles {
       rightIdIndex,
       leftIdIndex,
     } = this.brachIndexes;
-    /** Don't remove root body/branch */
-    if (this.rootBranch.length > 0 && this.rootBranch[idIndex] === id) {
-      this.rootBranch = [];
-
-      return;
-    }
 
     /**
      * Get sibling of the branch being removed
@@ -209,14 +214,16 @@ export class BVHCircles {
      */
     const parentId = branch[parentIdIndex];
     const parent = this.branches[parentId];
-    const grandparent = this.branches[parent[parentIdIndex]] ?? [];
-    const parentLeftId = parent[leftIdIndex];
-    const parentLeft = this.branches[parentLeftId] ?? [];
-    const sibling = parentLeftId === id ? this.branches[parent[rightIdIndex]] : parentLeft;
+    const grandparent: Branch | undefined = this.branches[parent[parentIdIndex]];
 
-    sibling[parentIdIndex] = grandparent[idIndex];
+    const parentLeftChildId = parent[leftIdIndex];
+    const parentLeftChild: Branch | undefined = this.branches[parentLeftChildId];
+    const sibling =
+      parentLeftChildId === id ? this.branches[parent[rightIdIndex]] : parentLeftChild;
 
-    if (grandparent.length > 0) {
+    sibling[parentIdIndex] = grandparent ? grandparent[idIndex] : -1;
+
+    if (grandparent !== undefined) {
       if (grandparent[leftIdIndex] === parentId) {
         grandparent[leftIdIndex] = sibling[idIndex];
       } else {
@@ -260,11 +267,13 @@ export class BVHCircles {
   }
 
   /** Returns a list of potential collisions for a body */
-  public getPotentials(id = 0): number[][] {
-    const potentials: number[][] = [];
+  public getPotentials(id = 0): Body[] {
+    const potentials: Body[] = [];
+    const { isLeafIndex } = this.brachIndexes;
+    if (this.rootBranch === undefined || this.rootBranch[isLeafIndex] === 1) return potentials;
+
     const {
       idIndex,
-      isLeafIndex,
       AABB_leftIndex,
       AABB_topIndex,
       AABB_rightIndex,
@@ -273,9 +282,6 @@ export class BVHCircles {
       rightIdIndex,
       leftIdIndex,
     } = this.brachIndexes;
-    if (this.rootBranch.length === 0 || this.rootBranch[isLeafIndex] === 1) {
-      return potentials;
-    }
 
     const branch = this.branches[id];
     const xMin = branch[AABB_leftIndex];
@@ -283,31 +289,30 @@ export class BVHCircles {
     const xMax = branch[AABB_rightIndex];
     const yMax = branch[AABB_bottomIndex];
 
-    let current = this.rootBranch;
+    let current: Branch | undefined = this.rootBranch;
     let traverse_left = true;
-    while (current.length > 0) {
+    while (current !== undefined) {
       if (traverse_left) {
         traverse_left = false;
 
-        let left = current[isLeafIndex] === 0 ? this.branches[current[leftIdIndex]] : [];
+        let left = this.branches[current[leftIdIndex]];
 
         while (
-          left.length > 0 &&
+          left !== undefined &&
           left[AABB_rightIndex] >= xMin &&
           left[AABB_bottomIndex] >= yMin &&
           left[AABB_leftIndex] <= xMax &&
           left[AABB_topIndex] <= yMax
         ) {
           current = left;
-          left = current[isLeafIndex] === 0 ? this.branches[current[leftIdIndex]] : [];
+          left = this.branches[current![leftIdIndex]];
         }
       }
 
-      const isLeaf = current[isLeafIndex] === 1;
-      const right = isLeaf ? [] : this.branches[current[rightIdIndex]];
+      const right: Branch | undefined = this.branches[current![rightIdIndex]];
 
       if (
-        right.length > 0 &&
+        right !== undefined &&
         right[AABB_rightIndex] > xMin &&
         right[AABB_bottomIndex] > yMin &&
         right[AABB_leftIndex] < xMax &&
@@ -316,15 +321,16 @@ export class BVHCircles {
         current = right;
         traverse_left = true;
       } else {
-        if (isLeaf && current[idIndex] !== id) {
-          potentials.push(this.bodies[current[idIndex]]);
+        if (current![isLeafIndex] === 1 && current![idIndex] !== id) {
+          potentials.push(this.bodies[current![idIndex]]);
         }
 
-        if (current[parentIdIndex] > -1) {
-          let parent = this.branches[current[parentIdIndex]] ?? [];
-          while (parent.length > 0 && parent[rightIdIndex] === current[idIndex]) {
+        let parent: Branch | undefined = this.branches[current![parentIdIndex]];
+
+        if (parent !== undefined) {
+          while (parent !== undefined && parent[rightIdIndex] === current![idIndex]) {
             current = parent;
-            parent = this.branches[current[parentIdIndex]] ?? [];
+            parent = this.branches[current![parentIdIndex]] ?? [];
           }
 
           current = parent;
@@ -377,7 +383,7 @@ export class BVHCircles {
   }
 
   drawShapes(context: PIXI.Graphics): void {
-    this.bodies.forEach((body: number[]): void => {
+    this.bodies.forEach((body: Body): void => {
       const { radius } = this;
       const id = body[0];
       const x = this.longitudes[id];

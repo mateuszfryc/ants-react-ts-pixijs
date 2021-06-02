@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 
 import PheromoneImage from 'assets/pheromone.png';
-import { doNTimes } from 'utils/do-n-times';
+import { doNTimes } from 'shared/do-n-times';
 import { Timer } from './Timer';
 import { TAGS } from './collisions/collisions';
 import { BVHCircles } from './BVHCircles';

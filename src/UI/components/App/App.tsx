@@ -5,7 +5,7 @@ import { observer } from 'mobx-react';
 import storeContext from 'stores/globalStore';
 import { Navigation } from 'UI/components/Navigation';
 import { SEO } from 'UI/components/SEO';
-import { updateRendererSize } from 'utils/graphics';
+import { updateRendererSize } from 'shared/graphics';
 import { StatusBar } from '../StatusBar';
 
 export const AppContainer = styled.div(
