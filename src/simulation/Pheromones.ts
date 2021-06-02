@@ -16,7 +16,6 @@ export class Pheromones extends BVHCircles {
   lastPheromonePickedIndex = 1;
   readonly pheromonesMaxLifeSpan: number;
   readonly pheromoneEmissionTimer: Timer;
-  readonly radius: number;
   readonly sensorRadius: number;
   /**
    * This additional property of the minimal collisions items
@@ -35,7 +34,6 @@ export class Pheromones extends BVHCircles {
     );
 
     this.pheromonesMaxLifeSpan = settings.pheromonesLifeSpan;
-    this.radius = defaultRadius * settings.antsScale;
     this.sensorRadius = this.radius * 3;
     this.pheromoneEmissionTimer = new Timer(settings.timeBetweenPheromonesEmissions);
 
@@ -99,13 +97,11 @@ export class Pheromones extends BVHCircles {
     let { lastPheromonePickedIndex } = this;
     const pheromone = this.bodies[lastPheromonePickedIndex];
     const [id] = pheromone;
-    this.longitudes[id] = x;
-    this.latitudes[id] = y;
     pheromone[this.tagIndex] = hasFood ? PHEROMONE_FOOD : PHEROMONE_NEST;
     pheromone[this.intensityIndex] = initialIntensity * this.pheromonesMaxLifeSpan;
     this.activePheromones.push(id);
     this.remove(id);
-    this.insert(id);
+    this.insert(id, x, y);
 
     const pheromoneSprite = this.pheromonesSpritesMap[id];
     pheromoneSprite.x = x;
@@ -155,27 +151,16 @@ export class Pheromones extends BVHCircles {
     directionY: number,
     hasFood: boolean,
   ): [number, number] {
-    const { sensorRadius, longitudes, latitudes } = this;
-    const { AABB_leftIndex, AABB_topIndex, AABB_rightIndex, AABB_bottomIndex } = this.brachIndexes;
     const { PHEROMONE_FOOD, PHEROMONE_NEST } = TAGS;
-
     let tag = hasFood ? PHEROMONE_NEST : PHEROMONE_FOOD;
-    longitudes[0] = x + directionX * sensorRadius;
-    latitudes[0] = y + directionY * sensorRadius;
 
-    const xS = longitudes[0];
-    const yS = latitudes[0];
-    const branch = this.branches[0];
-
-    if (
-      xS - sensorRadius < branch[AABB_leftIndex] ||
-      yS - sensorRadius < branch[AABB_topIndex] ||
-      xS + sensorRadius > branch[AABB_rightIndex] ||
-      yS + sensorRadius > branch[AABB_bottomIndex]
-    ) {
-      this.remove();
-      this.insert();
-    }
+    this.remove();
+    this.insert(
+      0,
+      x + directionX * this.sensorRadius,
+      y + directionY * this.sensorRadius,
+      this.sensorRadius,
+    );
 
     let intensity = 0;
     let directionTargetX = 0;
@@ -187,11 +172,11 @@ export class Pheromones extends BVHCircles {
       if (
         otherIntensity > intensity &&
         other[this.tagIndex] === tag &&
-        this.areCirclesOverlapping(0, otherId, sensorRadius)
+        this.areCirclesOverlapping(0, otherId, this.sensorRadius)
       ) {
         intensity = otherIntensity;
-        directionTargetX = longitudes[otherId] - x;
-        directionTargetY = latitudes[otherId] - y;
+        directionTargetX = this.longitudes[otherId] - x;
+        directionTargetY = this.latitudes[otherId] - y;
       }
     }
 
