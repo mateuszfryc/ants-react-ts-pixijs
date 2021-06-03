@@ -104,6 +104,7 @@ export class Pheromones extends BVHCircles {
     this.insert(id, x, y);
 
     const pheromoneSprite = this.pheromonesSpritesMap[id];
+    pheromoneSprite.renderable = true;
     pheromoneSprite.x = x;
     pheromoneSprite.y = y;
     pheromoneSprite.alpha = initialIntensity;
@@ -126,8 +127,7 @@ export class Pheromones extends BVHCircles {
         this.longitudes[id] = id * -this.radius;
         this.latitudes[id] = id * -this.radius;
         if (sprite) {
-          sprite.x = -10;
-          sprite.y = -10;
+          sprite.renderable = false;
         }
         toBeRemoved.push(id);
       }

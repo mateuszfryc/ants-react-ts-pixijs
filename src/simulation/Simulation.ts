@@ -44,6 +44,10 @@ export class Simulation {
   }
 
   private setupGraphics(container: HTMLElement): PIXI.Application {
+    /** Disable interpolation when scaling, will make texture be pixelated */
+    PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
+    PIXI.settings.PRECISION_FRAGMENT = PIXI.PRECISION.LOW;
+    PIXI.settings.GC_MAX_IDLE = 1600;
     const graphics = new PIXI.Application({
       backgroundColor: 0x000000, // 0xc5bb8e
     });
@@ -57,7 +61,6 @@ export class Simulation {
 
   private run(): void {
     const { collisions, world } = this;
-    const { stage } = this.graphics;
 
     this.antsColony.releaseOneByOne();
     // this.antsColony.throwAllAtOnce(worldWidth, worldHeight);
