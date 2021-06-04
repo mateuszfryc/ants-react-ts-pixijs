@@ -34,7 +34,7 @@ export class Pheromones extends BVHCircles {
     );
 
     this.pheromonesMaxLifeSpan = settings.pheromonesLifeSpan;
-    this.sensorRadius = this.radius * 2;
+    this.sensorRadius = this.radius * 3;
     this.pheromoneEmissionTimer = new Timer(settings.timeBetweenPheromonesEmissions);
 
     this.initialiseBodies(outOfWorldBoundsDistance);
@@ -50,13 +50,13 @@ export class Pheromones extends BVHCircles {
     timeBetweenPheromonesEmissions,
   }: SimulationSettings): void {
     // eslint-disable-next-line no-console, prettier/prettier
-    console.log(`time between emissions: ${timeBetweenPheromonesEmissions}`);
+    console.log(`Pheromones:`);
+    // eslint-disable-next-line no-console, prettier/prettier
+    console.log(`_time between emissions: ${timeBetweenPheromonesEmissions}`);
     // eslint-disable-next-line no-console
     console.log(
       // eslint-disable-next-line prettier/prettier
-      `pheromones body count: ${
-        antsCount * Math.round(1 / timeBetweenPheromonesEmissions) * pheromonesLifeSpan
-      }`,
+      `_count: ${antsCount * Math.round(1 / timeBetweenPheromonesEmissions) * pheromonesLifeSpan}`,
     );
   }
 

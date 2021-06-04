@@ -74,7 +74,8 @@ export class TheAntColony {
     return shapes;
   }
 
-  private spawnAnt(id: number, x: number, y: number): boolean {
+  private spawnAnt(x: number, y: number): boolean {
+    const id = this.lastCreatedAntId;
     const { antsScale, antTexture } = this;
     const antCollisionShape = new Circle(
       x,
@@ -128,7 +129,6 @@ export class TheAntColony {
   public releaseOneByOne(xSpawn = this.nest.x, ySpawn = this.nest.y): void {
     setTimeout(() => {
       const shouldSpawnNextAnt = this.spawnAnt(
-        this.lastCreatedAntId,
         xSpawn + MATH.randomInRange(-10, 10),
         ySpawn + MATH.randomInRange(-10, 10),
       );
@@ -141,7 +141,6 @@ export class TheAntColony {
   public throwAllAtOnce(worldWidth: number, worldHeight: number): void {
     doNTimes(() => {
       this.spawnAnt(
-        this.lastCreatedAntId,
         MATH.randomInRange(10, worldWidth - 10),
         MATH.randomInRange(10, worldHeight - 10),
       );
