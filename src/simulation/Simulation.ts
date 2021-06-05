@@ -107,9 +107,9 @@ export class Simulation {
     //   isTabFocused = true;
     // });
 
-    this.graphics.ticker.add(this.update.bind(this));
     this.graphics.start();
     this.lastTime = performance.now();
+    this.update();
   }
 
   update(): void {
@@ -135,6 +135,8 @@ export class Simulation {
     }
     this.debugDraw.draw();
     this.lastTime = frameStartTime;
+
+    requestAnimationFrame(this.update.bind(this));
   }
 
   public prepeareToBeRemoved(): void {
