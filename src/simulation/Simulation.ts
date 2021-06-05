@@ -30,7 +30,7 @@ export class Simulation {
     this.world = { width, height };
     this.graphics = this.setupGraphics(container);
     this.antsColony = new TheAntColony(settings, this.collisions);
-    this.pheromones = new Pheromones(settings, Math.max(width, height) + 1);
+    this.pheromones = new Pheromones(settings /* , Math.max(width, height) + 1 */);
     this.food = new Food(this.collisions);
     this.debugDraw = debugDraw;
     this.settings = settings;
@@ -59,7 +59,16 @@ export class Simulation {
     return graphics;
   }
 
-  private run(): void {
+  private async run(): Promise<void> {
+    // eslint-disable-next-line no-console
+    console.log(`Ants count: ${this.antsColony.antsCount}`);
+    let time = performance.now();
+
+    const initResult = await this.pheromones.initialiseBodies();
+    time += performance.now();
+    // eslint-disable-next-line no-console
+    console.log(`Pheromones bodies build time: ${(time / 1000).toFixed(2)} sec`);
+
     const { collisions, world } = this;
 
     this.antsColony.releaseOneByOne();

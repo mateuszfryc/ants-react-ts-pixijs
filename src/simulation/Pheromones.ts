@@ -24,7 +24,7 @@ export class Pheromones extends BVHCircles {
   readonly tagIndex = 1;
   readonly intensityIndex = 2;
 
-  constructor(settings: SimulationSettings, outOfWorldBoundsDistance: number, defaultRadius = 1.4) {
+  constructor(settings: SimulationSettings, defaultRadius = 1.4) {
     // prettier-ignore
     super(
       settings.antsCount *
@@ -37,30 +37,30 @@ export class Pheromones extends BVHCircles {
     this.sensorRadius = this.radius * 3;
     this.pheromoneEmissionTimer = new Timer(settings.timeBetweenPheromonesEmissions);
 
-    this.initialiseBodies(outOfWorldBoundsDistance);
-    this.initialiseSprites();
     this.sensor[this.tagIndex] = TAGS.ANT_SENSOR;
 
-    this.onConstructionLog(settings);
+    this.onConstructionLog(settings, this.initialiseSprites());
   }
 
-  private onConstructionLog({
-    antsCount,
-    pheromonesLifeSpan,
-    timeBetweenPheromonesEmissions,
-  }: SimulationSettings): void {
+  private onConstructionLog(
+    { antsCount, pheromonesLifeSpan, timeBetweenPheromonesEmissions }: SimulationSettings,
+    spritesBuildTime: number,
+  ): void {
     // eslint-disable-next-line no-console, prettier/prettier
     console.log(`Pheromones:`);
-    // eslint-disable-next-line no-console, prettier/prettier
-    console.log(`_time between emissions: ${timeBetweenPheromonesEmissions}`);
     // eslint-disable-next-line no-console
     console.log(
       // eslint-disable-next-line prettier/prettier
-      `_count: ${antsCount * Math.round(1 / timeBetweenPheromonesEmissions) * pheromonesLifeSpan}`,
+      ` count: ${antsCount * Math.round(1 / timeBetweenPheromonesEmissions) * pheromonesLifeSpan}`,
     );
+    // eslint-disable-next-line no-console, prettier/prettier
+    console.log(` time between emissions: ${timeBetweenPheromonesEmissions.toFixed(2)} sec`);
+    // eslint-disable-next-line no-console, prettier/prettier
+    console.log(` sprites build time: ${spritesBuildTime.toFixed(2)} sec`);
   }
 
-  private initialiseSprites(): void {
+  private initialiseSprites(): number {
+    const startTime = performance.now();
     const initLabel = 'Pheromones sprites build time';
     // eslint-disable-next-line no-console
     console.time(initLabel);
@@ -88,8 +88,8 @@ export class Pheromones extends BVHCircles {
       this.pheromonesSpritesMap[index] = pheromoneSprite;
       pheromonesSprites.addChild(pheromoneSprite);
     }, this.bodiesMaxCount);
-    // eslint-disable-next-line no-console
-    console.timeEnd(initLabel);
+
+    return performance.now() - startTime;
   }
 
   public placePheromone(x: number, y: number, hasFood: boolean, initialIntensity: number): void {

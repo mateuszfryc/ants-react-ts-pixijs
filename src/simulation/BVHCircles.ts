@@ -10,6 +10,7 @@ export class BVHCircles {
   readonly bodies: Body[] = [];
   readonly branches: Branch[] = [];
   lastNodeBranchIndex = 0;
+  areBodiesInitialised = false;
   rootBranch: Branch | undefined;
   /** Bodies properties */
   longitudes: Float32Array;
@@ -49,34 +50,43 @@ export class BVHCircles {
     this.radius = defaultRadius;
   }
 
-  public initialiseBodies(outOfBoundsDistance: number): void {
-    const { radius } = this;
-    const initLabel = 'CirclesBVHMinimalCollisions bodies init time';
-    // eslint-disable-next-line no-console
-    console.time(initLabel);
+  public initialiseBodies(): Promise<boolean> {
+    const step = this.initSingleBody.bind(this);
+
+    return new Promise(step);
+  }
+
+  private initSingleBody(resolve: (res: boolean) => void): void {
     /**
-     * Pre-initialise all circles and put them
-     * outside of the world bounds.
+     * Large enough distance to place
+     * newly created bodies
+     * out of physics world bounds
      */
-    let index = 0;
-    const { bodiesMaxCount } = this;
-    for (index; index < bodiesMaxCount; index++) {
-      // prettier-ignore
-      this.bodies[index] = [index];
-      this.branches[index] = [index];
-      this.isLeaf[index] = 1;
-      this.parentsIDs[index] = -1;
-      this.rightChildrenIDs[index] = -1;
-      this.leftChildrenIDs[index] = -1;
-      this.AABB_left[index] = -1;
-      this.AABB_top[index] = -1;
-      this.AABB_right[index] = -1;
-      this.AABB_bottom[index] = -1;
-      const distance = outOfBoundsDistance + (radius + 1) * index;
-      this.insert(index, distance, distance);
+    const index = this.bodies.length;
+    const outOfBoundsDistance = 99999999;
+    const distance = outOfBoundsDistance + (this.radius + 1) * index;
+
+    this.bodies[index] = [index];
+    this.branches[index] = [index];
+    this.isLeaf[index] = 1;
+    this.parentsIDs[index] = -1;
+    this.rightChildrenIDs[index] = -1;
+    this.leftChildrenIDs[index] = -1;
+    this.AABB_left[index] = -1;
+    this.AABB_top[index] = -1;
+    this.AABB_right[index] = -1;
+    this.AABB_bottom[index] = -1;
+    this.insert(index, distance, distance);
+
+    if (this.bodies.length < this.bodiesMaxCount) {
+      setTimeout(() => {
+        const step = this.initSingleBody.bind(this);
+        step(resolve);
+      }, 0);
+
+      return;
     }
-    // eslint-disable-next-line no-console
-    console.timeEnd(initLabel);
+    resolve(true);
   }
 
   /** Inserts a body into the BVH */
