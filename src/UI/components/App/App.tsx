@@ -19,7 +19,8 @@ export const AppContainer = styled.div(
 );
 
 export const Content = styled.div(
-  () => css`
+  ({ theme: { colors } }) => css`
+    background-color: ${colors.shade};
     overflow: hidden;
     flex: 1;
   `,

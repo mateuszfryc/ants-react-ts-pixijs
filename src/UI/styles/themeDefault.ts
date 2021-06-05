@@ -34,6 +34,7 @@ export const theme: DefaultTheme = {
   colors: {
     primary: setColor(colors.gray40),
     secondary: setColor(colors.white),
+    shade: setColor(colors.gray20),
     shadeDark: setColor(colors.gray60),
     shadeMid: setColor(colors.gray80),
     shadeLight: setColor(colors.gray100),

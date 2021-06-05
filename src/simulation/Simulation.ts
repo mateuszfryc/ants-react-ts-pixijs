@@ -62,10 +62,10 @@ export class Simulation {
   private async run(): Promise<void> {
     // eslint-disable-next-line no-console
     console.log(`Ants count: ${this.antsColony.antsCount}`);
-    let time = performance.now();
+    let time = Date.now();
 
     const initResult = await this.pheromones.initialiseBodies();
-    time += performance.now();
+    time = Date.now() - time;
     // eslint-disable-next-line no-console
     console.log(`Pheromones bodies build time: ${(time / 1000).toFixed(2)} sec`);
 
