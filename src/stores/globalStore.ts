@@ -25,7 +25,7 @@ export class GlobalStore {
     this.simulationContainer = undefined;
     this.currentSimulation = undefined;
     this.simulationSettings = {
-      antsCount: 50,
+      antsCount: 30,
       antsScale: 3,
       nestPositon: { x: 150, y: 150 },
       /** seconds */

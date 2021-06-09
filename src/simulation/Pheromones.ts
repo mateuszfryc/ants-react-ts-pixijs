@@ -56,7 +56,7 @@ export class Pheromones extends BVHCircles {
     // eslint-disable-next-line no-console, prettier/prettier
     console.log(` time between emissions: ${timeBetweenPheromonesEmissions.toFixed(2)} sec`);
     // eslint-disable-next-line no-console, prettier/prettier
-    console.log(` sprites build time: ${spritesBuildTime.toFixed(2)} sec`);
+    console.log(` sprites build time: ${(spritesBuildTime / 1000).toFixed(3)} sec`);
   }
 
   private initialiseSprites(): number {

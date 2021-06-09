@@ -1,11 +1,13 @@
+import { ResponseParams } from './setupWorker';
+
 type Body = number[];
 type Branch = number[];
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-explicit-any
-export function workerResponse({ data }: any): void {
+export function bvhInitResponse({ data }: ResponseParams): void {
   // eslint-disable-next-line no-restricted-globals, @typescript-eslint/no-explicit-any
   const script = self as any;
-  const [bodiesMaxCount, radius] = data;
+  const [bodiesMaxCount, radius] = data as number[];
   const branchesMaxCount = bodiesMaxCount * 2 - 1;
   const bodies: Body[] = [];
   const branches: Branch[] = [];
@@ -66,10 +68,10 @@ export function workerResponse({ data }: any): void {
         const xMaxLeft = AABB_right[leftId];
         const yMaxLeft = AABB_bottom[leftId];
         /** Simulate new left AABB by extending it with newCircle AABB */
-        const left_new_min_x = Math.min(xMin, xMinLeft);
-        const left_new_min_y = Math.min(yMin, yMinLeft);
-        const left_new_max_x = Math.max(xMax, xMaxLeft);
-        const left_new_max_y = Math.max(yMax, yMaxLeft);
+        const left_new_min_x = xMin < xMinLeft ? xMin : xMinLeft;
+        const left_new_min_y = yMin < yMinLeft ? yMin : yMinLeft;
+        const left_new_max_x = xMax < xMaxLeft ? xMax : xMaxLeft;
+        const left_new_max_y = yMax < yMaxLeft ? yMax : yMaxLeft;
         const left_volume = (xMaxLeft - xMinLeft) * (yMaxLeft - yMinLeft);
         const left_new_volume =
           (left_new_max_x - left_new_min_x) * (left_new_max_y - left_new_min_y);
@@ -82,18 +84,20 @@ export function workerResponse({ data }: any): void {
         const xMaxRight = AABB_right[rightId];
         const yMaxRight = AABB_bottom[rightId];
         /** Simulate new right AABB by extending it with newCircle AABB */
-        const right_new_min_x = Math.min(xMin, xMinRight);
-        const right_new_min_y = Math.min(yMin, yMinRight);
-        const right_new_max_x = Math.max(xMax, xMaxRight);
-        const right_new_max_y = Math.max(yMax, yMaxRight);
+        const right_new_min_x = xMin < xMinRight ? xMin : xMinRight;
+        const right_new_min_y = yMin < yMinRight ? yMin : yMinRight;
+        const right_new_max_x = xMax < xMaxRight ? xMax : xMaxRight;
+        const right_new_max_y = yMax < yMaxRight ? yMax : yMaxRight;
         const right_volume = (xMaxRight - xMinRight) * (yMaxRight - yMinRight);
         const right_new_volume =
           (right_new_max_x - right_new_min_x) * (right_new_max_y - right_new_min_y);
         const right_difference = right_new_volume - right_volume;
-        AABB_left[currentId] = Math.min(left_new_min_x, right_new_min_x);
-        AABB_top[currentId] = Math.min(left_new_min_y, right_new_min_y);
-        AABB_right[currentId] = Math.max(left_new_max_x, right_new_max_x);
-        AABB_bottom[currentId] = Math.max(left_new_max_y, right_new_max_y);
+
+        AABB_left[currentId] = left_new_min_x < right_new_min_x ? left_new_min_x : right_new_min_x;
+        AABB_top[currentId] = left_new_min_y < right_new_min_y ? left_new_min_y : right_new_min_y;
+        AABB_right[currentId] = left_new_max_x < right_new_max_x ? left_new_max_x : right_new_max_x;
+        AABB_bottom[currentId] =
+          left_new_max_y < right_new_max_y ? left_new_max_y : right_new_max_y;
         current = left_difference <= right_difference ? left : right;
       }
       // Leaf
@@ -115,10 +119,10 @@ export function workerResponse({ data }: any): void {
         parentsIDs[newParentId] = hasGrandparent ? grandparentId : -1;
         rightChildrenIDs[newParentId] = index;
         leftChildrenIDs[newParentId] = currentId;
-        AABB_left[newParentId] = Math.min(xMin, parent_min_x);
-        AABB_top[newParentId] = Math.min(yMin, parent_min_y);
-        AABB_right[newParentId] = Math.max(xMax, parent_max_x);
-        AABB_bottom[newParentId] = Math.max(yMax, parent_max_y);
+        AABB_left[newParentId] = xMin < parent_min_x ? xMin : parent_min_x;
+        AABB_top[newParentId] = yMin < parent_min_y ? yMin : parent_min_y;
+        AABB_right[newParentId] = xMax < parent_max_x ? xMax : parent_max_x;
+        AABB_bottom[newParentId] = yMax < parent_max_y ? yMax : parent_max_y;
 
         branches[newParentId] = newParent;
         parentsIDs[currentId] = newParentId;

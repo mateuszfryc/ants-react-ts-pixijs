@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
-import { workerResponse } from './BVHWorkerResolver';
+import { bvhInitResponse } from './workers/bvhInitResponse';
+import { setupWorker } from './workers/setupWorker';
 
 type Body = number[];
 type Branch = number[];
@@ -65,17 +66,6 @@ export class BVHCircles {
     this.radius = defaultRadius;
   }
 
-  setupWorker(): Worker {
-    window.URL = window.URL || window.webkitURL;
-
-    const safeResponse = workerResponse.toString().replace('"use strict";', '');
-    const workerContent = `self.onmessage = ${safeResponse}`;
-
-    const blob = new Blob([workerContent], { type: 'application/javascript' });
-
-    return new Worker(URL.createObjectURL(blob));
-  }
-
   protected setBVHData(data: BVHData): void {
     const [
       bodies,
@@ -115,7 +105,7 @@ export class BVHCircles {
     if (Worker) {
       const { bodiesMaxCount, radius } = this;
       const setter = this.setBVHData.bind(this);
-      const worker: Worker = this.setupWorker();
+      const worker: Worker = setupWorker(bvhInitResponse);
 
       return new Promise((resolve) => {
         worker.addEventListener('message', ({ data }) => {
