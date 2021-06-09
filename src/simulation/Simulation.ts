@@ -17,6 +17,7 @@ export class Simulation {
   debugDraw: DebugDraw;
   metrics: Metrics;
   world: Size;
+  animationID: number | undefined;
   lastTime = 0;
 
   constructor(
@@ -136,10 +137,11 @@ export class Simulation {
     this.debugDraw.draw();
     this.lastTime = frameStartTime;
 
-    requestAnimationFrame(this.update.bind(this));
+    this.animationID = requestAnimationFrame(this.update.bind(this));
   }
 
   public prepeareToBeRemoved(): void {
+    if (this.animationID) cancelAnimationFrame(this.animationID);
     this.debugDraw.clearReferences();
     this.graphics.ticker.stop();
     this.graphics.destroy(true, { children: true, texture: false, baseTexture: false });
