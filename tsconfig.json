@@ -18,9 +18,10 @@
     "noUnusedParameters": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "sourceMap": true,
     "strict": true,
     "target": "es5"
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*", "src/**/*", "./*.[ts|js|json]"],
   "exclude": ["node_modules", "documentation", "build", "public"]
 }

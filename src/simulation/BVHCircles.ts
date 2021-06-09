@@ -1,14 +1,33 @@
 import * as PIXI from 'pixi.js';
+import { workerResponse } from './BVHWorkerResolver';
 
 type Body = number[];
 type Branch = number[];
+type BVHData = [
+  bodies: Body[],
+  branches: Branch[],
+  isLeaf: number[],
+  parentsIDs: number[],
+  longitudes: number[],
+  latitudes: number[],
+  AABB_left: number[],
+  AABB_top: number[],
+  AABB_right: number[],
+  AABB_bottom: number[],
+  avilableNodeBranches: number[],
+  rightChildrenIDs: number[],
+  leftChildrenIDs: number[],
+  rootBranch: Branch | undefined,
+  lastNodeBranchIndex: number,
+];
 
 export class BVHCircles {
+  bodies: Body[] = [];
+  branches: Branch[] = [];
+  avilableNodeBranches: Branch = [];
+  branchesMaxCount: number;
+  readonly idIndex = 0;
   readonly bodiesMaxCount: number;
-  readonly branchesMaxCount: number;
-  readonly avilableNodeBranches: Branch = [];
-  readonly bodies: Body[] = [];
-  readonly branches: Branch[] = [];
   lastNodeBranchIndex = 0;
   areBodiesInitialised = false;
   rootBranch: Branch | undefined;
@@ -25,10 +44,6 @@ export class BVHCircles {
   AABB_right: Float32Array;
   AABB_bottom: Float32Array;
   radius: number;
-
-  readonly brachIndexes = {
-    idIndex: 0,
-  };
 
   constructor(bodiesMaxCount: number, defaultRadius: number) {
     this.bodiesMaxCount = bodiesMaxCount;
@@ -50,13 +65,75 @@ export class BVHCircles {
     this.radius = defaultRadius;
   }
 
-  public initialiseBodies(): Promise<boolean> {
+  setupWorker(): Worker {
+    window.URL = window.URL || window.webkitURL;
+
+    const safeResponse = workerResponse.toString().replace('"use strict";', '');
+    const workerContent = `self.onmessage = ${safeResponse}`;
+
+    const blob = new Blob([workerContent], { type: 'application/javascript' });
+
+    return new Worker(URL.createObjectURL(blob));
+  }
+
+  protected setBVHData(data: BVHData): void {
+    const [
+      bodies,
+      branches,
+      isLeaf,
+      parentsIDs,
+      longitudes,
+      latitudes,
+      AABB_left,
+      AABB_top,
+      AABB_right,
+      AABB_bottom,
+      avilableNodeBranches,
+      rightChildrenIDs,
+      leftChildrenIDs,
+      rootBranch,
+      lastNodeBranchIndex,
+    ] = data;
+    this.bodies = bodies;
+    this.branches = branches;
+    this.avilableNodeBranches = avilableNodeBranches;
+    this.isLeaf.set(isLeaf);
+    this.parentsIDs.set(parentsIDs);
+    this.longitudes.set(longitudes);
+    this.latitudes.set(latitudes);
+    this.AABB_left.set(AABB_left);
+    this.AABB_top.set(AABB_top);
+    this.AABB_right.set(AABB_right);
+    this.AABB_bottom.set(AABB_bottom);
+    this.rightChildrenIDs.set(rightChildrenIDs);
+    this.leftChildrenIDs.set(leftChildrenIDs);
+    this.rootBranch = rootBranch;
+    this.lastNodeBranchIndex = lastNodeBranchIndex;
+  }
+
+  public async initialiseBodies(): Promise<void> {
+    if (Worker) {
+      const { bodiesMaxCount, radius } = this;
+      const setter = this.setBVHData.bind(this);
+      const worker: Worker = this.setupWorker();
+
+      return new Promise((resolve) => {
+        worker.addEventListener('message', ({ data }) => {
+          setter(data);
+          worker.terminate();
+          resolve();
+        });
+
+        worker.postMessage([bodiesMaxCount, radius]);
+      });
+    }
+
     const step = this.initSingleBody.bind(this);
 
     return new Promise(step);
   }
 
-  private initSingleBody(resolve: (res: boolean) => void): void {
+  protected initSingleBody(resolve: () => void): void {
     /**
      * Large enough distance to place
      * newly created bodies
@@ -79,41 +156,37 @@ export class BVHCircles {
     this.insert(index, distance, distance);
 
     if (this.bodies.length < this.bodiesMaxCount) {
+      const step = this.initSingleBody.bind(this);
       setTimeout(() => {
-        const step = this.initSingleBody.bind(this);
         step(resolve);
       }, 0);
 
       return;
     }
-    resolve(true);
+    resolve();
   }
 
-  /** Inserts a body into the BVH */
-  public insert(insertedId: number, x: number, y: number, radius = this.radius): void {
-    // console.time('Insert');
-    this.longitudes[insertedId] = x;
-    this.latitudes[insertedId] = y;
+  public insert(index: number, x: number, y: number, radius = this.radius): void {
+    this.longitudes[index] = x;
+    this.latitudes[index] = y;
     const xMin = x - radius;
     const yMin = y - radius;
     const xMax = x + radius;
     const yMax = y + radius;
 
-    this.AABB_left[insertedId] = xMin;
-    this.AABB_top[insertedId] = yMin;
-    this.AABB_right[insertedId] = xMax;
-    this.AABB_bottom[insertedId] = yMax;
+    this.AABB_left[index] = xMin;
+    this.AABB_top[index] = yMin;
+    this.AABB_right[index] = xMax;
+    this.AABB_bottom[index] = yMax;
 
-    const branch = this.branches[insertedId];
     if (this.rootBranch === undefined) {
-      this.rootBranch = branch;
+      this.rootBranch = this.branches[index];
 
       return;
     }
 
     let current = this.rootBranch;
-    const { idIndex } = this.brachIndexes;
-    const { branches } = this;
+    const { branches, idIndex } = this;
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -182,7 +255,7 @@ export class BVHCircles {
         const newParent = [newParentId];
         this.isLeaf[newParentId] = 0;
         this.parentsIDs[newParentId] = hasGrandparent ? grandparentId : -1;
-        this.rightChildrenIDs[newParentId] = insertedId;
+        this.rightChildrenIDs[newParentId] = index;
         this.leftChildrenIDs[newParentId] = currentId;
         this.AABB_left[newParentId] = Math.min(xMin, parent_min_x);
         this.AABB_top[newParentId] = Math.min(yMin, parent_min_y);
@@ -191,7 +264,7 @@ export class BVHCircles {
 
         branches[newParentId] = newParent;
         this.parentsIDs[currentId] = newParentId;
-        this.parentsIDs[insertedId] = newParentId;
+        this.parentsIDs[index] = newParentId;
 
         if (!hasGrandparent) {
           this.rootBranch = newParent;
@@ -204,13 +277,12 @@ export class BVHCircles {
         break;
       }
     }
-    // console.timeEnd('Insert');
   }
 
   public remove(id = 0): void {
     if (this.rootBranch === undefined) return;
 
-    const { idIndex } = this.brachIndexes;
+    const { idIndex } = this;
     /** Don't remove root body/branch */
     if (this.rootBranch[idIndex] === id) {
       this.rootBranch = undefined;
@@ -287,7 +359,7 @@ export class BVHCircles {
     if (this.rootBranch === undefined) return potentials;
 
     let current = this.rootBranch;
-    const { idIndex } = this.brachIndexes;
+    const { idIndex } = this;
     if (this.isLeaf[current[idIndex]] === 1) return potentials;
 
     const xMin = this.AABB_left[id];
