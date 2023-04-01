@@ -1,6 +1,4 @@
 import * as PIXI from 'pixi.js';
-import { bvhInitResponse } from './workers/bvhInitResponse';
-import { setupWorker } from './workers/setupWorker';
 
 type Body = number[];
 type Branch = number[];
@@ -23,12 +21,12 @@ type BVHData = [
 ];
 
 export class BVHCircles {
+  readonly idIndex = 0;
+  readonly bodiesMaxCount: number;
   bodies: Body[] = [];
   branches: Branch[] = [];
   avilableNodeBranches: Branch = [];
   branchesMaxCount: number;
-  readonly idIndex = 0;
-  readonly bodiesMaxCount: number;
   lastNodeBranchIndex = 0;
   areBodiesInitialised = false;
   rootBranch: Branch | undefined;
@@ -102,94 +100,131 @@ export class BVHCircles {
   }
 
   public async initialiseBodies(): Promise<void> {
-    if (Worker) {
-      const { bodiesMaxCount, radius } = this;
-      const setter = this.setBVHData.bind(this);
-      const worker: Worker = setupWorker(bvhInitResponse);
-
-      return new Promise((resolve) => {
-        worker.addEventListener('message', ({ data }) => {
-          setter(data);
-          worker.terminate();
-          resolve();
-        });
-
-        worker.postMessage([bodiesMaxCount, radius]);
-      });
-    }
-
-    const step = this.initSingleBody.bind(this);
+    const step = this.initBodies.bind(this);
 
     return new Promise(step);
   }
 
-  protected initSingleBody(resolve: () => void): void {
-    /**
-     * Large enough distance to place
-     * newly created bodies
-     * out of physics world bounds
-     */
-    const index = this.bodies.length;
-    const outOfBoundsDistance = 99999999;
-    const distance = outOfBoundsDistance + (this.radius + 1) * index;
+  protected initBodiesByInserting(resolve: () => void): void {
+    const {
+      bodiesMaxCount,
+      bodies,
+      branches,
+      radius,
+      isLeaf,
+      leftChildrenIDs,
+      rightChildrenIDs,
+      parentsIDs,
+    } = this;
+    const outOfBoundsDistance = 999999;
 
-    this.bodies[index] = [index];
-    this.branches[index] = [index];
-    this.isLeaf[index] = 1;
-    this.parentsIDs[index] = -1;
-    this.rightChildrenIDs[index] = -1;
-    this.leftChildrenIDs[index] = -1;
-    this.AABB_left[index] = -1;
-    this.AABB_top[index] = -1;
-    this.AABB_right[index] = -1;
-    this.AABB_bottom[index] = -1;
-    this.insert(index, distance, distance);
+    rightChildrenIDs.fill(-1);
+    leftChildrenIDs.fill(-1);
+    parentsIDs.fill(-1);
+    isLeaf.fill(1);
 
-    if (this.bodies.length < this.bodiesMaxCount) {
-      const step = this.initSingleBody.bind(this);
-      setTimeout(() => {
-        step(resolve);
-      }, 0);
+    let index = 0;
+    for (index = 0; index < bodiesMaxCount; index++) {
+      bodies[index] = [index];
+      branches[index] = [index];
 
-      return;
+      const distance = outOfBoundsDistance + (radius + 50) * index;
+      this.insert(index, distance, distance);
     }
+
     resolve();
   }
 
+  protected initBodies(resolve: () => void): void {
+    const {
+      bodiesMaxCount,
+      bodies,
+      branches,
+      radius,
+      isLeaf,
+      branchesMaxCount,
+      leftChildrenIDs,
+      rightChildrenIDs,
+      parentsIDs,
+      latitudes,
+      longitudes,
+      AABB_left,
+      AABB_top,
+      AABB_right,
+      AABB_bottom,
+    } = this;
+    const outOfBoundsDistance = 999999;
+
+    let index = 0;
+    for (index = 0; index < bodiesMaxCount; index++) {
+      bodies[index] = [index];
+      branches[index] = [index];
+    }
+
+    index = 0;
+    for (index = 0; index < branchesMaxCount; index++) {
+      branches[index] = [index];
+      isLeaf[index] = index < bodiesMaxCount ? 1 : 0;
+      leftChildrenIDs[index] = index < bodiesMaxCount ? -1 : index - bodiesMaxCount;
+      rightChildrenIDs[index] = index < bodiesMaxCount ? -1 : index + 1;
+      parentsIDs[index] = index < bodiesMaxCount ? index + bodiesMaxCount : index - 1;
+      if (index === bodiesMaxCount - 1) parentsIDs[index] = branchesMaxCount - 1;
+      if (index === bodiesMaxCount) parentsIDs[index] = -1;
+      if (index === branchesMaxCount - 1)
+        rightChildrenIDs[index] = branchesMaxCount - bodiesMaxCount;
+      const x = outOfBoundsDistance + index * 5;
+      latitudes[index] = x;
+      longitudes[index] = x;
+      AABB_left[index] = x - radius;
+      AABB_top[index] = x - radius;
+      AABB_right[index] = x + radius;
+      AABB_bottom[index] = x + radius;
+    }
+
+    this.lastNodeBranchIndex = bodiesMaxCount;
+    this.rootBranch = this.branches[bodiesMaxCount];
+
+    resolve();
+    console.log(' ------------------------------', this);
+  }
+
   public insert(index: number, x: number, y: number, radius = this.radius): void {
-    this.longitudes[index] = x;
-    this.latitudes[index] = y;
+    const { branches, longitudes, latitudes, AABB_left, AABB_top, AABB_right, AABB_bottom } = this;
+    longitudes[index] = x;
+    latitudes[index] = y;
     const xMin = x - radius;
     const yMin = y - radius;
     const xMax = x + radius;
     const yMax = y + radius;
 
-    this.AABB_left[index] = xMin;
-    this.AABB_top[index] = yMin;
-    this.AABB_right[index] = xMax;
-    this.AABB_bottom[index] = yMax;
+    AABB_left[index] = xMin;
+    AABB_top[index] = yMin;
+    AABB_right[index] = xMax;
+    AABB_bottom[index] = yMax;
 
     if (this.rootBranch === undefined) {
-      this.rootBranch = this.branches[index];
+      this.rootBranch = branches[index];
 
       return;
     }
 
     let current = this.rootBranch;
-    const { branches, idIndex } = this;
+    const { idIndex, isLeaf, leftChildrenIDs, rightChildrenIDs, parentsIDs } = this;
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    let shouldLoop = true;
+    let steps = 0;
+    while (shouldLoop) {
       /** is of BranchType */
       let currentId = current[idIndex];
-      if (this.isLeaf[currentId] === 0) {
-        const left = branches[this.leftChildrenIDs[currentId]];
+      steps = isLeaf[currentId];
+      if (isLeaf[currentId] === 0) {
+        const left = branches[leftChildrenIDs[currentId]];
         const leftId = left[idIndex];
         /** Get left AABB */
-        const xMinLeft = this.AABB_left[leftId];
-        const yMinLeft = this.AABB_top[leftId];
-        const xMaxLeft = this.AABB_right[leftId];
-        const yMaxLeft = this.AABB_bottom[leftId];
+        const xMinLeft = AABB_left[leftId];
+        const yMinLeft = AABB_top[leftId];
+        const xMaxLeft = AABB_right[leftId];
+        const yMaxLeft = AABB_bottom[leftId];
 
         /** Simulate new left AABB by extending it with newCircle AABB */
         const left_new_min_x = Math.min(xMin, xMinLeft);
@@ -203,12 +238,12 @@ export class BVHCircles {
         const left_difference = left_new_volume - left_volume;
 
         /** Get right AABB */
-        const right = branches[this.rightChildrenIDs[currentId]];
+        const right = branches[rightChildrenIDs[currentId]];
         const rightId = right[idIndex];
-        const xMinRight = this.AABB_left[rightId];
-        const yMinRight = this.AABB_top[rightId];
-        const xMaxRight = this.AABB_right[rightId];
-        const yMaxRight = this.AABB_bottom[rightId];
+        const xMinRight = AABB_left[rightId];
+        const yMinRight = AABB_top[rightId];
+        const xMaxRight = AABB_right[rightId];
+        const yMaxRight = AABB_bottom[rightId];
 
         /** Simulate new right AABB by extending it with newCircle AABB */
         const right_new_min_x = Math.min(xMin, xMinRight);
@@ -221,50 +256,50 @@ export class BVHCircles {
           (right_new_max_x - right_new_min_x) * (right_new_max_y - right_new_min_y);
         const right_difference = right_new_volume - right_volume;
 
-        this.AABB_left[currentId] = Math.min(left_new_min_x, right_new_min_x);
-        this.AABB_top[currentId] = Math.min(left_new_min_y, right_new_min_y);
-        this.AABB_right[currentId] = Math.max(left_new_max_x, right_new_max_x);
-        this.AABB_bottom[currentId] = Math.max(left_new_max_y, right_new_max_y);
+        AABB_left[currentId] = Math.min(left_new_min_x, right_new_min_x);
+        AABB_top[currentId] = Math.min(left_new_min_y, right_new_min_y);
+        AABB_right[currentId] = Math.max(left_new_max_x, right_new_max_x);
+        AABB_bottom[currentId] = Math.max(left_new_max_y, right_new_max_y);
 
         current = left_difference <= right_difference ? left : right;
       }
       // Leaf
       else {
         currentId = current[idIndex];
-        const parentId = this.parentsIDs[currentId];
+        const parentId = parentsIDs[currentId];
         const grandparent: Branch | undefined = branches[parentId];
         const hasGrandparent = grandparent !== undefined;
         const grandparentId = hasGrandparent ? grandparent[idIndex] : undefined!;
-        const parent_min_x = this.AABB_left[currentId];
-        const parent_min_y = this.AABB_top[currentId];
-        const parent_max_x = this.AABB_right[currentId];
-        const parent_max_y = this.AABB_bottom[currentId];
+        const parent_min_x = AABB_left[currentId];
+        const parent_min_y = AABB_top[currentId];
+        const parent_max_x = AABB_right[currentId];
+        const parent_max_y = AABB_bottom[currentId];
         const newParentId = this.avilableNodeBranches.pop() ?? this.lastNodeBranchIndex++;
         if (this.lastNodeBranchIndex >= this.branchesMaxCount)
           this.lastNodeBranchIndex = this.bodiesMaxCount;
         const newParent = [newParentId];
-        this.isLeaf[newParentId] = 0;
-        this.parentsIDs[newParentId] = hasGrandparent ? grandparentId : -1;
-        this.rightChildrenIDs[newParentId] = index;
-        this.leftChildrenIDs[newParentId] = currentId;
-        this.AABB_left[newParentId] = Math.min(xMin, parent_min_x);
-        this.AABB_top[newParentId] = Math.min(yMin, parent_min_y);
-        this.AABB_right[newParentId] = Math.max(xMax, parent_max_x);
-        this.AABB_bottom[newParentId] = Math.max(yMax, parent_max_y);
+        isLeaf[newParentId] = 0;
+        parentsIDs[newParentId] = hasGrandparent ? grandparentId : -1;
+        rightChildrenIDs[newParentId] = index;
+        leftChildrenIDs[newParentId] = currentId;
+        AABB_left[newParentId] = Math.min(xMin, parent_min_x);
+        AABB_top[newParentId] = Math.min(yMin, parent_min_y);
+        AABB_right[newParentId] = Math.max(xMax, parent_max_x);
+        AABB_bottom[newParentId] = Math.max(yMax, parent_max_y);
 
         branches[newParentId] = newParent;
-        this.parentsIDs[currentId] = newParentId;
-        this.parentsIDs[index] = newParentId;
+        parentsIDs[currentId] = newParentId;
+        parentsIDs[index] = newParentId;
 
         if (!hasGrandparent) {
           this.rootBranch = newParent;
-        } else if (this.leftChildrenIDs[grandparentId] === current[idIndex]) {
-          this.leftChildrenIDs[grandparentId] = newParentId;
+        } else if (leftChildrenIDs[grandparentId] === current[idIndex]) {
+          leftChildrenIDs[grandparentId] = newParentId;
         } else {
-          this.rightChildrenIDs[grandparentId] = newParentId;
+          rightChildrenIDs[grandparentId] = newParentId;
         }
 
-        break;
+        shouldLoop = false;
       }
     }
   }

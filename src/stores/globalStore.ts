@@ -1,9 +1,9 @@
+import { action, makeObservable, observable } from 'mobx';
 import { createContext } from 'react';
-import { makeObservable, observable, action } from 'mobx';
+import { DebugDraw } from 'simulation/DebugDraw';
+import { Metrics } from 'simulation/Metrics';
 import { Simulation } from 'simulation/Simulation';
 import { SimulationSettings, Vector } from 'simulation/types';
-import { Metrics } from 'simulation/Metrics';
-import { DebugDraw } from 'simulation/DebugDraw';
 
 export class GlobalStore {
   metrics = new Metrics();
@@ -25,13 +25,13 @@ export class GlobalStore {
     this.simulationContainer = undefined;
     this.currentSimulation = undefined;
     this.simulationSettings = {
-      antsCount: 30,
+      antsCount: 300,
       antsScale: 3,
       nestPositon: { x: 150, y: 150 },
       /** seconds */
-      pheromonesLifeSpan: 30,
+      pheromonesLifeSpan: 60,
       /** Time between consequent emmisions in seconds */
-      timeBetweenPheromonesEmissions: 0.15,
+      timeBetweenPheromonesEmissions: 0.2,
       isDebugDrawOn: false,
     };
   }
