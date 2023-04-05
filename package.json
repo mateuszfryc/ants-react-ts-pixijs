@@ -61,7 +61,7 @@
     "worker-loader": "^3.0.8"
   },
   "scripts": {
-    "start": "set PORT=3001 && react-scripts start",
+    "start": "set PORT=3001 && set GENERATE_SOURCEMAP=true && react-scripts start",
     "build": "react-scripts build",
     "eject": "react-scripts eject",
     "release": "standard-version",

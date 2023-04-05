@@ -1,16 +1,16 @@
-import { Container, ParticleContainer, Sprite, Texture } from 'pixi.js';
+import { ParticleContainer, Sprite, Texture } from 'pixi.js';
 
 import AntImage from 'assets/ant-red.png';
-import { Circle } from 'simulation/collisions/circle';
-import { Collisions, TAGS } from 'simulation/collisions/collisions';
+import { doNTimes } from 'shared/do-n-times';
 import * as MATH from 'shared/math';
 import { Timer } from 'simulation/Timer';
-import { doNTimes } from 'shared/do-n-times';
-import { Shape } from './collisions/proxyTypes';
+import { Circle } from 'simulation/collisions/circle';
+import { Collisions, TAGS } from 'simulation/collisions/collisions';
 import { Food } from './Food';
-import { Pheromones } from './Pheromones';
-import { SimulationSettings } from './types';
 import { Nest } from './Nest';
+import { Pheromones } from './Pheromones';
+import { Shape } from './collisions/proxyTypes';
+import { SimulationSettings } from './types';
 
 export class TheAntColony {
   antsProps: number[][] = [];
@@ -156,6 +156,7 @@ export class TheAntColony {
   ): number {
     const {
       antsProps,
+      collisions,
       indexes: {
         idIndex,
         directionXIndex,
@@ -184,7 +185,7 @@ export class TheAntColony {
       ant.y += speed * props[directionYIndex] * deltaSeconds;
     });
 
-    this.collisions.update();
+    collisions.update();
 
     antsProps.forEach((ant: number[]) => {
       let [
@@ -206,22 +207,22 @@ export class TheAntColony {
       let searchForPheromones = true;
       let makeRandomTurn = true;
 
-      for (const other of this.collisions.getPotentials(antBody as Shape)) {
-        if (this.collisions.areBodiesColliding(antBody as Shape, other, collisionTestResult)) {
+      for (const other of collisions.getPotentials(antBody as Shape)) {
+        if (collisions.areBodiesColliding(antBody as Shape, other, collisionTestResult)) {
           let [overlap, overlapX, overlapY] = collisionTestResult;
           const { id: otherId, tag } = other;
 
           /* eslint-disable indent */
           switch (tag) {
             case ANT:
-              if (!hasFood && !other[hasFoodIndex]) {
-                overlap *= 0.5;
-                antBody.x -= overlap * overlapX;
-                antBody.y -= overlap * overlapY;
-                other.x -= overlap * overlapX;
-                other.y -= overlap * overlapY;
-                makeRandomTurn = false;
-              }
+              // if (!hasFood && !other[hasFoodIndex]) {
+              //   overlap *= 0.5;
+              //   antBody.x -= overlap * overlapX;
+              //   antBody.y -= overlap * overlapY;
+              //   other.x -= overlap * overlapX;
+              //   other.y -= overlap * overlapY;
+              //   makeRandomTurn = false;
+              // }
               break;
 
             case NEST:
@@ -323,19 +324,15 @@ export class TheAntColony {
         }
       }
 
+      let hasScentOfFood = 0;
       if (searchForPheromones) {
-        const [pheromoneSteerForceX, pheromoneSteerForceY] = pheromones.getDirectionFromSensor(
-          x,
-          y,
-          directionX,
-          directionY,
-          hasFood > 0,
-        );
-
+        const [pheromoneSteerForceX, pheromoneSteerForceY, foundFoodScent] =
+          pheromones.getDirectionFromSensor(x, y, directionX, directionY, hasFood > 0);
+        hasScentOfFood = foundFoodScent;
         /**
          * pheromonesSteeringSensitivity
          * helps here to make movement towards
-         * pheromones more fluent. The higher this number
+         * pheromones more fluent. The higher this number is
          * the more sudden turns towards pheromones are.
          */
         directionTargetX += pheromoneSteerForceX * this.pheromonesSteeringSensitivity;
@@ -377,7 +374,13 @@ export class TheAntColony {
       }
 
       if (shouldSpawnPheromones && pheromoneFuel > 0) {
-        pheromones.placePheromone(x, y, hasFood > 0, pheromoneFuel / maxPheromoneFuel);
+        pheromones.placePheromone(
+          x,
+          y,
+          hasFood > 0,
+          pheromoneFuel / maxPheromoneFuel,
+          hasScentOfFood === 1,
+        );
         pheromoneFuel--;
       }
 

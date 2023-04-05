@@ -1,8 +1,9 @@
-import { Texture, Sprite, ParticleContainer } from 'pixi.js';
+import { ParticleContainer, Sprite, Texture } from 'pixi.js';
 
 import FoodImage from 'assets/food.png';
 import { Circle } from 'simulation/collisions/circle';
 import { Collisions, TAGS } from 'simulation/collisions/collisions';
+import { randomUnitVector } from '../shared/math';
 import { Shape } from './collisions/proxyTypes';
 
 type SpawnFoodInAreaArgs = {
@@ -90,6 +91,18 @@ export class Food {
       const y = location[1] + (random() * radius - radius * 0.5);
 
       this.spawnOneCrumb(x, y);
+    }
+  }
+
+  public spawnFoodInCircle({ location, count = 10, radius = 100 }: SpawnFoodInAreaArgs): void {
+    let i = 0;
+    for (i; i < count; i++) {
+      let [xl, yl] = location;
+      const [xu, yu] = randomUnitVector();
+      xl += xu * radius;
+      yl += yu * radius;
+
+      this.spawnOneCrumb(xl, yl);
     }
   }
 }

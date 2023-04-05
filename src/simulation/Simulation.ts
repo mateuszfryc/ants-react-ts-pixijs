@@ -1,11 +1,11 @@
 import * as PIXI from 'pixi.js';
-import { SimulationSettings, Size } from 'simulation/types';
 import { Metrics } from 'simulation/Metrics';
-import { Collisions } from './collisions/collisions';
+import { SimulationSettings, Size } from 'simulation/types';
 import { TheAntColony } from './AntsColony';
-import { Pheromones } from './Pheromones';
-import { Food } from './Food';
 import { DebugDraw } from './DebugDraw';
+import { Food } from './Food';
+import { Pheromones } from './Pheromones';
+import { Collisions } from './collisions/collisions';
 
 export class Simulation {
   collisions = new Collisions();
@@ -19,6 +19,7 @@ export class Simulation {
   world: Size;
   animationID: number | undefined;
   lastTime = 0;
+  simulationSpeed = 1;
 
   constructor(
     container: HTMLElement,
@@ -28,6 +29,8 @@ export class Simulation {
   ) {
     const width = container.offsetWidth;
     const height = container.offsetHeight;
+    // const width = 500;
+    // const height = 500;
     this.world = { width, height };
     this.graphics = this.setupGraphics(container);
     this.antsColony = new TheAntColony(settings, this.collisions);
@@ -40,6 +43,7 @@ export class Simulation {
     debugDraw.registerDrawable(this.collisions, 'Ants Collisions');
     debugDraw.registerDrawable(this.collisions.bvh, 'Bounding Volume Hierarchy', 0x666666);
     debugDraw.registerDrawable(this.pheromones, 'Pheromones collisions', 0x2299ff);
+    // debugDraw.switchByDrawableLabel('Pheromones collisions');
 
     this.run();
   }
@@ -76,10 +80,16 @@ export class Simulation {
     // this.antsColony.throwAllAtOnce(worldWidth, worldHeight);
 
     this.food.spawnFoodInArea({
-      location: [world.width * 0.5, world.height - 150],
+      location: [world.width - 100, world.height - 100],
       count: 500,
       radius: 50,
     });
+
+    // this.food.spawnFoodInCircle({
+    //   location: [150, 150],
+    //   count: 500,
+    //   radius: 120,
+    // });
 
     this.food.spawnFoodInArea({
       location: [world.width - 100, 250],
@@ -116,7 +126,9 @@ export class Simulation {
   update(): void {
     // if (!isTabFocused) return;
     const frameStartTime = performance.now();
-    const deltaSeconds = Math.min((frameStartTime - this.lastTime) / 1000, 0.5);
+    // const deltaSeconds = 0.016 * 1;
+    const deltaSeconds =
+      Math.min((frameStartTime - this.lastTime) / 1000, 0.5) * this.simulationSpeed;
     const antsOnScreenCount = this.antsColony.update(
       deltaSeconds,
       this.pheromones,

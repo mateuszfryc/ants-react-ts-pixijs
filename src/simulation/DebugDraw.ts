@@ -1,5 +1,5 @@
+import { action, makeObservable, observable } from 'mobx';
 import { Graphics } from 'pixi.js';
-import { makeObservable, observable, action } from 'mobx';
 import { DrawableObject, DrawableReference } from './DrawableReference';
 
 export class DebugDraw extends Graphics {
@@ -38,6 +38,20 @@ export class DebugDraw extends Graphics {
   }
 
   updateDrawable(drawable: DrawableReference): void {
+    if (this.queue.some((item) => item.id === drawable.id)) {
+      this.updateQueue(this.queue.filter((item) => item.id !== drawable.id));
+      this.clear();
+
+      return;
+    }
+    this.queue.push(drawable);
+    this.clear();
+  }
+
+  switchByDrawableLabel(label: string): void {
+    const drawable = this.drawables.find((d) => d.label === label);
+    if (!drawable) return;
+
     if (this.queue.some((item) => item.id === drawable.id)) {
       this.updateQueue(this.queue.filter((item) => item.id !== drawable.id));
       this.clear();

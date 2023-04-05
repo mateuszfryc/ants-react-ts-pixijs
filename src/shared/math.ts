@@ -105,3 +105,23 @@ export const getMiddleOfTwoRadians = (a: number, b: number): number => {
 export const getRadiansFromPointAtoB = (ax: number, ay: number, bx: number, by: number): number => {
   return -atan2(ax - bx, ay - by);
 };
+
+export const areCirclesOverlapping = (
+  xA: number,
+  yA: number,
+  radiusA: number,
+  xB: number,
+  yB: number,
+  radiusB: number,
+): boolean => {
+  const difference_x = xB - xA;
+  const difference_y = yB - yA;
+  const radius_sum = radiusA + radiusB;
+  const length_squared = difference_x * difference_x + difference_y * difference_y;
+
+  if (Math.abs(length_squared) > radius_sum * radius_sum) {
+    return false;
+  }
+
+  return true;
+};

@@ -1,5 +1,28 @@
 import * as PIXI from 'pixi.js';
 
+const timer = {
+  current: Date.now(),
+  canRun() {
+    const now = Date.now();
+    if (now - this.current > 1000) {
+      this.current = now;
+
+      return true;
+    }
+
+    return false;
+  },
+};
+let min = 99999;
+let avr = 0;
+let max = 0;
+
+function updateStat(steps) {
+  if (steps < min) min = steps;
+  if (steps > max) max = steps;
+  avr = (min + max) / 2;
+}
+
 type Body = number[];
 type Branch = number[];
 type BVHData = [
@@ -185,7 +208,6 @@ export class BVHCircles {
     this.rootBranch = this.branches[bodiesMaxCount];
 
     resolve();
-    console.log(' ------------------------------', this);
   }
 
   public insert(index: number, x: number, y: number, radius = this.radius): void {
@@ -216,7 +238,7 @@ export class BVHCircles {
     while (shouldLoop) {
       /** is of BranchType */
       let currentId = current[idIndex];
-      steps = isLeaf[currentId];
+      steps++;
       if (isLeaf[currentId] === 0) {
         const left = branches[leftChildrenIDs[currentId]];
         const leftId = left[idIndex];
@@ -298,6 +320,9 @@ export class BVHCircles {
         } else {
           rightChildrenIDs[grandparentId] = newParentId;
         }
+
+        updateStat(steps);
+        if (timer.canRun()) console.log(`min: ${min} | avr: ${avr} | max: ${max}`);
 
         shouldLoop = false;
       }
@@ -384,62 +409,70 @@ export class BVHCircles {
     if (this.rootBranch === undefined) return potentials;
 
     let current = this.rootBranch;
-    const { idIndex } = this;
-    if (this.isLeaf[current[idIndex]] === 1) return potentials;
+    const { idIndex, isLeaf } = this;
+    if (isLeaf[current[idIndex]] === 1) return potentials;
+    const {
+      AABB_left,
+      AABB_top,
+      AABB_right,
+      AABB_bottom,
+      branches,
+      leftChildrenIDs,
+      rightChildrenIDs,
+      bodies,
+      parentsIDs,
+    } = this;
 
-    const xMin = this.AABB_left[id];
-    const yMin = this.AABB_top[id];
-    const xMax = this.AABB_right[id];
-    const yMax = this.AABB_bottom[id];
+    const xMin = AABB_left[id];
+    const yMin = AABB_top[id];
+    const xMax = AABB_right[id];
+    const yMax = AABB_bottom[id];
 
     let traverse_left = true;
     while (current !== undefined) {
       if (traverse_left) {
         traverse_left = false;
 
-        let left = this.branches[this.leftChildrenIDs[current[idIndex]]];
+        let left = branches[leftChildrenIDs[current[idIndex]]];
         let leftId = left !== undefined ? left[idIndex] : undefined!;
 
         while (
           left !== undefined &&
-          this.AABB_right[leftId] >= xMin &&
-          this.AABB_bottom[leftId] >= yMin &&
-          this.AABB_left[leftId] <= xMax &&
-          this.AABB_top[leftId] <= yMax
+          AABB_right[leftId] >= xMin &&
+          AABB_bottom[leftId] >= yMin &&
+          AABB_left[leftId] <= xMax &&
+          AABB_top[leftId] <= yMax
         ) {
           current = left;
-          left = this.branches[this.leftChildrenIDs[current![idIndex]]];
+          left = branches[leftChildrenIDs[current![idIndex]]];
           leftId = left !== undefined ? left[idIndex] : undefined!;
         }
       }
 
-      const right: Branch | undefined = this.branches[this.rightChildrenIDs[current![idIndex]]];
+      const right: Branch | undefined = branches[rightChildrenIDs[current![idIndex]]];
       const rightId = right !== undefined ? right[idIndex] : undefined!;
 
       if (
         right !== undefined &&
-        this.AABB_right[rightId] > xMin &&
-        this.AABB_bottom[rightId] > yMin &&
-        this.AABB_left[rightId] < xMax &&
-        this.AABB_top[rightId] < yMax
+        AABB_right[rightId] > xMin &&
+        AABB_bottom[rightId] > yMin &&
+        AABB_left[rightId] < xMax &&
+        AABB_top[rightId] < yMax
       ) {
         current = right;
         traverse_left = true;
       } else {
         const currentId = current![idIndex];
-        if (this.isLeaf[currentId] === 1 && currentId !== id) {
-          potentials.push(this.bodies[currentId]);
+        if (isLeaf[currentId] === 1 && currentId !== id) {
+          potentials.push(bodies[currentId]);
         }
 
-        let parent: Branch | undefined = this.branches[this.parentsIDs[currentId]];
+        let parent: Branch | undefined = branches[parentsIDs[currentId]];
 
         if (parent !== undefined) {
-          while (
-            parent !== undefined &&
-            this.rightChildrenIDs[parent[idIndex]] === current![idIndex]
-          ) {
+          while (parent !== undefined && rightChildrenIDs[parent[idIndex]] === current![idIndex]) {
             current = parent;
-            parent = this.branches[this.parentsIDs[current[idIndex]]];
+            parent = branches[parentsIDs[current[idIndex]]];
           }
 
           current = parent;
@@ -458,25 +491,25 @@ export class BVHCircles {
     radiusA = this.radius,
     radiusB = this.radius,
   ): boolean {
-    /** Stage 1: AABB test step by step */
+    /** Skip: Stage 1: AABB test step by step */
     const xA = this.longitudes[aID];
     const yA = this.latitudes[aID];
-    const a_min_x = xA - radiusA;
-    const a_min_y = yA - radiusA;
-    const a_max_x = xA + radiusA;
-    const a_max_y = yA + radiusA;
+    // const a_min_x = xA - radiusA;
+    // const a_min_y = yA - radiusA;
+    // const a_max_x = xA + radiusA;
+    // const a_max_y = yA + radiusA;
 
     const xB = this.longitudes[bID];
     const yB = this.latitudes[bID];
-    const b_min_x = xB - radiusB;
-    const b_min_y = yB - radiusB;
-    const b_max_x = xB + radiusB;
-    const b_max_y = yB + radiusB;
+    // const b_min_x = xB - radiusB;
+    // const b_min_y = yB - radiusB;
+    // const b_max_x = xB + radiusB;
+    // const b_max_y = yB + radiusB;
 
-    if (a_min_x > b_max_x) return false;
-    if (a_min_y > b_max_y) return false;
-    if (a_max_x < b_min_x) return false;
-    if (a_max_y < b_min_y) return false;
+    // if (a_min_x > b_max_x) return false;
+    // if (a_min_y > b_max_y) return false;
+    // if (a_max_x < b_min_x) return false;
+    // if (a_max_y < b_min_y) return false;
 
     /** Stage 2: circle vs circle collision/overlap detection */
     const difference_x = xB - xA;
@@ -492,12 +525,12 @@ export class BVHCircles {
   }
 
   drawShapes(context: PIXI.Graphics): void {
-    this.bodies.forEach((body: Body): void => {
+    this.bodies.forEach((body: Body, index: number): void => {
       const { radius } = this;
       const id = body[0];
       const x = this.longitudes[id];
       const y = this.latitudes[id];
-      context.drawCircle(x, y, radius);
+      context.drawCircle(x, y, index === 0 ? radius * 3 : radius);
     });
   }
 }

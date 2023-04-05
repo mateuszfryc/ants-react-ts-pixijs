@@ -25,14 +25,16 @@ export class GlobalStore {
     this.simulationContainer = undefined;
     this.currentSimulation = undefined;
     this.simulationSettings = {
-      antsCount: 300,
+      antsCount: 400,
       antsScale: 3,
       nestPositon: { x: 150, y: 150 },
       /** seconds */
       pheromonesLifeSpan: 60,
       /** Time between consequent emmisions in seconds */
       timeBetweenPheromonesEmissions: 0.2,
-      isDebugDrawOn: false,
+      isDebugDrawOn: true,
+      // fixed time step: seconds
+      // simulation speed: 100%
     };
   }
 

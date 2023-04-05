@@ -13,3 +13,5 @@ export const getMousePositionFromEvent = (event: MouseEvent): [x: number, y: num
 
   return [x, y];
 };
+
+// export const
