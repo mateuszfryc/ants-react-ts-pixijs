@@ -1,27 +1,27 @@
 import * as PIXI from 'pixi.js';
 
-const timer = {
-  current: Date.now(),
-  canRun() {
-    const now = Date.now();
-    if (now - this.current > 1000) {
-      this.current = now;
+// const timer = {
+//   current: Date.now(),
+//   canRun() {
+//     const now = Date.now();
+//     if (now - this.current > 1000) {
+//       this.current = now;
 
-      return true;
-    }
+//       return true;
+//     }
 
-    return false;
-  },
-};
-let min = 99999;
-let avr = 0;
-let max = 0;
+//     return false;
+//   },
+// };
+// let min = 99999;
+// let avr = 0;
+// let max = 0;
 
-function updateStat(steps) {
-  if (steps < min) min = steps;
-  if (steps > max) max = steps;
-  avr = (min + max) / 2;
-}
+// function updateStat(steps) {
+//   if (steps < min) min = steps;
+//   if (steps > max) max = steps;
+//   avr = (min + max) / 2;
+// }
 
 type Body = number[];
 type Branch = number[];
@@ -321,8 +321,8 @@ export class BVHCircles {
           rightChildrenIDs[grandparentId] = newParentId;
         }
 
-        updateStat(steps);
-        if (timer.canRun()) console.log(`min: ${min} | avr: ${avr} | max: ${max}`);
+        // updateStat(steps);
+        // if (timer.canRun()) console.log(`min: ${min} | avr: ${avr} | max: ${max}`);
 
         shouldLoop = false;
       }

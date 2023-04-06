@@ -3,13 +3,13 @@ import { ParticleContainer, Sprite, Texture } from 'pixi.js';
 import AntImage from 'assets/ant-red.png';
 import { doNTimes } from 'shared/do-n-times';
 import * as MATH from 'shared/math';
-import { Timer } from 'simulation/Timer';
 import { Circle } from 'simulation/collisions/circle';
 import { Collisions, TAGS } from 'simulation/collisions/collisions';
+import { Timer } from 'simulation/Timer';
+import { Shape } from './collisions/proxyTypes';
 import { Food } from './Food';
 import { Nest } from './Nest';
 import { Pheromones } from './Pheromones';
-import { Shape } from './collisions/proxyTypes';
 import { SimulationSettings } from './types';
 
 export class TheAntColony {

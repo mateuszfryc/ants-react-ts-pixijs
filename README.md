@@ -1,5 +1,27 @@
 ### Ants behavior
 
+- [ ] finding the nest (without scent)
+  - [ ] much like placing nest markers ant can remembre route to nest
+    - [ ] once ant gets back to nest it could clean up the route
+      - [ ] should it?
+  - [ ] landmarks route? How?
+- [ ] hunger
+  - [ ] nest should store food: every food piece needs to increase it
+  - [ ] hunger from 0 to 1 that grows over time
+  - [ ] when ant riches fixed hunger point it will go back to the nest for food
+    - [ ] when ant comes back to eat it takes one piece of food
+      - [ ] once it hapens the hunger goes to zero
+    - [ ] if ant gets hungry wile carrying food it stops to eat it
+      - [ ] if ant eats is not moving
+        - [ ] eating should take short amount of time
+    - [ ] if ant is hungry and meets another ant with food it stops that and takes it and its it
+  - [ ] fungs food slowly growing in numbers inside the nest? Could allow to feed few ants without external food source
+- [ ] when food source gets extracted down to zero the first and that gets back for another peace should:
+  - [ ] see that there is no food - HOW?
+  - [ ] go back to the nest and clear all food markers on its way - HOW?
+- [ ] paint food
+  - [ ] single piece - continous with mouse click and drag
+  - [ ] food image converted to single pieces, 2x2 pixel piece colord based on food image pixels colors
 - [x] walking
   - [x] random direction
   - [x] collisions
@@ -7,35 +29,18 @@
     - [x] changing directions
     - [x] following rotation
 - [x] picking up food
-- [x] leaving scent
+- [x] placing scent
   - [x] scent of the nest
   - [x] scent of food
 - [x] following scent
-
-  - [ ] once the scent is found selection of the right direction
-
-- [ ] bringing food back to the nest
-
-  - [ ] following own scent
-  - [ ] finding the nest when there is no own scent
-
+  - [x] once the scent is found selection of the right direction
+  - [x] food
+  - [x] nest when having food
+- [x] bringing food back to the nest
+  - [x] following own scent
 - [ ] pheromones
-
   - [x] nest
   - [x] food
   - [ ] danger (released uppon death, this would have to work differently, meaby have bigger radius)
   - [ ] defend the nest
   - [ ] take care for the nest
-
-- [ ] class extending Sprite with preset defaults that currently are being set in runtime
-
-  - [ ] scale (mostly for pheromone sprites, since there is a huge number of them in each frame)
-  - [ ] anchor
-
-- [ ] check if it would make sens to change collisions class to just functions exported from collisions module: addCircle, addPolygon, insert, remove and isColliding
-- [ ] try to store position and velocity as int8. This could be achived by multiplying float by 100 and than pluging it into int8, which will cut not needed digits. Before using it, it could be divided by 100 and saved as local float for update function
-
-- [ ] separate collision systems? If yes: how to distribute shapes between them?
-- [ ] collision test under circle created at run time? findCollisionsInCircle? Is there faster way to test circle collision than creating them before the simulation?
-- [ ] remove collision result object and return array / undefined instead
-- [ ] should ants sensors prioritise lower or higher scent values?

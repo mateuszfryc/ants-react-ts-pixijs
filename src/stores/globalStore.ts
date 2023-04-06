@@ -31,7 +31,7 @@ export class GlobalStore {
       /** seconds */
       pheromonesLifeSpan: 60,
       /** Time between consequent emmisions in seconds */
-      timeBetweenPheromonesEmissions: 0.2,
+      timeBetweenPheromonesEmissions: 0.3,
       isDebugDrawOn: true,
       // fixed time step: seconds
       // simulation speed: 100%

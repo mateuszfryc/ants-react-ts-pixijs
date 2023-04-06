@@ -4,8 +4,8 @@ import PheromoneImage from 'assets/pheromone.png';
 import { doNTimes } from 'shared/do-n-times';
 import { areCirclesOverlapping } from '../shared/math';
 import { BVHCircles } from './BVHCircles';
-import { Timer } from './Timer';
 import { TAGS } from './collisions/collisions';
+import { Timer } from './Timer';
 import { SimulationSettings } from './types';
 
 export class Pheromones extends BVHCircles {
@@ -26,16 +26,15 @@ export class Pheromones extends BVHCircles {
   readonly intensityIndex = 2;
 
   constructor(settings: SimulationSettings, defaultRadius = 1.4) {
-    // prettier-ignore
     super(
       settings.antsCount *
-      Math.round(1 / settings.timeBetweenPheromonesEmissions) *
-      settings.pheromonesLifeSpan,
+        Math.round(1 / settings.timeBetweenPheromonesEmissions) *
+        settings.pheromonesLifeSpan,
       defaultRadius * settings.antsScale,
     );
 
     this.pheromonesMaxLifeSpan = settings.pheromonesLifeSpan;
-    this.sensorRadius = this.radius * 3;
+    this.sensorRadius = this.radius * 4;
     this.pheromoneEmissionTimer = new Timer(settings.timeBetweenPheromonesEmissions);
 
     this.sensor[this.tagIndex] = TAGS.ANT_SENSOR;
@@ -113,12 +112,12 @@ export class Pheromones extends BVHCircles {
     this.insert(id, x, y);
 
     // this should optimise the number of pheromones test when there is a "highway" created
-    const pheromoneIntensityReductionRate = 0.85;
+    const pheromoneIntensityReductionRate = 0.9;
     if (hasFood || _hasScentOfFood) {
       const potentials = this.getPotentials(id).filter(
         (other) =>
           other[tagIndex] === pheromoneType &&
-          this.areCirclesOverlapping(id, other[idIndex], radius * 3),
+          this.areCirclesOverlapping(id, other[idIndex], radius * 4),
       );
       potentials.forEach((body) => {
         // by reducing the lifespan of overlapping pheromones we reduce the number of pheromones in one spot

@@ -2,10 +2,10 @@ import * as PIXI from 'pixi.js';
 import { Metrics } from 'simulation/Metrics';
 import { SimulationSettings, Size } from 'simulation/types';
 import { TheAntColony } from './AntsColony';
+import { Collisions } from './collisions/collisions';
 import { DebugDraw } from './DebugDraw';
 import { Food } from './Food';
 import { Pheromones } from './Pheromones';
-import { Collisions } from './collisions/collisions';
 
 export class Simulation {
   collisions = new Collisions();
@@ -34,7 +34,7 @@ export class Simulation {
     this.world = { width, height };
     this.graphics = this.setupGraphics(container);
     this.antsColony = new TheAntColony(settings, this.collisions);
-    this.pheromones = new Pheromones(settings /* , Math.max(width, height) + 1 */);
+    this.pheromones = new Pheromones(settings);
     this.food = new Food(this.collisions);
     this.debugDraw = debugDraw;
     this.settings = settings;
