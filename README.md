@@ -1,46 +1,4 @@
-### Ants behavior
+# Ants Simulation
+Made with React.js and Pixi.js it's a attempt to simulate ants pheremones based food and nest search.
 
-- [ ] finding the nest (without scent)
-  - [ ] much like placing nest markers ant can remembre route to nest
-    - [ ] once ant gets back to nest it could clean up the route
-      - [ ] should it?
-  - [ ] landmarks route? How?
-- [ ] hunger
-  - [ ] nest should store food: every food piece needs to increase it
-  - [ ] hunger from 0 to 1 that grows over time
-  - [ ] when ant riches fixed hunger point it will go back to the nest for food
-    - [ ] when ant comes back to eat it takes one piece of food
-      - [ ] once it hapens the hunger goes to zero
-    - [ ] if ant gets hungry wile carrying food it stops to eat it
-      - [ ] if ant eats is not moving
-        - [ ] eating should take short amount of time
-    - [ ] if ant is hungry and meets another ant with food it stops that and takes it and its it
-  - [ ] fungs food slowly growing in numbers inside the nest? Could allow to feed few ants without external food source
-- [ ] when food source gets extracted down to zero the first and that gets back for another peace should:
-  - [ ] see that there is no food - HOW?
-  - [ ] go back to the nest and clear all food markers on its way - HOW?
-- [ ] paint food
-  - [ ] single piece - continous with mouse click and drag
-  - [ ] food image converted to single pieces, 2x2 pixel piece colord based on food image pixels colors
-- [x] walking
-  - [x] random direction
-  - [x] collisions
-    - [x] bouncing of the walls
-    - [x] changing directions
-    - [x] following rotation
-- [x] picking up food
-- [x] placing scent
-  - [x] scent of the nest
-  - [x] scent of food
-- [x] following scent
-  - [x] once the scent is found selection of the right direction
-  - [x] food
-  - [x] nest when having food
-- [x] bringing food back to the nest
-  - [x] following own scent
-- [ ] pheromones
-  - [x] nest
-  - [x] food
-  - [ ] danger (released uppon death, this would have to work differently, meaby have bigger radius)
-  - [ ] defend the nest
-  - [ ] take care for the nest
+Inspired by C++ work of Pezzza: [https://www.youtube.com/watch?v=81GQNPJip2Y&list=PLPiMlUuvmixC-R-5DXE6k2P6FdKn71JGY&ab_channel=Pezzza%27sWork](https://www.youtube.com/watch?v=81GQNPJip2Y&list=PLPiMlUuvmixC-R-5DXE6k2P6FdKn71JGY&ab_channel=Pezzza%27sWork)
